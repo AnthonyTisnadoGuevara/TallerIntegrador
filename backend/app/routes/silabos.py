@@ -203,3 +203,41 @@ def listar_silabos_con_alertas():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@router.get("/{silabo_id}/historial")
+def obtener_historial_silabo(silabo_id: str):
+    try:
+        # Verificar si el sílabo existe
+        silabo_actual = (
+            supabase.table("silabos")
+            .select("*")
+            .eq("id", silabo_id)
+            .execute()
+        )
+
+        if not silabo_actual.data:
+            raise HTTPException(status_code=404, detail="Sílabo no encontrado")
+
+        # Consultar historial del sílabo
+        response = (
+            supabase.table("historial_silabo")
+            .select("*")
+            .eq("silabo_id", silabo_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        return {
+            "message": "Historial del sílabo obtenido correctamente",
+            "silabo": {
+                "id": silabo_actual.data[0]["id"],
+                "asignatura": silabo_actual.data[0]["asignatura"],
+                "codigo_asignatura": silabo_actual.data[0]["codigo_asignatura"],
+                "estado_actual": silabo_actual.data[0]["estado"]
+            },
+            "historial": response.data
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
