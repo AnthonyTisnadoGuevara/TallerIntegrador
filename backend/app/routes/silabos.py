@@ -5,6 +5,7 @@ from app.services.supabase_client import supabase
 from fastapi import APIRouter, HTTPException, UploadFile, File
 import uuid
 import os
+from app.utils.document_reader import extraer_texto_docx_desde_url, validar_secciones_silabo
 
 router = APIRouter(prefix="/api/silabos", tags=["Sílabos"])
 
@@ -305,6 +306,112 @@ async def subir_archivo_silabo(silabo_id: str, archivo: UploadFile = File(...)):
         return {
             "message": "Archivo del sílabo subido correctamente",
             "archivo_url": archivo_url,
+            "data": response.data
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@router.post("/{silabo_id}/validar-documento")
+def validar_documento_silabo(silabo_id: str):
+    try:
+        # Verificar si el sílabo existe
+        silabo_actual = (
+            supabase.table("silabos")
+            .select("*")
+            .eq("id", silabo_id)
+            .execute()
+        )
+
+        if not silabo_actual.data:
+            raise HTTPException(status_code=404, detail="Sílabo no encontrado")
+
+        silabo = silabo_actual.data[0]
+        archivo_url = silabo.get("archivo_url")
+
+        if not archivo_url:
+            raise HTTPException(
+                status_code=400,
+                detail="El sílabo no tiene archivo cargado para validar."
+            )
+
+        if not archivo_url.lower().endswith(".docx"):
+            raise HTTPException(
+                status_code=400,
+                detail="Por ahora solo se permite validar archivos .docx."
+            )
+
+        # Extraer texto del documento
+        texto = extraer_texto_docx_desde_url(archivo_url)
+
+        if not texto.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="No se pudo extraer texto del documento."
+            )
+
+        # Validar secciones obligatorias
+        resultados = validar_secciones_silabo(texto)
+
+        # Eliminar validaciones anteriores del mismo sílabo
+        supabase.table("validacion_silabo").delete().eq("silabo_id", silabo_id).execute()
+
+        # Insertar nuevas validaciones
+        registros_validacion = [
+            {
+                "silabo_id": silabo_id,
+                "seccion": item["seccion"],
+                "cumple": item["cumple"],
+                "observacion": item["observacion"]
+            }
+            for item in resultados
+        ]
+
+        supabase.table("validacion_silabo").insert(registros_validacion).execute()
+
+        total = len(resultados)
+        cumplidas = sum(1 for item in resultados if item["cumple"])
+        porcentaje = round((cumplidas / total) * 100, 2)
+
+        if porcentaje >= 90:
+            nuevo_estado = "completo"
+        elif porcentaje >= 70:
+            nuevo_estado = "observado"
+        else:
+            nuevo_estado = "incompleto"
+
+        estado_anterior = silabo.get("estado")
+
+        # Actualizar sílabo
+        response = (
+            supabase.table("silabos")
+            .update({
+                "porcentaje_cumplimiento": porcentaje,
+                "estado": nuevo_estado,
+                "observacion_general": f"Validación automática: {cumplidas} de {total} secciones identificadas."
+            })
+            .eq("id", silabo_id)
+            .execute()
+        )
+
+        # Registrar historial
+        supabase.table("historial_silabo").insert({
+            "silabo_id": silabo_id,
+            "estado_anterior": estado_anterior,
+            "estado_nuevo": nuevo_estado,
+            "observacion": f"Validación automática del documento: {cumplidas} de {total} secciones identificadas.",
+            "usuario": "backend"
+        }).execute()
+
+        return {
+            "message": "Documento del sílabo validado correctamente",
+            "silabo_id": silabo_id,
+            "secciones_cumplidas": cumplidas,
+            "total_secciones": total,
+            "porcentaje_cumplimiento": porcentaje,
+            "estado": nuevo_estado,
+            "validacion": resultados,
             "data": response.data
         }
 
