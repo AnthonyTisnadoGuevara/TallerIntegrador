@@ -36,6 +36,23 @@ class EstadoUpdate(BaseModel):
     estado: str
     observacion_general: Optional[str] = None
 
+class SilaboUpdate(BaseModel):
+    semestre_academico: Optional[str] = None
+    facultad: Optional[str] = None
+    programa_estudios: Optional[str] = None
+    asignatura: Optional[str] = None
+    codigo_asignatura: Optional[str] = None
+    ciclo: Optional[int] = None
+    modalidad: Optional[str] = None
+    creditos: Optional[int] = None
+    total_horas_semestrales: Optional[int] = None
+    total_horas_semanales: Optional[int] = None
+    fecha_inicio: Optional[str] = None
+    fecha_culminacion: Optional[str] = None
+    duracion_semanas: Optional[int] = None
+    docente_responsable: Optional[str] = None
+    correo_docente: Optional[str] = None
+    observacion_general: Optional[str] = None
 
 @router.get("/")
 def listar_silabos():
@@ -455,6 +472,60 @@ def obtener_validacion_silabo(silabo_id: str):
                 "archivo_url": silabo["archivo_url"]
             },
             "validacion": response.data
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@router.put("/{silabo_id}")
+def actualizar_silabo(silabo_id: str, datos: SilaboUpdate):
+    try:
+        # Verificar si el sílabo existe
+        silabo_actual = (
+            supabase.table("silabos")
+            .select("*")
+            .eq("id", silabo_id)
+            .execute()
+        )
+
+        if not silabo_actual.data:
+            raise HTTPException(status_code=404, detail="Sílabo no encontrado")
+
+        datos_actualizar = datos.model_dump(exclude_unset=True)
+
+        if not datos_actualizar:
+            raise HTTPException(
+                status_code=400,
+                detail="No se enviaron datos para actualizar"
+            )
+
+        if "ciclo" in datos_actualizar:
+            if datos_actualizar["ciclo"] < 1 or datos_actualizar["ciclo"] > 10:
+                raise HTTPException(
+                    status_code=400,
+                    detail="El ciclo debe estar entre 1 y 10"
+                )
+
+        response = (
+            supabase.table("silabos")
+            .update(datos_actualizar)
+            .eq("id", silabo_id)
+            .execute()
+        )
+
+        # Registrar trazabilidad de edición
+        supabase.table("historial_silabo").insert({
+            "silabo_id": silabo_id,
+            "estado_anterior": silabo_actual.data[0]["estado"],
+            "estado_nuevo": silabo_actual.data[0]["estado"],
+            "observacion": "Se actualizó información general del sílabo.",
+            "usuario": "frontend"
+        }).execute()
+
+        return {
+            "message": "Información del sílabo actualizada correctamente",
+            "data": response.data
         }
 
     except HTTPException:

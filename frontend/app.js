@@ -66,6 +66,7 @@ async function cargarSilabos() {
             <button class="danger" onclick="eliminarSilabo('${silabo.id}')">Eliminar</button>
             <button onclick="seleccionarArchivo('${silabo.id}')">Subir archivo</button>
             <button class="warning" onclick="cambiarEstado('${silabo.id}')">Cambiar estado</button>
+            <button onclick="editarSilabo('${silabo.id}')">Editar</button>
           </div>
         </td>
       `;
@@ -308,6 +309,73 @@ async function cambiarEstado(id) {
     await verHistorial(id);
   } catch (error) {
     alert("Error al actualizar el estado");
+    console.error(error);
+  }
+}
+async function editarSilabo(id) {
+  try {
+    const response = await fetch(`${API_URL}/api/silabos/${id}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert(result.detail || "No se pudo obtener el sílabo");
+      return;
+    }
+
+    const silabo = result.data;
+
+    const asignatura = prompt("Asignatura:", silabo.asignatura);
+    if (asignatura === null) return;
+
+    const codigo = prompt("Código de asignatura:", silabo.codigo_asignatura);
+    if (codigo === null) return;
+
+    const ciclo = prompt("Ciclo:", silabo.ciclo);
+    if (ciclo === null) return;
+
+    const creditos = prompt("Créditos:", silabo.creditos ?? "");
+    if (creditos === null) return;
+
+    const docente = prompt("Docente responsable:", silabo.docente_responsable ?? "");
+    if (docente === null) return;
+
+    const correo = prompt("Correo docente:", silabo.correo_docente ?? "");
+    if (correo === null) return;
+
+    const observacion = prompt("Observación general:", silabo.observacion_general ?? "");
+    if (observacion === null) return;
+
+    const datosActualizados = {
+      asignatura: asignatura.trim(),
+      codigo_asignatura: codigo.trim(),
+      ciclo: Number(ciclo),
+      creditos: creditos ? Number(creditos) : null,
+      docente_responsable: docente.trim(),
+      correo_docente: correo.trim(),
+      observacion_general: observacion.trim()
+    };
+
+    const updateResponse = await fetch(`${API_URL}/api/silabos/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(datosActualizados)
+    });
+
+    const updateResult = await updateResponse.json();
+
+    if (!updateResponse.ok) {
+      alert(updateResult.detail || "No se pudo actualizar el sílabo");
+      return;
+    }
+
+    alert("Información del sílabo actualizada correctamente");
+    await cargarDatos();
+    await verHistorial(id);
+
+  } catch (error) {
+    alert("Error al editar el sílabo");
     console.error(error);
   }
 }
