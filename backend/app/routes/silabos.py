@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from app.services.supabase_client import supabase
+from fastapi import APIRouter, HTTPException, UploadFile, File
+import uuid
+import os
 
 router = APIRouter(prefix="/api/silabos", tags=["Sílabos"])
 
@@ -235,6 +238,74 @@ def obtener_historial_silabo(silabo_id: str):
                 "estado_actual": silabo_actual.data[0]["estado"]
             },
             "historial": response.data
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@router.post("/{silabo_id}/archivo")
+async def subir_archivo_silabo(silabo_id: str, archivo: UploadFile = File(...)):
+    try:
+        # Verificar si el sílabo existe
+        silabo_actual = (
+            supabase.table("silabos")
+            .select("*")
+            .eq("id", silabo_id)
+            .execute()
+        )
+
+        if not silabo_actual.data:
+            raise HTTPException(status_code=404, detail="Sílabo no encontrado")
+
+        # Validar extensión del archivo
+        nombre_original = archivo.filename
+        extension = os.path.splitext(nombre_original)[1].lower()
+
+        extensiones_permitidas = [".pdf", ".doc", ".docx"]
+
+        if extension not in extensiones_permitidas:
+            raise HTTPException(
+                status_code=400,
+                detail="Formato no permitido. Solo se aceptan archivos PDF, DOC o DOCX."
+            )
+
+        # Leer contenido del archivo
+        contenido = await archivo.read()
+
+        # Crear nombre único para evitar duplicados
+        nombre_archivo = f"{silabo_id}_{uuid.uuid4()}{extension}"
+
+        # Ruta dentro del bucket
+        ruta_storage = f"silabos/{nombre_archivo}"
+
+        # Subir archivo a Supabase Storage
+        supabase.storage.from_("silabos").upload(
+            path=ruta_storage,
+            file=contenido,
+            file_options={
+                "content-type": archivo.content_type or "application/octet-stream",
+                "upsert": "true"
+            }
+        )
+
+        # Obtener URL pública del archivo
+        archivo_url = supabase.storage.from_("silabos").get_public_url(ruta_storage)
+
+        # Actualizar campo archivo_url en tabla silabos
+        response = (
+            supabase.table("silabos")
+            .update({
+                "archivo_url": archivo_url
+            })
+            .eq("id", silabo_id)
+            .execute()
+        )
+
+        return {
+            "message": "Archivo del sílabo subido correctamente",
+            "archivo_url": archivo_url,
+            "data": response.data
         }
 
     except HTTPException:
