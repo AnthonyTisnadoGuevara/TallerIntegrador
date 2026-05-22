@@ -419,3 +419,45 @@ def validar_documento_silabo(silabo_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@router.get("/{silabo_id}/validacion")
+def obtener_validacion_silabo(silabo_id: str):
+    try:
+        # Verificar si el sílabo existe
+        silabo_actual = (
+            supabase.table("silabos")
+            .select("*")
+            .eq("id", silabo_id)
+            .execute()
+        )
+
+        if not silabo_actual.data:
+            raise HTTPException(status_code=404, detail="Sílabo no encontrado")
+
+        silabo = silabo_actual.data[0]
+
+        # Obtener validaciones del sílabo
+        response = (
+            supabase.table("validacion_silabo")
+            .select("*")
+            .eq("silabo_id", silabo_id)
+            .order("seccion")
+            .execute()
+        )
+
+        return {
+            "message": "Validación del sílabo obtenida correctamente",
+            "silabo": {
+                "id": silabo["id"],
+                "asignatura": silabo["asignatura"],
+                "codigo_asignatura": silabo["codigo_asignatura"],
+                "estado": silabo["estado"],
+                "porcentaje_cumplimiento": silabo["porcentaje_cumplimiento"],
+                "archivo_url": silabo["archivo_url"]
+            },
+            "validacion": response.data
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
