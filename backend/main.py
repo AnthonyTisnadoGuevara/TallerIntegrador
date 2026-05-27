@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from app.routes import agentes
 from app.routes import silabos, dashboard
 
 app = FastAPI(
@@ -19,7 +19,7 @@ app.add_middleware(
 
 app.include_router(silabos.router)
 app.include_router(dashboard.router)
-
+app.include_router(agentes.router)
 
 @app.get("/")
 def home():
