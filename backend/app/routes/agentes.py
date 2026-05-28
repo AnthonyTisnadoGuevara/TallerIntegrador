@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.agents.syllabus_graph import ejecutar_grafo_analisis_silabo
+from app.agents.trazabilidad_graph import ejecutar_grafo_trazabilidad
 from app.services.supabase_client import supabase
 
 router = APIRouter(
@@ -28,6 +29,27 @@ def analizar_silabo(silabo_id: str):
             },
             "analisis": resultado["resultado_guardado"],
             "texto_extraido_preview": texto[:500],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/analizar-trazabilidad-curricular")
+def analizar_trazabilidad_curricular():
+    try:
+        resultado = ejecutar_grafo_trazabilidad()
+        relaciones = resultado.get("relaciones", [])
+        brechas = resultado.get("brechas", [])
+
+        return {
+            "message": "Trazabilidad curricular generada correctamente con LangGraph",
+            "total_relaciones": len(relaciones),
+            "total_brechas": len(brechas),
+            "relaciones": relaciones,
+            "brechas": brechas,
         }
 
     except HTTPException:
