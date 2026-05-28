@@ -3,6 +3,7 @@ from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
 from app.agents.curricular_analyzer import analizar_texto_silabo
+from app.agents.gemini_recommender import generar_recomendaciones_con_gemini
 from app.services.supabase_client import supabase
 from app.utils.document_reader import extraer_texto_desde_url
 
@@ -79,6 +80,39 @@ def analizar_contenido(state: SyllabusAnalysisState) -> SyllabusAnalysisState:
     }
 
 
+def generar_recomendaciones_gemini(state: SyllabusAnalysisState) -> SyllabusAnalysisState:
+    print("[LangGraph] Ejecutando nodo generar_recomendaciones_gemini")
+    texto = state.get("texto", "")
+    silabo = state.get("silabo", {})
+    analisis = state.get("analisis", {})
+    resultado_gemini = generar_recomendaciones_con_gemini(texto, silabo, analisis)
+
+    if resultado_gemini:
+        analisis["sugerencias"] = resultado_gemini.get(
+            "sugerencias",
+            analisis.get("sugerencias", []),
+        )
+        analisis["observacion_general"] = resultado_gemini.get(
+            "observacion_general",
+            analisis.get("observacion_general"),
+        )
+        analisis["recomendaciones_mejora"] = resultado_gemini.get(
+            "recomendaciones_mejora",
+            [],
+        )
+        analisis["modelo_usado"] = resultado_gemini.get(
+            "modelo_usado",
+            MODELO_LANGGRAPH_REGLAS,
+        )
+
+    print("[LangGraph] Modelo resultante:", analisis.get("modelo_usado"))
+
+    return {
+        **state,
+        "analisis": analisis,
+    }
+
+
 def guardar_analisis(state: SyllabusAnalysisState) -> SyllabusAnalysisState:
     silabo_id = state["silabo_id"]
     analisis = state["analisis"]
@@ -100,7 +134,7 @@ def guardar_analisis(state: SyllabusAnalysisState) -> SyllabusAnalysisState:
         "sugerencias": analisis.get("sugerencias", []),
         "nivel_riesgo": analisis.get("nivel_riesgo", "medio"),
         "estado_analisis": "analizado",
-        "modelo_usado": MODELO_LANGGRAPH_REGLAS,
+        "modelo_usado": analisis.get("modelo_usado", MODELO_LANGGRAPH_REGLAS),
         "observacion_general": analisis.get(
             "observacion_general",
             "Análisis generado mediante LangGraph.",
@@ -127,13 +161,15 @@ def construir_grafo_analisis():
     graph.add_node("validar_archivo", validar_archivo)
     graph.add_node("extraer_texto", extraer_texto)
     graph.add_node("analizar_contenido", analizar_contenido)
+    graph.add_node("generar_recomendaciones_gemini", generar_recomendaciones_gemini)
     graph.add_node("guardar_analisis", guardar_analisis)
 
     graph.add_edge(START, "obtener_silabo")
     graph.add_edge("obtener_silabo", "validar_archivo")
     graph.add_edge("validar_archivo", "extraer_texto")
     graph.add_edge("extraer_texto", "analizar_contenido")
-    graph.add_edge("analizar_contenido", "guardar_analisis")
+    graph.add_edge("analizar_contenido", "generar_recomendaciones_gemini")
+    graph.add_edge("generar_recomendaciones_gemini", "guardar_analisis")
     graph.add_edge("guardar_analisis", END)
 
     return graph.compile()
