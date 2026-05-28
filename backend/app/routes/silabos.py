@@ -52,6 +52,7 @@ class SilaboUpdate(BaseModel):
     duracion_semanas: Optional[int] = None
     docente_responsable: Optional[str] = None
     correo_docente: Optional[str] = None
+    archivo_url: Optional[str] = None
     observacion_general: Optional[str] = None
 
 @router.get("/")

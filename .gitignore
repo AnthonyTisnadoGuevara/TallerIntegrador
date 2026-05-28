@@ -223,6 +223,7 @@ backend/.env
 # Entorno virtual Python
 venv/
 backend/venv/
+backend/uploads/
 
 # Caché Python
 __pycache__/
