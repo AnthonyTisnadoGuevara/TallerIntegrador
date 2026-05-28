@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitoreo de Gestión de Sílabos</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div>
+      <h1>Sistema de Monitoreo de Gestión de Sílabos</h1>
+      <p>MVP del Plan de Mejora Continua - Programa ISIA</p>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section class="cards">
+      <div class="card">
+        <h3>Total de sílabos</h3>
+        <p id="totalSilabos">0</p>
+      </div>
+
+      <div class="card success">
+        <h3>Completos</h3>
+        <p id="silabosCompletos">0</p>
+      </div>
+
+      <div class="card warning">
+        <h3>Observados</h3>
+        <p id="silabosObservados">0</p>
+      </div>
+
+      <div class="card danger">
+        <h3>Pendientes</h3>
+        <p id="silabosPendientes">0</p>
+      </div>
+
+      <div class="card">
+        <h3>Cumplimiento promedio</h3>
+        <p id="cumplimientoPromedio">0%</p>
+      </div>
+    </section>
+
+    <section class="card analisis-curricular-card">
+      <div class="section-header">
+        <div>
+          <h2>Análisis curricular con LangGraph</h2>
+          <p>Evalúa la progresión curricular entre ciclos, detecta relaciones entre asignaturas y brechas formativas.</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-success" onclick="analizarTrazabilidadCurricular()">Analizar trazabilidad curricular</button>
+          <button class="btn btn-info" onclick="verTrazabilidadCurricular()">Ver trazabilidad</button>
+          <button class="btn btn-warning" onclick="verBrechasCurriculares()">Ver brechas</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Listado de Sílabos</h2>
+        <button onclick="cargarDatos()">Actualizar</button>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+        <thead>
+          <tr>
+            <th>Ciclo</th>
+            <th>Código</th>
+            <th>Asignatura</th>
+            <th>Estado</th>
+            <th>Cumplimiento</th>
+            <th>Archivo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaSilabos">
+          <tr>
+            <td colspan="7">Cargando datos...</td>
+          </tr>
+        </tbody>
+        </table>
+      </div>
+      <div id="paginacionSilabos" class="paginacion"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Registrar nuevo sílabo</h2>
+
+      <form id="formSilabo">
+        <div class="form-grid">
+          <input type="text" id="semestre" placeholder="Semestre académico" value="202510" required />
+          <input type="text" id="facultad" placeholder="Facultad" value="Ingeniería" />
+          <input type="text" id="programa" placeholder="Programa de estudios" value="Ingeniería de Sistemas e Inteligencia Artificial" />
+          <input type="text" id="asignatura" placeholder="Asignatura" required />
+          <input type="text" id="codigo" placeholder="Código de asignatura" required />
+          <input type="number" id="ciclo" placeholder="Ciclo" min="1" max="10" required />
+          <input type="text" id="modalidad" placeholder="Modalidad" value="Presencial" />
+          <input type="number" id="creditos" placeholder="Créditos" />
+          <input type="number" id="horasSemestrales" placeholder="Horas semestrales" />
+          <input type="number" id="horasSemanales" placeholder="Horas semanales" />
+          <input type="date" id="fechaInicio" />
+          <input type="date" id="fechaFin" />
+          <input type="number" id="duracion" placeholder="Duración en semanas" value="17" />
+          <input type="text" id="docente" placeholder="Docente responsable" />
+          <input type="email" id="correo" placeholder="Correo docente" />
+        </div>
+
+        <textarea id="observacion" placeholder="Observación general"></textarea>
+
+        <button type="submit">Registrar sílabo</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Detalle del sílabo</h2>
+      <div id="detalleSilabo" class="detalle">
+        Selecciona un sílabo para ver su validación o historial.
+      </div>
+    </section>
+
+  </main>
+
+  <div id="modalEstado" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalEstado">
+    <div class="modal-card modal-card-small">
+      <div class="modal-header">
+        <h2 id="tituloModalEstado">Cambiar estado del sílabo</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalCambioEstado()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="estadoNuevo">Nuevo estado</label>
+          <select id="estadoNuevo" class="form-control">
+            <option value="pendiente">Pendiente</option>
+            <option value="completo">Completo</option>
+            <option value="observado">Observado</option>
+            <option value="incompleto">Incompleto</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="estadoObservacion">Observación general</label>
+          <textarea id="estadoObservacion" class="form-control" placeholder="Describe el motivo del cambio de estado"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalCambioEstado()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarCambioEstado()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalEditarSilabo" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalEditar">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="tituloModalEditar">Editar información del sílabo</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalEditarSilabo()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-form-grid">
+          <div class="form-group">
+            <label for="editarAsignatura">Asignatura</label>
+            <input id="editarAsignatura" class="form-control" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="editarCodigo">Código de asignatura</label>
+            <input id="editarCodigo" class="form-control" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="editarCiclo">Ciclo</label>
+            <input id="editarCiclo" class="form-control" type="number" min="1" max="10" required />
+          </div>
+          <div class="form-group">
+            <label for="editarCreditos">Créditos</label>
+            <input id="editarCreditos" class="form-control" type="number" min="0" />
+          </div>
+          <div class="form-group">
+            <label for="editarDocente">Docente responsable</label>
+            <input id="editarDocente" class="form-control" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="editarCorreo">Correo docente</label>
+            <input id="editarCorreo" class="form-control" type="email" />
+          </div>
+          <div class="form-group full-width">
+            <label for="editarArchivoUrl">Enlace del archivo en Google Drive o Supabase</label>
+            <input id="editarArchivoUrl" class="form-control" type="url" placeholder="https://..." />
+          </div>
+          <div class="form-group full-width">
+            <label for="editarObservacion">Observación general</label>
+            <textarea id="editarObservacion" class="form-control" placeholder="Observaciones del sílabo"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarSilabo()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarEdicionSilabo()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalAnalisis" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalAnalisis">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h2 id="tituloModalAnalisis">Análisis curricular del sílabo</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalAnalisis()">&times;</button>
+      </div>
+      <div id="contenidoAnalisis" class="modal-body">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalAnalisis()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalTrazabilidad" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalTrazabilidad">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalTrazabilidad">Trazabilidad curricular</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalTrazabilidad()">&times;</button>
+      </div>
+      <div id="contenidoTrazabilidad" class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalTrazabilidad()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalBrechas" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalBrechas">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalBrechas">Brechas curriculares detectadas</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalBrechas()">&times;</button>
+      </div>
+      <div id="contenidoBrechas" class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalBrechas()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalConfirmacion" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="confirmacionTitulo">
+    <div class="modal-card modal-card-small">
+      <div class="modal-header">
+        <h2 id="confirmacionTitulo">Confirmar acción</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalConfirmacion(false)">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmacionMensaje" class="confirmacion-mensaje"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalConfirmacion(false)">Cancelar</button>
+        <button type="button" id="confirmacionAceptar" class="btn btn-primary" onclick="cerrarModalConfirmacion(true)">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
