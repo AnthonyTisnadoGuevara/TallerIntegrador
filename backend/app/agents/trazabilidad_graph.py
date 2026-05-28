@@ -1,4 +1,5 @@
 import json
+import re
 import unicodedata
 from typing import Any
 
@@ -73,14 +74,126 @@ FAMILIAS_TEMATICAS = {
     ],
 }
 
+PROGRESIONES_ESPERADAS = [
+    {
+        "linea": "programacion_software",
+        "secuencia": [
+            "ALGORITMIA Y PROGRAMACION",
+            "PROGRAMACION ORIENTADA A OBJETOS",
+            "ESTRUCTURA DE DATOS Y ALGORITMOS",
+            "INGENIERIA DE REQUISITOS",
+            "INGENIERIA DE SOFTWARE",
+            "PATRONES DE DISENO DE SOFTWARE",
+            "ARQUITECTURA DE SISTEMAS",
+            "SISTEMAS DE INFORMACION INTEGRADOS",
+            "APLICACIONES MOVILES PARA NEGOCIOS",
+        ],
+    },
+    {
+        "linea": "datos_ia",
+        "secuencia": [
+            "ESTADISTICA PARA INGENIEROS",
+            "APRENDIZAJE ESTADISTICO",
+            "INTELIGENCIA ARTIFICIAL PRINCIPIOS Y TECNICAS",
+            "MACHINE LEARNING",
+            "PERCEPCION COMPUTACIONAL",
+            "BIG DATA",
+            "BIG DATA Y ANALITICA DE DATOS",
+            "DEEP LEARNING",
+            "AUTOMATIZACION INTELIGENTE DE PROCESOS",
+        ],
+    },
+    {
+        "linea": "infraestructura_nube",
+        "secuencia": [
+            "REDES Y SISTEMAS OPERATIVOS",
+            "COMPUTO DISTRIBUIDO Y PARALELO",
+            "INFRAESTRUCTURA COMO CODIGO",
+            "INTERNET DE LAS COSAS",
+            "ARQUITECTURA DE SISTEMAS",
+            "BLOCKCHAIN APLICADO A LOS NEGOCIOS",
+            "BLOCKCHAIN APLICADO A SISTEMAS EMPRESARIALES",
+        ],
+    },
+    {
+        "linea": "gestion_innovacion",
+        "secuencia": [
+            "GESTION DE PROCESOS DE NEGOCIOS",
+            "SISTEMA EMPRESARIALES",
+            "SISTEMAS EMPRESARIALES",
+            "AGILE DEVELOPMENT",
+            "SISTEMAS AGILE DEVELOPMENT",
+            "CUSTOMER DEVELOPMENT",
+            "GESTION DE PROYECTOS DE SISTEMAS DE INFORMACION",
+            "TRANSFORMACION DIGITAL",
+        ],
+    },
+    {
+        "linea": "investigacion",
+        "secuencia": [
+            "PROYECTO DE INVESTIGACION",
+            "TESIS I",
+            "TESIS II",
+            "PRACTICAS PRE PROFESIONALES",
+            "PRACTICAS PRE-PROFESIONALES",
+        ],
+    },
+]
+
 TERMINOS_AVANZADOS = {
-    "programacion": ["patrones", "arquitectura", "estructuras de datos"],
-    "datos": ["big data", "machine learning", "deep learning"],
-    "ia": ["machine learning", "deep learning", "redes neuronales", "vision", "nlp"],
-    "infraestructura": ["nube", "terraform", "ansible", "iot", "blockchain"],
-    "software": ["arquitectura", "sistemas integrados", "aplicaciones moviles"],
-    "gestion": ["pmbok", "customer development", "agile"],
-    "investigacion": ["tesis", "resultados"],
+    "programacion_software": [
+        "patrones",
+        "arquitectura",
+        "microservicios",
+        "diseno",
+        "requisitos",
+        "mantenimiento",
+        "sistemas integrados",
+    ],
+    "datos_ia": [
+        "machine learning",
+        "deep learning",
+        "redes neuronales",
+        "big data",
+        "pca",
+        "clustering",
+        "modelo predictivo",
+    ],
+    "infraestructura_nube": [
+        "nube",
+        "terraform",
+        "ansible",
+        "distribuido",
+        "paralelo",
+        "iot",
+        "blockchain",
+    ],
+    "gestion_innovacion": [
+        "pmbok",
+        "agile",
+        "scrum",
+        "lean",
+        "customer development",
+        "transformacion digital",
+    ],
+    "investigacion": [
+        "metodologia",
+        "instrumentos",
+        "resultados",
+        "discusion",
+        "conclusiones",
+        "sustentacion",
+    ],
+}
+
+FAMILIA_A_LINEAS = {
+    "programacion": ["programacion_software"],
+    "software": ["programacion_software"],
+    "datos": ["datos_ia"],
+    "ia": ["datos_ia"],
+    "infraestructura": ["infraestructura_nube"],
+    "gestion": ["gestion_innovacion"],
+    "investigacion": ["investigacion"],
 }
 
 _graph_trazabilidad = None
@@ -102,6 +215,92 @@ def _normalizar_texto(valor: Any) -> str:
     texto = unicodedata.normalize("NFD", texto)
     texto = "".join(caracter for caracter in texto if unicodedata.category(caracter) != "Mn")
     return texto.lower().strip()
+
+
+def normalizar_nombre_curso(nombre: str) -> str:
+    texto = str(nombre or "").replace("_", " ")
+    texto = unicodedata.normalize("NFD", texto)
+    texto = "".join(caracter for caracter in texto if unicodedata.category(caracter) != "Mn")
+    texto = texto.upper().replace("Ñ", "N")
+    texto = re.sub(r"[^A-Z0-9 ]+", " ", texto)
+    texto = re.sub(r"\s+", " ", texto)
+    return texto.strip()
+
+
+def detectar_linea_y_posicion(asignatura: str):
+    asignatura_normalizada = normalizar_nombre_curso(asignatura)
+    if not asignatura_normalizada:
+        return None
+
+    for progresion in PROGRESIONES_ESPERADAS:
+        for posicion, nombre_referencia in enumerate(progresion["secuencia"]):
+            referencia_normalizada = normalizar_nombre_curso(nombre_referencia)
+            if (
+                asignatura_normalizada == referencia_normalizada
+                or (
+                    abs(len(asignatura_normalizada) - len(referencia_normalizada)) > 4
+                    and (
+                        asignatura_normalizada in referencia_normalizada
+                        or referencia_normalizada in asignatura_normalizada
+                    )
+                )
+            ):
+                return {
+                    "linea": progresion["linea"],
+                    "posicion": posicion,
+                    "nombre_referencia": nombre_referencia,
+                }
+
+    return None
+
+
+def evaluar_progresion_esperada(origen, destino):
+    origen_info = detectar_linea_y_posicion(origen)
+    destino_info = detectar_linea_y_posicion(destino)
+
+    if not origen_info or not destino_info:
+        return None
+
+    if origen_info["linea"] != destino_info["linea"]:
+        return None
+
+    linea = origen_info["linea"]
+    if destino_info["posicion"] > origen_info["posicion"]:
+        return {
+            "tipo_relacion": "progresion_adecuada",
+            "nivel_coherencia": "alto",
+            "descripcion": (
+                f"Existe una progresión curricular entre {origen} y {destino}, ya que el segundo "
+                f"curso profundiza contenidos o competencias trabajadas previamente dentro de la línea {linea}."
+            ),
+            "sugerencia": (
+                f"Explicitar en el sílabo de {destino} los prerrequisitos conceptuales "
+                f"provenientes de {origen}."
+            ),
+            "linea": linea,
+        }
+
+    if destino_info["posicion"] == origen_info["posicion"]:
+        return {
+            "tipo_relacion": "repeticion",
+            "nivel_coherencia": "medio",
+            "descripcion": (
+                f"{origen} y {destino} ocupan la misma posición en la línea {linea}; "
+                "puede existir duplicación curricular."
+            ),
+            "sugerencia": "Revisar si ambas asignaturas cumplen propósitos diferenciados.",
+            "linea": linea,
+        }
+
+    return {
+        "tipo_relacion": "desorden_curricular",
+        "nivel_coherencia": "bajo",
+        "descripcion": (
+            f"{destino} aparece antes que {origen} dentro de la progresión esperada de la línea {linea}."
+        ),
+        "sugerencia": "Revisar la secuencia curricular o los prerrequisitos declarados.",
+        "linea": linea,
+    }
 
 
 def _entero_o_none(valor: Any) -> int | None:
@@ -183,12 +382,17 @@ def _texto_curricular(item: dict) -> str:
     return " ".join(str(parte) for parte in partes if parte)
 
 
-def _tiene_terminos_avanzados(familia: str, texto: str) -> bool:
-    texto_normalizado = _normalizar_texto(texto)
+def contiene_terminos_avanzados(destino_texto, linea):
+    texto_normalizado = _normalizar_texto(destino_texto)
     return any(
         _normalizar_texto(termino) in texto_normalizado
-        for termino in TERMINOS_AVANZADOS.get(familia, [])
+        for termino in TERMINOS_AVANZADOS.get(linea, [])
     )
+
+
+def _tiene_terminos_avanzados(familia: str, texto: str) -> bool:
+    lineas = FAMILIA_A_LINEAS.get(familia, [familia])
+    return any(contiene_terminos_avanzados(texto, linea) for linea in lineas)
 
 
 def obtener_silabos_y_analisis(state: TrazabilidadState) -> TrazabilidadState:
@@ -264,23 +468,55 @@ def analizar_relaciones(state: TrazabilidadState) -> TrazabilidadState:
                 contenidos_destino = normalizar_lista(analisis_destino.get("contenidos_detectados"))
                 familias_comunes = sorted(familias_origen & familias_destino)
                 contenidos_comunes = calcular_interseccion(contenidos_origen, contenidos_destino)
+                progresion_esperada = evaluar_progresion_esperada(
+                    silabo_origen.get("asignatura"),
+                    silabo_destino.get("asignatura"),
+                )
+
+                if progresion_esperada:
+                    relaciones.append(
+                        {
+                            "silabo_origen_id": silabo_origen.get("id"),
+                            "silabo_destino_id": silabo_destino.get("id"),
+                            "ciclo_origen": ciclo,
+                            "ciclo_destino": ciclo + 1,
+                            "asignatura_origen": silabo_origen.get("asignatura"),
+                            "asignatura_destino": silabo_destino.get("asignatura"),
+                            "tipo_relacion": progresion_esperada["tipo_relacion"],
+                            "descripcion": progresion_esperada["descripcion"],
+                            "nivel_coherencia": progresion_esperada["nivel_coherencia"],
+                            "observacion": (
+                                f"Relación priorizada por progresión esperada en la línea "
+                                f"{progresion_esperada['linea']}. "
+                                f"Contenidos comunes detectados: {len(contenidos_comunes)}."
+                            ),
+                            "sugerencia": progresion_esperada["sugerencia"],
+                        }
+                    )
+                    continue
 
                 if familias_comunes or contenidos_comunes:
                     familia_principal = familias_comunes[0] if familias_comunes else "contenidos"
                     es_progresion = _tiene_terminos_avanzados(familia_principal, texto_destino)
                     tipo_relacion = "progresion_adecuada" if es_progresion else "continuidad_tematica"
-                    nivel_coherencia = "alto" if es_progresion or len(contenidos_comunes) >= 2 else "medio"
+                    nivel_coherencia = "alto" if es_progresion else "medio"
                     descripcion = (
-                        f"{silabo_destino.get('asignatura')} mantiene continuidad con "
-                        f"{silabo_origen.get('asignatura')} en {', '.join(familias_comunes) or 'contenidos afines'}."
+                        f"Ambas asignaturas comparten una familia temática, por lo que existe relación "
+                        f"curricular entre {silabo_origen.get('asignatura')} y "
+                        f"{silabo_destino.get('asignatura')}."
                     )
 
                     if len(contenidos_comunes) >= 4 and not es_progresion:
                         tipo_relacion = "repeticion"
                         nivel_coherencia = "bajo"
                         descripcion = (
-                            f"Se detecta repetición temática entre {silabo_origen.get('asignatura')} "
-                            f"y {silabo_destino.get('asignatura')} sin evidencia clara de mayor complejidad."
+                            "Se detectan contenidos similares sin evidencia clara de aumento de complejidad."
+                        )
+                    elif es_progresion:
+                        descripcion = (
+                            f"Existe una progresión curricular entre {silabo_origen.get('asignatura')} "
+                            f"y {silabo_destino.get('asignatura')}, porque el curso destino incorpora "
+                            "términos de mayor complejidad."
                         )
 
                     relaciones.append(
@@ -299,7 +535,8 @@ def analizar_relaciones(state: TrazabilidadState) -> TrazabilidadState:
                                 f"Contenidos comunes: {len(contenidos_comunes)}."
                             ),
                             "sugerencia": (
-                                "Explicitar prerrequisitos y evidencias de progresión curricular."
+                                f"Explicitar en el sílabo de {silabo_destino.get('asignatura')} "
+                                f"los prerrequisitos conceptuales provenientes de {silabo_origen.get('asignatura')}."
                                 if nivel_coherencia != "alto"
                                 else "Mantener la articulación y documentar evidencias de continuidad."
                             ),
@@ -323,8 +560,8 @@ def analizar_relaciones(state: TrazabilidadState) -> TrazabilidadState:
                             "asignatura_destino": silabo_destino.get("asignatura"),
                             "tipo_relacion": "vacio_formativo",
                             "descripcion": (
-                                f"{silabo_destino.get('asignatura')} incluye temas avanzados "
-                                "sin una base temática previa claramente detectada."
+                                "El curso destino aborda contenidos avanzados sin una base previa claramente "
+                                "identificada en ciclos anteriores."
                             ),
                             "nivel_coherencia": "bajo",
                             "observacion": f"Familias avanzadas sin base previa: {', '.join(familias_avanzadas_destino)}.",
