@@ -682,6 +682,116 @@ textarea.form-control {
   font-style: italic;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.summary-card {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.summary-card span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 24px;
+}
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.filters-bar input,
+.filters-bar select {
+  min-width: 210px;
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: white;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.cards-list {
+  display: grid;
+  gap: 14px;
+}
+
+.trace-card,
+.brecha-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-left: 5px solid #2563eb;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.trace-card h3,
+.brecha-card h3 {
+  margin: 8px 0 10px;
+  color: #0f172a;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.trace-card p,
+.brecha-card p {
+  margin: 6px 0;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.trace-header,
+.brecha-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cycle-badge {
+  background: #e0f2fe;
+  color: #075985;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trace-alto,
+.brecha-baja {
+  border-left-color: #16a34a;
+}
+
+.trace-medio,
+.brecha-media {
+  border-left-color: #f59e0b;
+}
+
+.trace-bajo,
+.brecha-alta {
+  border-left-color: #dc2626;
+}
+
 .table-modal-wrapper {
   width: 100%;
   overflow-x: auto;

@@ -2,6 +2,8 @@ const API_URL = "http://127.0.0.1:8000";
 let silabosGlobal = [];
 let paginaActual = 1;
 const SILABOS_POR_PAGINA = 10;
+let trazabilidadDataGlobal = [];
+let brechasDataGlobal = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   cargarDatos();
@@ -817,6 +819,19 @@ function formatearTexto(valor) {
   return String(valor).replaceAll("_", " ");
 }
 
+function normalizarValor(valor) {
+  return String(valor ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function contarPorCampo(data, campo, valor) {
+  const valorNormalizado = normalizarValor(valor);
+  return data.filter((item) => normalizarValor(item[campo]) === valorNormalizado).length;
+}
+
 function claseBadge(valor) {
   return formatearTexto(valor)
     .toLowerCase()
@@ -832,50 +847,24 @@ function renderBadge(valor) {
   return `<span class="badge badge-${clase}">${escaparHtml(texto)}</span>`;
 }
 
-function abrirModalTrazabilidad(data) {
-  const contenedor = document.getElementById("contenidoTrazabilidad");
+function escaparAtributo(valor) {
+  return escaparHtml(valor).replaceAll("`", "&#096;");
+}
 
-  if (!Array.isArray(data) || data.length === 0) {
-    contenedor.innerHTML = `
-      <p class="text-muted">No hay trazabilidad registrada. Primero ejecuta el análisis de trazabilidad curricular.</p>
-    `;
-    mostrarModal("modalTrazabilidad");
-    return;
-  }
-
-  const filas = data.map((item) => `
-    <tr>
-      <td>${escaparHtml(item.ciclo_origen ?? "-")}</td>
-      <td>${escaparHtml(item.asignatura_origen ?? "-")}</td>
-      <td>${escaparHtml(item.ciclo_destino ?? "-")}</td>
-      <td>${escaparHtml(item.asignatura_destino ?? "-")}</td>
-      <td>${escaparHtml(formatearTexto(item.tipo_relacion))}</td>
-      <td>${renderBadge(item.nivel_coherencia)}</td>
-      <td>${escaparHtml(item.observacion ?? "-")}</td>
-      <td>${escaparHtml(item.sugerencia ?? "-")}</td>
-    </tr>
-  `).join("");
-
-  contenedor.innerHTML = `
-    <div class="table-modal-wrapper">
-      <table class="table-modal">
-        <thead>
-          <tr>
-            <th>Ciclo origen</th>
-            <th>Asignatura origen</th>
-            <th>Ciclo destino</th>
-            <th>Asignatura destino</th>
-            <th>Tipo de relación</th>
-            <th>Nivel de coherencia</th>
-            <th>Observación</th>
-            <th>Sugerencia</th>
-          </tr>
-        </thead>
-        <tbody>${filas}</tbody>
-      </table>
+function renderSummaryCard(titulo, valor) {
+  return `
+    <div class="summary-card">
+      <span>${escaparHtml(titulo)}</span>
+      <strong>${escaparHtml(valor)}</strong>
     </div>
   `;
+}
 
+function abrirModalTrazabilidad(data) {
+  trazabilidadDataGlobal = Array.isArray(data) ? data : [];
+  prepararFiltrosTrazabilidad();
+  renderizarResumenTrazabilidad();
+  renderizarTrazabilidadFiltrada();
   mostrarModal("modalTrazabilidad");
 }
 
@@ -883,47 +872,158 @@ function cerrarModalTrazabilidad() {
   ocultarModal("modalTrazabilidad");
 }
 
-function abrirModalBrechas(data) {
-  const contenedor = document.getElementById("contenidoBrechas");
+function prepararFiltrosTrazabilidad() {
+  const buscar = document.getElementById("buscarTrazabilidad");
+  const coherencia = document.getElementById("filtroCoherenciaTrazabilidad");
+  const tipo = document.getElementById("filtroTipoTrazabilidad");
 
-  if (!Array.isArray(data) || data.length === 0) {
-    contenedor.innerHTML = `<p class="text-muted">No hay brechas registradas.</p>`;
-    mostrarModal("modalBrechas");
+  buscar.value = "";
+  coherencia.value = "todos";
+  tipo.value = "todos";
+
+  buscar.oninput = renderizarTrazabilidadFiltrada;
+  coherencia.onchange = renderizarTrazabilidadFiltrada;
+  tipo.onchange = renderizarTrazabilidadFiltrada;
+}
+
+function renderizarResumenTrazabilidad() {
+  const resumen = document.getElementById("resumenTrazabilidad");
+  const data = trazabilidadDataGlobal;
+
+  resumen.innerHTML = [
+    renderSummaryCard("Total de relaciones", data.length),
+    renderSummaryCard("Coherencia alta", contarPorCampo(data, "nivel_coherencia", "alto")),
+    renderSummaryCard("Coherencia media", contarPorCampo(data, "nivel_coherencia", "medio")),
+    renderSummaryCard("Coherencia baja", contarPorCampo(data, "nivel_coherencia", "bajo")),
+    renderSummaryCard("Progresión adecuada", contarPorCampo(data, "tipo_relacion", "progresion_adecuada")),
+    renderSummaryCard("Repetición", contarPorCampo(data, "tipo_relacion", "repeticion")),
+    renderSummaryCard("Vacío formativo", contarPorCampo(data, "tipo_relacion", "vacio_formativo")),
+    renderSummaryCard("Continuidad temática", contarPorCampo(data, "tipo_relacion", "continuidad_tematica"))
+  ].join("");
+}
+
+function renderizarTrazabilidadFiltrada() {
+  const contenedor = document.getElementById("contenidoTrazabilidad");
+  const busqueda = normalizarValor(document.getElementById("buscarTrazabilidad").value);
+  const filtroCoherencia = document.getElementById("filtroCoherenciaTrazabilidad").value;
+  const filtroTipo = document.getElementById("filtroTipoTrazabilidad").value;
+
+  if (trazabilidadDataGlobal.length === 0) {
+    contenedor.innerHTML = `
+      <p class="text-muted">No hay trazabilidad registrada. Primero ejecuta el análisis de trazabilidad curricular.</p>
+    `;
     return;
   }
 
-  const filas = data.map((item) => `
-    <tr>
-      <td>${escaparHtml(item.ciclo ?? "-")}</td>
-      <td>${escaparHtml(item.asignatura ?? "-")}</td>
-      <td>${escaparHtml(formatearTexto(item.tipo_brecha))}</td>
-      <td>${renderBadge(item.prioridad)}</td>
-      <td>${escaparHtml(item.descripcion ?? "-")}</td>
-      <td>${escaparHtml(item.recomendacion ?? "-")}</td>
-      <td>${escaparHtml(formatearTexto(item.estado))}</td>
-    </tr>
-  `).join("");
+  const filtrados = trazabilidadDataGlobal.filter((item) => {
+    const textoAsignaturas = normalizarValor(`${item.asignatura_origen ?? ""} ${item.asignatura_destino ?? ""}`);
+    const coincideBusqueda = !busqueda || textoAsignaturas.includes(busqueda);
+    const coincideCoherencia = filtroCoherencia === "todos" || normalizarValor(item.nivel_coherencia) === filtroCoherencia;
+    const coincideTipo = filtroTipo === "todos" || normalizarValor(item.tipo_relacion) === filtroTipo;
+    return coincideBusqueda && coincideCoherencia && coincideTipo;
+  });
 
-  contenedor.innerHTML = `
-    <div class="table-modal-wrapper">
-      <table class="table-modal">
-        <thead>
-          <tr>
-            <th>Ciclo</th>
-            <th>Asignatura</th>
-            <th>Tipo de brecha</th>
-            <th>Prioridad</th>
-            <th>Descripción</th>
-            <th>Recomendación</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>${filas}</tbody>
-      </table>
-    </div>
-  `;
+  if (filtrados.length === 0) {
+    contenedor.innerHTML = `<p class="text-muted">No se encontraron relaciones con los filtros aplicados.</p>`;
+    return;
+  }
 
+  contenedor.innerHTML = filtrados.map((item) => {
+    const coherencia = claseBadge(item.nivel_coherencia);
+    return `
+      <article class="trace-card trace-${coherencia}">
+        <div class="trace-header">
+          <span class="cycle-badge">Ciclo ${escaparHtml(item.ciclo_origen ?? "-")} &rarr; Ciclo ${escaparHtml(item.ciclo_destino ?? "-")}</span>
+          ${renderBadge(item.nivel_coherencia)}
+        </div>
+        <h3>${escaparHtml(item.asignatura_origen ?? "-")} &rarr; ${escaparHtml(item.asignatura_destino ?? "-")}</h3>
+        <p><strong>Tipo:</strong> ${escaparHtml(formatearTexto(item.tipo_relacion))}</p>
+        <p><strong>Observación:</strong> ${escaparHtml(item.observacion ?? "-")}</p>
+        <p><strong>Sugerencia:</strong> ${escaparHtml(item.sugerencia ?? "-")}</p>
+      </article>
+    `;
+  }).join("");
+}
+
+function abrirModalBrechas(data) {
+  brechasDataGlobal = Array.isArray(data) ? data : [];
+  prepararFiltrosBrechas();
+  renderizarResumenBrechas();
+  renderizarBrechasFiltradas();
   mostrarModal("modalBrechas");
+}
+
+function prepararFiltrosBrechas() {
+  const buscar = document.getElementById("buscarBrechas");
+  const prioridad = document.getElementById("filtroPrioridadBrechas");
+  const tipo = document.getElementById("filtroTipoBrechas");
+  const tipos = [...new Set(brechasDataGlobal.map((item) => item.tipo_brecha).filter(Boolean))];
+
+  buscar.value = "";
+  prioridad.value = "todas";
+  tipo.innerHTML = `<option value="todos">Todos los tipos</option>`;
+  tipos.forEach((valor) => {
+    tipo.innerHTML += `<option value="${escaparAtributo(valor)}">${escaparHtml(formatearTexto(valor))}</option>`;
+  });
+  tipo.value = "todos";
+
+  buscar.oninput = renderizarBrechasFiltradas;
+  prioridad.onchange = renderizarBrechasFiltradas;
+  tipo.onchange = renderizarBrechasFiltradas;
+}
+
+function renderizarResumenBrechas() {
+  const resumen = document.getElementById("resumenBrechas");
+  const data = brechasDataGlobal;
+
+  resumen.innerHTML = [
+    renderSummaryCard("Total de brechas", data.length),
+    renderSummaryCard("Prioridad alta", contarPorCampo(data, "prioridad", "alta")),
+    renderSummaryCard("Prioridad media", contarPorCampo(data, "prioridad", "media")),
+    renderSummaryCard("Prioridad baja", contarPorCampo(data, "prioridad", "baja")),
+    renderSummaryCard("Brechas pendientes", contarPorCampo(data, "estado", "pendiente"))
+  ].join("");
+}
+
+function renderizarBrechasFiltradas() {
+  const contenedor = document.getElementById("contenidoBrechas");
+  const busqueda = normalizarValor(document.getElementById("buscarBrechas").value);
+  const filtroPrioridad = document.getElementById("filtroPrioridadBrechas").value;
+  const filtroTipo = document.getElementById("filtroTipoBrechas").value;
+
+  if (brechasDataGlobal.length === 0) {
+    contenedor.innerHTML = `<p class="text-muted">No hay brechas registradas.</p>`;
+    return;
+  }
+
+  const filtrados = brechasDataGlobal.filter((item) => {
+    const coincideBusqueda = !busqueda || normalizarValor(item.asignatura).includes(busqueda);
+    const coincidePrioridad = filtroPrioridad === "todas" || normalizarValor(item.prioridad) === filtroPrioridad;
+    const coincideTipo = filtroTipo === "todos" || normalizarValor(item.tipo_brecha) === normalizarValor(filtroTipo);
+    return coincideBusqueda && coincidePrioridad && coincideTipo;
+  });
+
+  if (filtrados.length === 0) {
+    contenedor.innerHTML = `<p class="text-muted">No se encontraron brechas con los filtros aplicados.</p>`;
+    return;
+  }
+
+  contenedor.innerHTML = filtrados.map((item) => {
+    const prioridad = claseBadge(item.prioridad);
+    return `
+      <article class="brecha-card brecha-${prioridad}">
+        <div class="brecha-header">
+          <span class="cycle-badge">Ciclo ${escaparHtml(item.ciclo ?? "-")}</span>
+          ${renderBadge(item.prioridad)}
+        </div>
+        <h3>${escaparHtml(item.asignatura ?? "-")}</h3>
+        <p><strong>Tipo de brecha:</strong> ${escaparHtml(formatearTexto(item.tipo_brecha))}</p>
+        <p><strong>Descripción:</strong> ${escaparHtml(item.descripcion ?? "-")}</p>
+        <p><strong>Recomendación:</strong> ${escaparHtml(item.recomendacion ?? "-")}</p>
+        <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.estado))}</p>
+      </article>
+    `;
+  }).join("");
 }
 
 function cerrarModalBrechas() {

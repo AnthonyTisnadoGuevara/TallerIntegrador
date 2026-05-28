@@ -220,7 +220,26 @@
         <h2 id="tituloModalTrazabilidad">Trazabilidad curricular</h2>
         <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalTrazabilidad()">&times;</button>
       </div>
-      <div id="contenidoTrazabilidad" class="modal-body"></div>
+      <div class="modal-body">
+        <div id="resumenTrazabilidad" class="summary-grid"></div>
+        <div class="filters-bar">
+          <input id="buscarTrazabilidad" type="search" placeholder="Buscar asignatura..." />
+          <select id="filtroCoherenciaTrazabilidad">
+            <option value="todos">Todos los niveles</option>
+            <option value="alto">Alto</option>
+            <option value="medio">Medio</option>
+            <option value="bajo">Bajo</option>
+          </select>
+          <select id="filtroTipoTrazabilidad">
+            <option value="todos">Todos los tipos</option>
+            <option value="progresion_adecuada">Progresión adecuada</option>
+            <option value="continuidad_tematica">Continuidad temática</option>
+            <option value="repeticion">Repetición</option>
+            <option value="vacio_formativo">Vacío formativo</option>
+          </select>
+        </div>
+        <div id="contenidoTrazabilidad" class="cards-list"></div>
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalTrazabilidad()">Cerrar</button>
       </div>
@@ -233,7 +252,22 @@
         <h2 id="tituloModalBrechas">Brechas curriculares detectadas</h2>
         <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalBrechas()">&times;</button>
       </div>
-      <div id="contenidoBrechas" class="modal-body"></div>
+      <div class="modal-body">
+        <div id="resumenBrechas" class="summary-grid"></div>
+        <div class="filters-bar">
+          <input id="buscarBrechas" type="search" placeholder="Buscar asignatura..." />
+          <select id="filtroPrioridadBrechas">
+            <option value="todas">Todas las prioridades</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+          <select id="filtroTipoBrechas">
+            <option value="todos">Todos los tipos</option>
+          </select>
+        </div>
+        <div id="contenidoBrechas" class="cards-list"></div>
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalBrechas()">Cerrar</button>
       </div>
