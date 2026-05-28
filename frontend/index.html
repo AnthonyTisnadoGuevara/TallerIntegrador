@@ -57,6 +57,21 @@
       </div>
     </section>
 
+    <section class="card acciones-mejora-card">
+      <div class="section-header">
+        <div>
+          <h2>Acciones de mejora continua</h2>
+          <p>Realiza el seguimiento de acciones generadas a partir de brechas curriculares detectadas por los agentes.</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-success" onclick="generarAccionesDesdeBrechas()">Generar desde brechas</button>
+          <button class="btn btn-info" onclick="verAccionesMejora()">Ver acciones</button>
+          <button class="btn btn-secondary" onclick="cargarDashboardAccionesMejora()">Actualizar dashboard</button>
+        </div>
+      </div>
+      <div id="dashboardAccionesMejora" class="summary-grid"></div>
+    </section>
+
     <section class="panel">
       <div class="panel-header">
         <h2>Listado de Sílabos</h2>
@@ -270,6 +285,38 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalBrechas()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalAccionesMejora" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalAccionesMejora">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalAccionesMejora">Acciones de mejora continua</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalAccionesMejora()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="resumenAccionesMejora" class="summary-grid"></div>
+        <div class="filters-bar">
+          <input id="buscarAccionesMejora" type="text" placeholder="Buscar por asignatura, título o responsable..." />
+          <select id="filtroEstadoAcciones">
+            <option value="todos">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="en_proceso">En proceso</option>
+            <option value="atendida">Atendida</option>
+            <option value="descartada">Descartada</option>
+          </select>
+          <select id="filtroPrioridadAcciones">
+            <option value="todos">Todas las prioridades</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+        </div>
+        <div id="contenidoAccionesMejora" class="cards-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalAccionesMejora()">Cerrar</button>
       </div>
     </div>
   </div>

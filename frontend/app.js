@@ -4,6 +4,7 @@ let paginaActual = 1;
 const SILABOS_POR_PAGINA = 10;
 let trazabilidadDataGlobal = [];
 let brechasDataGlobal = [];
+let accionesMejoraGlobal = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   cargarDatos();
@@ -24,6 +25,7 @@ document.addEventListener("click", function(event) {
 async function cargarDatos() {
   await cargarDashboard();
   await cargarSilabos();
+  await cargarDashboardAccionesMejora();
 }
 
 function normalizarEnlaceArchivo(enlace) {
@@ -1028,4 +1030,202 @@ function renderizarBrechasFiltradas() {
 
 function cerrarModalBrechas() {
   ocultarModal("modalBrechas");
+}
+
+async function generarAccionesDesdeBrechas() {
+  try {
+    mostrarToast("Generando acciones de mejora desde brechas...", "info");
+
+    const response = await fetch(`${API_URL}/api/acciones-mejora/generar-desde-brechas`, {
+      method: "POST"
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudieron generar las acciones de mejora.");
+    }
+
+    mostrarToast(`Acciones generadas: ${result.total_generadas || 0}`, "success");
+    await cargarDashboardAccionesMejora();
+    await verAccionesMejora();
+  } catch (error) {
+    console.error("Error al generar acciones:", error);
+    mostrarToast("Error al generar acciones: " + error.message, "error");
+  }
+}
+
+async function cargarDashboardAccionesMejora() {
+  try {
+    const response = await fetch(`${API_URL}/api/acciones-mejora/dashboard`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo obtener el dashboard de acciones.");
+    }
+
+    const data = result.data || {};
+    const contenedor = document.getElementById("dashboardAccionesMejora");
+    if (!contenedor) return;
+
+    contenedor.innerHTML = [
+      renderSummaryCard("Total acciones", data.total_acciones || 0),
+      renderSummaryCard("Pendientes", data.pendientes || 0),
+      renderSummaryCard("En proceso", data.en_proceso || 0),
+      renderSummaryCard("Atendidas", data.atendidas || 0),
+      renderSummaryCard("Prioridad alta", data.prioridad_alta || 0),
+      renderSummaryCard("Prioridad media", data.prioridad_media || 0),
+      renderSummaryCard("Prioridad baja", data.prioridad_baja || 0)
+    ].join("");
+  } catch (error) {
+    console.error("Error dashboard acciones:", error);
+    mostrarToast("Error al cargar dashboard de acciones: " + error.message, "error");
+  }
+}
+
+async function verAccionesMejora() {
+  try {
+    const response = await fetch(`${API_URL}/api/acciones-mejora/`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudieron obtener las acciones de mejora.");
+    }
+
+    accionesMejoraGlobal = result.data || [];
+    abrirModalAccionesMejora();
+  } catch (error) {
+    console.error("Error al obtener acciones:", error);
+    mostrarToast("Error al obtener acciones: " + error.message, "error");
+  }
+}
+
+function abrirModalAccionesMejora() {
+  document.getElementById("buscarAccionesMejora").value = "";
+  document.getElementById("filtroEstadoAcciones").value = "todos";
+  document.getElementById("filtroPrioridadAcciones").value = "todos";
+
+  document.getElementById("buscarAccionesMejora").oninput = renderizarAccionesMejoraFiltradas;
+  document.getElementById("filtroEstadoAcciones").onchange = renderizarAccionesMejoraFiltradas;
+  document.getElementById("filtroPrioridadAcciones").onchange = renderizarAccionesMejoraFiltradas;
+
+  renderizarAccionesMejoraFiltradas();
+  mostrarModal("modalAccionesMejora");
+}
+
+function cerrarModalAccionesMejora() {
+  ocultarModal("modalAccionesMejora");
+}
+
+function renderizarAccionesMejoraFiltradas() {
+  const busqueda = normalizarValor(document.getElementById("buscarAccionesMejora")?.value || "");
+  const estado = document.getElementById("filtroEstadoAcciones")?.value || "todos";
+  const prioridad = document.getElementById("filtroPrioridadAcciones")?.value || "todos";
+
+  const data = accionesMejoraGlobal.filter((accion) => {
+    const texto = normalizarValor(
+      `${accion.titulo || ""} ${accion.asignatura || ""} ${accion.responsable || ""} ${accion.descripcion || ""}`
+    );
+    const coincideBusqueda = !busqueda || texto.includes(busqueda);
+    const coincideEstado = estado === "todos" || accion.estado === estado;
+    const coincidePrioridad = prioridad === "todos" || accion.prioridad === prioridad;
+    return coincideBusqueda && coincideEstado && coincidePrioridad;
+  });
+
+  renderizarResumenAcciones(data);
+  renderizarTarjetasAcciones(data);
+}
+
+function renderizarResumenAcciones(data) {
+  const contenedor = document.getElementById("resumenAccionesMejora");
+  if (!contenedor) return;
+
+  contenedor.innerHTML = [
+    renderSummaryCard("Mostradas", data.length),
+    renderSummaryCard("Pendientes", data.filter((accion) => accion.estado === "pendiente").length),
+    renderSummaryCard("En proceso", data.filter((accion) => accion.estado === "en_proceso").length),
+    renderSummaryCard("Atendidas", data.filter((accion) => accion.estado === "atendida").length)
+  ].join("");
+}
+
+function renderizarTarjetasAcciones(data) {
+  const contenedor = document.getElementById("contenidoAccionesMejora");
+  if (!contenedor) return;
+
+  if (data.length === 0) {
+    contenedor.innerHTML = `<p class="text-muted">No hay acciones de mejora registradas.</p>`;
+    return;
+  }
+
+  contenedor.innerHTML = data.map((accion) => {
+    const prioridad = accion.prioridad || "media";
+    const estado = accion.estado || "pendiente";
+
+    return `
+      <article class="accion-card accion-prioridad-${escaparAtributo(prioridad)}">
+        <div class="accion-header">
+          <span class="cycle-badge">Ciclo ${escaparHtml(accion.ciclo || "-")}</span>
+          <div class="accion-badges">
+            ${renderBadge(prioridad)}
+            <span class="badge badge-estado-${escaparAtributo(estado)}">${escaparHtml(formatearTexto(estado))}</span>
+          </div>
+        </div>
+        <h3>${escaparHtml(accion.titulo || "Acción de mejora")}</h3>
+        <p><strong>Asignatura:</strong> ${escaparHtml(accion.asignatura || "-")}</p>
+        <p><strong>Descripción:</strong> ${escaparHtml(accion.descripcion || "-")}</p>
+        <p><strong>Recomendación:</strong> ${escaparHtml(accion.recomendacion || "-")}</p>
+        <p><strong>Responsable:</strong> ${escaparHtml(accion.responsable || "Sin responsable")}</p>
+        <p><strong>Fecha límite:</strong> ${escaparHtml(accion.fecha_limite || "No definida")}</p>
+        <div class="accion-actions">
+          <button class="btn btn-warning" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'en_proceso')">En proceso</button>
+          <button class="btn btn-success" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'atendida')">Atendida</button>
+          <button class="btn btn-secondary" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'descartada')">Descartar</button>
+          <button class="btn btn-danger" onclick="eliminarAccionMejora('${escaparAtributo(accion.id)}')">Eliminar</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function actualizarEstadoAccion(id, estado) {
+  try {
+    const response = await fetch(`${API_URL}/api/acciones-mejora/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estado })
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo actualizar la acción.");
+    }
+
+    mostrarToast("Estado actualizado correctamente.", "success");
+    await verAccionesMejora();
+    await cargarDashboardAccionesMejora();
+  } catch (error) {
+    console.error("Error al actualizar acción:", error);
+    mostrarToast("Error al actualizar acción: " + error.message, "error");
+  }
+}
+
+async function eliminarAccionMejora(id) {
+  if (!confirm("¿Deseas eliminar esta acción de mejora?")) return;
+
+  try {
+    const response = await fetch(`${API_URL}/api/acciones-mejora/${id}`, {
+      method: "DELETE"
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo eliminar la acción.");
+    }
+
+    mostrarToast("Acción eliminada correctamente.", "success");
+    await verAccionesMejora();
+    await cargarDashboardAccionesMejora();
+  } catch (error) {
+    console.error("Error al eliminar acción:", error);
+    mostrarToast("Error al eliminar acción: " + error.message, "error");
+  }
 }
