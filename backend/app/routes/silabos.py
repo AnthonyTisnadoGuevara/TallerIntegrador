@@ -1,11 +1,18 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from app.services.supabase_client import supabase
 from fastapi import APIRouter, HTTPException, UploadFile, File
 import uuid
 import os
-from app.utils.document_reader import extraer_texto_docx_desde_url, validar_secciones_silabo
+from app.utils.document_reader import (
+    extraer_texto_desde_url,
+    extraer_texto_docx,
+    extraer_texto_pdf,
+    validar_secciones_silabo,
+)
+from app.utils.silabo_extractor import extraer_datos_silabo_desde_texto
 
 router = APIRouter(prefix="/api/silabos", tags=["Sílabos"])
 
@@ -16,14 +23,14 @@ class SilaboCreate(BaseModel):
     programa_estudios: Optional[str] = None
     asignatura: str
     codigo_asignatura: str
-    ciclo: int
+    ciclo: int = Field(..., ge=1, le=10)
     modalidad: Optional[str] = None
-    creditos: Optional[int] = None
-    total_horas_semestrales: Optional[int] = None
-    total_horas_semanales: Optional[int] = None
+    creditos: Optional[int] = Field(None, ge=0)
+    total_horas_semestrales: Optional[int] = Field(None, ge=0)
+    total_horas_semanales: Optional[int] = Field(None, ge=0)
     fecha_inicio: Optional[str] = None
     fecha_culminacion: Optional[str] = None
-    duracion_semanas: Optional[int] = None
+    duracion_semanas: Optional[int] = Field(None, gt=0)
     docente_responsable: Optional[str] = None
     correo_docente: Optional[str] = None
     archivo_url: Optional[str] = None
@@ -42,14 +49,14 @@ class SilaboUpdate(BaseModel):
     programa_estudios: Optional[str] = None
     asignatura: Optional[str] = None
     codigo_asignatura: Optional[str] = None
-    ciclo: Optional[int] = None
+    ciclo: Optional[int] = Field(None, ge=1, le=10)
     modalidad: Optional[str] = None
-    creditos: Optional[int] = None
-    total_horas_semestrales: Optional[int] = None
-    total_horas_semanales: Optional[int] = None
+    creditos: Optional[int] = Field(None, ge=0)
+    total_horas_semestrales: Optional[int] = Field(None, ge=0)
+    total_horas_semanales: Optional[int] = Field(None, ge=0)
     fecha_inicio: Optional[str] = None
     fecha_culminacion: Optional[str] = None
-    duracion_semanas: Optional[int] = None
+    duracion_semanas: Optional[int] = Field(None, gt=0)
     docente_responsable: Optional[str] = None
     correo_docente: Optional[str] = None
     archivo_url: Optional[str] = None
@@ -63,6 +70,56 @@ def listar_silabos():
             "message": "Listado de sílabos obtenido correctamente",
             "data": response.data
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/extraer-datos-archivo")
+async def extraer_datos_archivo_silabo(archivo: UploadFile = File(...)):
+    try:
+        nombre_original = archivo.filename or ""
+        extension = os.path.splitext(nombre_original)[1].lower()
+
+        if extension not in [".docx", ".pdf"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Formato no permitido. Solo se aceptan archivos DOCX o PDF."
+            )
+
+        contenido = await archivo.read()
+        if not contenido:
+            raise HTTPException(status_code=400, detail="El archivo esta vacio.")
+
+        try:
+            if extension == ".docx":
+                texto = extraer_texto_docx(contenido)
+            else:
+                texto = extraer_texto_pdf(contenido)
+        except ValueError as error:
+            mensaje_error = str(error)
+            if "no contiene texto" in mensaje_error.lower() or "texto extra" in mensaje_error.lower():
+                raise HTTPException(
+                    status_code=400,
+                    detail="No se pudo extraer texto del documento. Si es PDF escaneado, conviertalo a PDF con texto seleccionable o a DOCX."
+                ) from error
+            raise HTTPException(status_code=400, detail=mensaje_error) from error
+
+        if not texto.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="No se pudo extraer texto del documento. Si es PDF escaneado, conviertalo a PDF con texto seleccionable o a DOCX."
+            )
+
+        datos = extraer_datos_silabo_desde_texto(texto)
+
+        return {
+            "message": "Datos extraidos correctamente",
+            "data": datos,
+            "preview_texto": texto[:500]
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -116,7 +173,7 @@ def crear_silabo(silabo: SilaboCreate):
 
         return {
             "message": "Sílabo registrado correctamente",
-            "data": response.data
+            "data": response.data[0] if response.data else None
         }
 
     except HTTPException:
@@ -281,12 +338,12 @@ async def subir_archivo_silabo(silabo_id: str, archivo: UploadFile = File(...)):
         nombre_original = archivo.filename
         extension = os.path.splitext(nombre_original)[1].lower()
 
-        extensiones_permitidas = [".pdf", ".doc", ".docx"]
+        extensiones_permitidas = [".pdf", ".docx"]
 
         if extension not in extensiones_permitidas:
             raise HTTPException(
                 status_code=400,
-                detail="Formato no permitido. Solo se aceptan archivos PDF, DOC o DOCX."
+                detail="Formato no permitido. Solo se aceptan archivos PDF o DOCX."
             )
 
         # Leer contenido del archivo
@@ -315,14 +372,15 @@ async def subir_archivo_silabo(silabo_id: str, archivo: UploadFile = File(...)):
         response = (
             supabase.table("silabos")
             .update({
-                "archivo_url": archivo_url
+                "archivo_url": archivo_url,
+                "updated_at": datetime.now(timezone.utc).isoformat()
             })
             .eq("id", silabo_id)
             .execute()
         )
 
         return {
-            "message": "Archivo del sílabo subido correctamente",
+            "message": "Archivo del silabo actualizado correctamente.",
             "archivo_url": archivo_url,
             "data": response.data
         }
@@ -354,19 +412,39 @@ def validar_documento_silabo(silabo_id: str):
                 detail="El sílabo no tiene archivo cargado para validar."
             )
 
-        if not archivo_url.lower().endswith(".docx"):
+        archivo_url_limpia = archivo_url.lower().split("?")[0]
+        if archivo_url_limpia.endswith(".doc"):
             raise HTTPException(
                 status_code=400,
-                detail="Por ahora solo se permite validar archivos .docx."
+                detail="El formato .doc antiguo no está soportado. Convierta el archivo a .docx o PDF con texto seleccionable."
             )
 
-        # Extraer texto del documento
-        texto = extraer_texto_docx_desde_url(archivo_url)
+        # Extraer texto del documento DOCX o PDF mediante el lector central
+        try:
+            texto = extraer_texto_desde_url(archivo_url)
+        except ValueError as error:
+            mensaje_error = str(error)
+            if "PDF no contiene texto extra" in mensaje_error:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No se pudo extraer texto del documento. Si es PDF escaneado, conviértalo a PDF con texto seleccionable o a DOCX."
+                ) from error
+            if "formato .doc antiguo" in mensaje_error.lower():
+                raise HTTPException(
+                    status_code=400,
+                    detail="El formato .doc antiguo no está soportado. Convierta el archivo a .docx o PDF con texto seleccionable."
+                ) from error
+            raise HTTPException(
+                status_code=400,
+                detail="Solo se permite validar documentos .docx o PDF con texto extraíble."
+            ) from error
+        except RuntimeError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
 
         if not texto.strip():
             raise HTTPException(
                 status_code=400,
-                detail="No se pudo extraer texto del documento."
+                detail="No se pudo extraer texto del documento. Si es PDF escaneado, conviértalo a PDF con texto seleccionable o a DOCX."
             )
 
         # Validar secciones obligatorias

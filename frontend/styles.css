@@ -9,7 +9,133 @@ body {
   color: #1f2937;
 }
 
+.login-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.22), transparent 32%),
+    linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #0f766e 100%);
+}
+
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 28px;
+}
+
+.auth-card {
+  width: min(460px, 100%);
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 18px;
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.32);
+}
+
+.auth-brand {
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+.auth-brand h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.auth-brand p {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 6px;
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+
+.auth-tabs button {
+  background: transparent;
+  color: #475569;
+  border-radius: 9px;
+}
+
+.auth-tabs button.active {
+  background: #2563eb;
+  color: white;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.auth-message {
+  min-height: 20px;
+  margin-bottom: 12px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-message.error {
+  color: #b91c1c;
+}
+
+.auth-message.success {
+  color: #15803d;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.google-btn {
+  width: 100%;
+  min-height: 42px;
+  background: white;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+}
+
+.google-btn:hover {
+  background: #f8fafc;
+}
+
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
   background: #1e3a8a;
   color: white;
   padding: 24px 40px;
@@ -25,8 +151,149 @@ body {
   opacity: 0.9;
 }
 
+.user-session {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.user-session span {
+  max-width: 280px;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .container {
   padding: 30px 40px;
+}
+
+.macroprocesos-view {
+  padding: 28px 34px;
+}
+
+.macro-hero {
+  margin-bottom: 24px;
+  padding: 30px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(30, 58, 138, 0.25);
+}
+
+.macro-hero h2 {
+  margin: 0 0 10px;
+  font-size: 28px;
+}
+
+.macro-hero p {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.macro-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 22px;
+}
+
+.macro-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 260px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.macro-card.featured {
+  border-color: #bfdbfe;
+  box-shadow: 0 16px 36px rgba(37, 99, 235, 0.14);
+}
+
+.macro-card.disabled {
+  opacity: 0.78;
+}
+
+.macro-card h3 {
+  margin: 0 0 12px;
+  color: #0f172a;
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.macro-card p {
+  margin: 0 0 12px;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.macro-card .btn {
+  margin-top: auto;
+}
+
+.macro-note {
+  font-weight: 700;
+}
+
+.macro-status {
+  display: inline-flex;
+  margin-bottom: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.macro-status.ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.macro-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.macro-module {
+  padding: 24px 34px;
+}
+
+.module-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 18px 22px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.module-header h2 {
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 24px;
+}
+
+.module-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .cards {
@@ -231,6 +498,39 @@ textarea {
   margin: 12px 0;
   min-height: 90px;
   resize: vertical;
+}
+
+.file-autofill-box {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+}
+
+.file-autofill-box label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.file-autofill-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.file-autofill-actions input {
+  flex: 1;
+  min-width: 240px;
+}
+
+.file-help-text {
+  color: #64748b;
+  line-height: 1.45;
 }
 
 .detalle {
@@ -929,12 +1229,31 @@ textarea.form-control {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .user-session {
+    justify-content: flex-start;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
 
   .container {
     padding: 20px;
+  }
+
+  .macroprocesos-view,
+  .macro-module {
+    padding: 0;
+  }
+
+  .module-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

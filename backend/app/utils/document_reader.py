@@ -2,12 +2,14 @@ import os
 import re
 import tempfile
 import unicodedata
+from io import BytesIO
 from urllib.parse import parse_qs, quote, urlparse
 from zipfile import BadZipFile
 
 import requests
 from docx import Document
 from docx.opc.exceptions import PackageNotFoundError
+from pypdf import PdfReader
 
 
 def convertir_google_drive_url(url: str) -> str:
@@ -28,7 +30,7 @@ def convertir_google_drive_url(url: str) -> str:
     return f"https://drive.google.com/uc?export=download&id={quote(file_id, safe='')}"
 
 
-def descargar_archivo_desde_url(url: str) -> bytes:
+def descargar_archivo_con_metadata(url: str) -> tuple[bytes, str, str]:
     """Descarga un archivo documental desde Drive, Storage o una URL directa."""
     url_descarga = convertir_google_drive_url(url)
     es_google_drive = "drive.google.com" in urlparse(url_descarga).netloc.lower()
@@ -53,15 +55,19 @@ def descargar_archivo_desde_url(url: str) -> bytes:
                 "Google Drive no entregó el documento. "
                 'Verifique que esté compartido como "Cualquier persona con el enlace puede ver".'
             )
-        raise RuntimeError("La URL indicada devolvió una página HTML en lugar de un archivo DOCX.")
+        raise RuntimeError("La URL indicada devolvió una página HTML en lugar de un archivo documental.")
 
-    return response.content
+    return response.content, content_type, url_descarga
 
 
-def extraer_texto_docx_desde_url(url: str) -> str:
-    """Descarga un archivo DOCX publico y extrae texto de parrafos y tablas."""
-    contenido = descargar_archivo_desde_url(url)
+def descargar_archivo_desde_url(url: str) -> bytes:
+    """Descarga un archivo documental desde Drive, Storage o una URL directa."""
+    contenido, _, _ = descargar_archivo_con_metadata(url)
+    return contenido
 
+
+def extraer_texto_docx(contenido: bytes) -> str:
+    """Extrae texto de un archivo DOCX desde bytes."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as temp_file:
         temp_file.write(contenido)
         temp_path = temp_file.name
@@ -91,17 +97,69 @@ def extraer_texto_docx_desde_url(url: str) -> str:
             os.remove(temp_path)
 
 
+def extraer_texto_docx_desde_url(url: str) -> str:
+    """Descarga un archivo DOCX público y extrae texto de párrafos y tablas."""
+    contenido = descargar_archivo_desde_url(url)
+    return extraer_texto_docx(contenido)
+
+
+def extraer_texto_pdf(contenido_bytes: bytes) -> str:
+    try:
+        reader = PdfReader(BytesIO(contenido_bytes))
+        textos = []
+
+        for page in reader.pages:
+            texto = page.extract_text()
+            if texto:
+                textos.append(texto)
+
+        texto_final = "\n".join(textos).strip()
+
+        if not texto_final:
+            raise ValueError(
+                "El PDF no contiene texto extraíble. Puede ser un documento escaneado. "
+                "Para analizarlo, conviértalo a DOCX o use un PDF con texto seleccionable."
+            )
+
+        return texto_final
+    except ValueError:
+        raise
+    except Exception as e:
+        raise ValueError(f"No se pudo extraer texto del PDF: {str(e)}") from e
+
+
+def _es_pdf(url: str, content_type: str, contenido: bytes) -> bool:
+    ruta = urlparse(url.strip()).path.lower()
+    return (
+        ruta.endswith(".pdf")
+        or ".pdf" in url.lower()
+        or "application/pdf" in (content_type or "").lower()
+        or contenido[:5] == b"%PDF-"
+    )
+
+
 def extraer_texto_desde_url(url: str) -> str:
-    """Extrae texto desde un documento remoto; por ahora solo admite DOCX."""
+    """Extrae texto desde un documento remoto DOCX o PDF."""
     if not url or not isinstance(url, str):
         raise ValueError("No se proporcionó una URL de documento válida.")
 
-    ruta = urlparse(url.strip()).path.lower()
+    url_limpia = url.strip()
+    contenido, content_type, url_descarga = descargar_archivo_con_metadata(url_limpia)
+    ruta = urlparse(url_descarga).path.lower()
     extension = os.path.splitext(ruta)[1]
-    if extension and extension != ".docx" and "/file/d/" not in ruta:
-        raise ValueError("Por ahora el análisis curricular solo soporta documentos .docx.")
 
-    texto = extraer_texto_docx_desde_url(url.strip())
+    if _es_pdf(url_limpia, content_type, contenido):
+        return extraer_texto_pdf(contenido)
+
+    if extension == ".doc":
+        raise ValueError(
+            "El formato .doc antiguo no está soportado. Convierta el archivo a .docx o PDF con texto seleccionable."
+        )
+
+    if extension and extension != ".docx" and "/file/d/" not in ruta:
+        raise ValueError("Solo se permite validar documentos .docx o PDF con texto extraíble.")
+
+    texto = extraer_texto_docx(contenido)
     if not texto.strip():
         raise ValueError("El documento .docx no contiene texto extraíble.")
 

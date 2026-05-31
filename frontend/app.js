@@ -6,8 +6,13 @@ let trazabilidadDataGlobal = [];
 let brechasDataGlobal = [];
 let accionesMejoraGlobal = [];
 
-document.addEventListener("DOMContentLoaded", () => {
-  cargarDatos();
+document.addEventListener("DOMContentLoaded", async () => {
+  if (typeof protegerPagina === "function") {
+    const sesionValida = await protegerPagina();
+    if (sesionValida === false) return;
+  }
+
+  await cargarDatos();
 
   const form = document.getElementById("formSilabo");
   form.addEventListener("submit", registrarSilabo);
@@ -21,6 +26,38 @@ document.addEventListener("click", function(event) {
     });
   }
 });
+
+function mostrarMacroproceso(nombre) {
+  const macroprocesosView = document.getElementById("macroprocesosView");
+  const gestionSilabos = document.getElementById("macroGestionSilabos");
+
+  if (macroprocesosView) {
+    macroprocesosView.classList.add("hidden");
+  }
+
+  document.querySelectorAll(".macro-module").forEach((seccion) => {
+    seccion.classList.add("hidden");
+  });
+
+  if (nombre === "gestionSilabos" && gestionSilabos) {
+    gestionSilabos.classList.remove("hidden");
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function volverMacroprocesos() {
+  document.querySelectorAll(".macro-module").forEach((seccion) => {
+    seccion.classList.add("hidden");
+  });
+
+  const macroprocesosView = document.getElementById("macroprocesosView");
+  if (macroprocesosView) {
+    macroprocesosView.classList.remove("hidden");
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 async function cargarDatos() {
   await cargarDashboard();
@@ -135,8 +172,7 @@ function renderizarTablaSilabos() {
               <div class="menu-divider"></div>
               <div class="menu-section">
                 <span class="menu-label">Gesti&oacute;n</span>
-                <button class="menu-item" onclick="validarDocumento('${silabo.id}')">Validar documento</button>
-                <button class="menu-item" onclick="seleccionarArchivo('${silabo.id}')">Subir archivo</button>
+                <button class="menu-item" onclick="seleccionarArchivo('${silabo.id}')">Actualizar archivo</button>
                 <button class="menu-item" onclick="cambiarEstado('${silabo.id}')">Cambiar estado</button>
                 <button class="menu-item" onclick="editarSilabo('${silabo.id}')">Editar</button>
               </div>
@@ -197,22 +233,59 @@ function toggleMenuAcciones(id) {
 async function registrarSilabo(event) {
   event.preventDefault();
 
+  const ciclo = Number(document.getElementById("ciclo").value);
+  const creditos = obtenerNumeroOpcional("creditos");
+  const totalHorasSemestrales = obtenerNumeroOpcional("horasSemestrales");
+  const totalHorasSemanales = obtenerNumeroOpcional("horasSemanales");
+  const duracionSemanas = Number(document.getElementById("duracion").value);
+  const fechaInicio = document.getElementById("fechaInicio").value || null;
+  const fechaFin = document.getElementById("fechaFin").value || null;
+  const correoDocente = document.getElementById("correo").value.trim();
+  const inputArchivoRegistro = document.getElementById("archivoSilaboRegistro");
+  const archivoRegistro = inputArchivoRegistro?.files?.[0] || null;
+
+  if (!Number.isInteger(ciclo) || ciclo < 1 || ciclo > 10) {
+    mostrarToast("El ciclo debe estar entre 1 y 10.", "error");
+    return;
+  }
+
+  if (
+    creditos === false ||
+    totalHorasSemestrales === false ||
+    totalHorasSemanales === false ||
+    !Number.isFinite(duracionSemanas) ||
+    duracionSemanas <= 0
+  ) {
+    mostrarToast("No se permiten valores negativos en los datos del sílabo.", "error");
+    return;
+  }
+
+  if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+    mostrarToast("La fecha de culminacion no puede ser menor que la fecha de inicio.", "error");
+    return;
+  }
+
+  if (correoDocente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoDocente)) {
+    mostrarToast("Ingrese un correo docente valido.", "error");
+    return;
+  }
+
   const data = {
     semestre_academico: document.getElementById("semestre").value,
     facultad: document.getElementById("facultad").value,
     programa_estudios: document.getElementById("programa").value,
     asignatura: document.getElementById("asignatura").value,
     codigo_asignatura: document.getElementById("codigo").value,
-    ciclo: Number(document.getElementById("ciclo").value),
+    ciclo,
     modalidad: document.getElementById("modalidad").value,
-    creditos: Number(document.getElementById("creditos").value) || null,
-    total_horas_semestrales: Number(document.getElementById("horasSemestrales").value) || null,
-    total_horas_semanales: Number(document.getElementById("horasSemanales").value) || null,
-    fecha_inicio: document.getElementById("fechaInicio").value || null,
-    fecha_culminacion: document.getElementById("fechaFin").value || null,
-    duracion_semanas: Number(document.getElementById("duracion").value) || null,
+    creditos,
+    total_horas_semestrales: totalHorasSemestrales,
+    total_horas_semanales: totalHorasSemanales,
+    fecha_inicio: fechaInicio,
+    fecha_culminacion: fechaFin,
+    duracion_semanas: duracionSemanas,
     docente_responsable: document.getElementById("docente").value,
-    correo_docente: document.getElementById("correo").value,
+    correo_docente: correoDocente,
     estado: "pendiente",
     porcentaje_cumplimiento: 0,
     observacion_general: document.getElementById("observacion").value
@@ -227,17 +300,113 @@ async function registrarSilabo(event) {
       body: JSON.stringify(data)
     });
 
+    const result = await response.json();
+
     if (!response.ok) {
-      throw new Error("Error al registrar el sílabo");
+      throw new Error(result.detail || "Error al registrar el sílabo");
     }
 
-    alert("Sílabo registrado correctamente");
+    const silaboCreado = Array.isArray(result.data) ? result.data[0] : result.data;
+    const silaboId = silaboCreado?.id;
+
+    if (archivoRegistro) {
+      if (!silaboId) {
+        throw new Error("El silabo se registro, pero no se recibio el ID para subir el archivo.");
+      }
+      await subirArchivoSilaboConId(silaboId, archivoRegistro);
+    }
+
+    mostrarToast("Sílabo registrado correctamente.", "success");
     event.target.reset();
     await cargarDatos();
   } catch (error) {
-    alert("No se pudo registrar el sílabo");
     console.error(error);
+    mostrarToast("No se pudo registrar el sílabo: " + error.message, "error");
   }
+}
+
+function obtenerNumeroOpcional(inputId) {
+  const valor = document.getElementById(inputId).value;
+  if (valor === "") return null;
+
+  const numero = Number(valor);
+  if (!Number.isFinite(numero) || numero < 0) return false;
+
+  return numero;
+}
+
+function setInputValueIfExists(id, value) {
+  const input = document.getElementById(id);
+  if (!input) return;
+  if (value !== null && value !== undefined && value !== "") {
+    input.value = value;
+  }
+}
+
+async function extraerDatosDesdeArchivoRegistro() {
+  const input = document.getElementById("archivoSilaboRegistro");
+  const archivo = input?.files?.[0];
+
+  if (!archivo) {
+    mostrarToast("Seleccione un archivo DOCX o PDF.", "warning");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("archivo", archivo);
+
+  try {
+    mostrarToast("Leyendo archivo del silabo...", "info");
+
+    const response = await fetch(`${API_URL}/api/silabos/extraer-datos-archivo`, {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo leer el archivo.");
+    }
+
+    const data = result.data || {};
+
+    setInputValueIfExists("asignatura", data.asignatura);
+    setInputValueIfExists("codigo", data.codigo_asignatura);
+    setInputValueIfExists("ciclo", data.ciclo);
+    setInputValueIfExists("modalidad", data.modalidad);
+    setInputValueIfExists("creditos", data.creditos);
+    setInputValueIfExists("horasSemestrales", data.total_horas_semestrales);
+    setInputValueIfExists("horasSemanales", data.total_horas_semanales);
+    setInputValueIfExists("fechaInicio", data.fecha_inicio);
+    setInputValueIfExists("fechaFin", data.fecha_culminacion);
+    setInputValueIfExists("duracion", data.duracion_semanas);
+    setInputValueIfExists("docente", data.docente_responsable);
+    setInputValueIfExists("correo", data.correo_docente);
+
+    mostrarToast("Datos extraidos. Revise y corrija si es necesario.", "success");
+  } catch (error) {
+    console.error(error);
+    mostrarToast("Error al leer archivo: " + error.message, "error");
+  }
+}
+
+async function subirArchivoSilaboConId(silaboId, archivo) {
+  const formData = new FormData();
+  formData.append("archivo", archivo);
+
+  const response = await fetch(`${API_URL}/api/silabos/${silaboId}/archivo`, {
+    method: "POST",
+    body: formData
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.detail || "El silabo se registro, pero no se pudo subir el archivo.");
+  }
+
+  return result;
 }
 
 async function verValidacion(id) {
@@ -348,12 +517,13 @@ async function eliminarSilabo(id) {
 function seleccionarArchivo(id) {
   const input = document.createElement("input");
   input.type = "file";
-  input.accept = ".pdf,.doc,.docx";
+  input.accept = ".docx,.pdf";
 
   input.onchange = async () => {
     const archivo = input.files[0];
 
     if (!archivo) return;
+    if (!confirm("Esto reemplazara el archivo actual del silabo. Desea continuar?")) return;
 
     await subirArchivoSilabo(id, archivo);
   };
@@ -362,27 +532,13 @@ function seleccionarArchivo(id) {
 }
 
 async function subirArchivoSilabo(id, archivo) {
-  const formData = new FormData();
-  formData.append("archivo", archivo);
-
   try {
-    const response = await fetch(`${API_URL}/api/silabos/${id}/archivo`, {
-      method: "POST",
-      body: formData
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      alert(result.detail || "No se pudo subir el archivo");
-      return;
-    }
-
-    alert("Archivo subido correctamente");
+    await subirArchivoSilaboConId(id, archivo);
+    mostrarToast("Archivo del silabo actualizado correctamente.", "success");
     await cargarDatos();
   } catch (error) {
-    alert("Error al subir el archivo");
     console.error(error);
+    mostrarToast("Error al actualizar el archivo: " + error.message, "error");
   }
 }
 let silaboIdEstadoActual = null;

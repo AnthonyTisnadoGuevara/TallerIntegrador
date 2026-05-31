@@ -9,12 +9,57 @@
 <body>
   <header class="header">
     <div>
-      <h1>Sistema de Monitoreo de Gestión de Sílabos</h1>
-      <p>MVP del Plan de Mejora Continua - Programa ISIA</p>
+      <h1>Sistema de Monitoreo del Plan de Mejora Continua</h1>
+      <p>Programa de Ingeniería de Sistemas e Inteligencia Artificial - ISIA</p>
+    </div>
+    <div class="user-session">
+      <span id="usuarioSesion">Usuario</span>
+      <button class="btn btn-secondary" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
   </header>
 
   <main class="container">
+    <section id="macroprocesosView" class="macroprocesos-view">
+      <div class="macro-hero">
+        <h2>Panel de Macroprocesos</h2>
+        <p>Seleccione el macroproceso que desea gestionar dentro del sistema de monitoreo del plan de mejora continua.</p>
+      </div>
+
+      <div class="macro-grid">
+        <article class="macro-card disabled">
+          <span class="macro-status pending">Próximamente</span>
+          <h3>Planificación Estratégica</h3>
+          <p>Permitirá gestionar objetivos estratégicos, indicadores, metas, responsables, evidencias y seguimiento del plan de mejora continua.</p>
+          <p class="macro-note">Este MVP aún no está implementado.</p>
+          <button class="btn btn-disabled" type="button" disabled>Próximamente</button>
+        </article>
+
+        <article class="macro-card disabled">
+          <span class="macro-status pending">Próximamente</span>
+          <h3>Gestión Académica del Programa de Estudio</h3>
+          <p>Permitirá analizar la malla curricular, perfil de egreso, competencias del programa y coherencia académica del plan de estudios.</p>
+          <p class="macro-note">Este MVP aún no está implementado porque falta información institucional.</p>
+          <button class="btn btn-disabled" type="button" disabled>Próximamente</button>
+        </article>
+
+        <article class="macro-card featured">
+          <span class="macro-status ready">Implementado</span>
+          <h3>Gestión de Sílabos</h3>
+          <p>Registra, valida, analiza y monitorea sílabos mediante agentes IA, LangGraph, Gemini y Supabase.</p>
+          <p class="macro-note">MVP disponible para el programa ISIA.</p>
+          <button class="btn btn-primary" type="button" onclick="mostrarMacroproceso('gestionSilabos')">Ingresar</button>
+        </article>
+      </div>
+    </section>
+
+    <section id="macroGestionSilabos" class="macro-module hidden">
+      <div class="module-header">
+        <div>
+          <h2>Gestión de Sílabos</h2>
+          <p>MVP implementado para registrar, validar, analizar y monitorear sílabos del programa.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+      </div>
 
     <section class="cards">
       <div class="card">
@@ -105,6 +150,17 @@
       <h2>Registrar nuevo sílabo</h2>
 
       <form id="formSilabo">
+        <div class="file-autofill-box">
+          <label for="archivoSilaboRegistro">Archivo del s&iacute;labo (opcional)</label>
+          <div class="file-autofill-actions">
+            <input type="file" id="archivoSilaboRegistro" accept=".docx,.pdf" />
+            <button type="button" class="btn btn-secondary" onclick="extraerDatosDesdeArchivoRegistro()">
+              Leer archivo y autocompletar
+            </button>
+          </div>
+          <small class="file-help-text">Puede subir un DOCX o PDF con texto para autocompletar los datos. Si falta alg&uacute;n dato, puede completarlo manualmente.</small>
+        </div>
+
         <div class="form-grid">
           <input type="text" id="semestre" placeholder="Semestre académico" value="202510" required />
           <input type="text" id="facultad" placeholder="Facultad" value="Ingeniería" />
@@ -113,12 +169,12 @@
           <input type="text" id="codigo" placeholder="Código de asignatura" required />
           <input type="number" id="ciclo" placeholder="Ciclo" min="1" max="10" required />
           <input type="text" id="modalidad" placeholder="Modalidad" value="Presencial" />
-          <input type="number" id="creditos" placeholder="Créditos" />
-          <input type="number" id="horasSemestrales" placeholder="Horas semestrales" />
-          <input type="number" id="horasSemanales" placeholder="Horas semanales" />
+          <input type="number" id="creditos" placeholder="Créditos" min="0" />
+          <input type="number" id="horasSemestrales" placeholder="Horas semestrales" min="0" />
+          <input type="number" id="horasSemanales" placeholder="Horas semanales" min="0" />
           <input type="date" id="fechaInicio" />
           <input type="date" id="fechaFin" />
-          <input type="number" id="duracion" placeholder="Duración en semanas" value="17" />
+          <input type="number" id="duracion" placeholder="Duración en semanas" min="1" value="17" />
           <input type="text" id="docente" placeholder="Docente responsable" />
           <input type="email" id="correo" placeholder="Correo docente" />
         </div>
@@ -134,6 +190,7 @@
       <div id="detalleSilabo" class="detalle">
         Selecciona un sílabo para ver su validación o historial.
       </div>
+    </section>
     </section>
 
   </main>
@@ -337,6 +394,8 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./auth.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
