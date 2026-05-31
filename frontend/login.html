@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acceso - Sistema de Monitoreo de Gestión de Sílabos</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="login-page">
+  <main class="auth-container">
+    <section class="auth-card">
+      <div class="auth-brand">
+        <h1>Sistema de Monitoreo de Mejora Continua</h1>
+        <p>Programa ISIA</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button id="loginTab" class="active" type="button" onclick="mostrarFormularioAuth('login')">Iniciar sesión</button>
+        <button id="registerTab" type="button" onclick="mostrarFormularioAuth('registro')">Registrarse</button>
+      </div>
+
+      <div id="authMessage" class="auth-message"></div>
+
+      <form id="loginForm" class="auth-form" onsubmit="iniciarSesion(event)">
+        <div class="form-group">
+          <label for="loginEmail">Correo electrónico</label>
+          <input id="loginEmail" class="form-control" type="email" autocomplete="email" required />
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Contraseña</label>
+          <input id="loginPassword" class="form-control" type="password" autocomplete="current-password" required />
+        </div>
+        <button class="btn btn-primary auth-submit" type="submit">Ingresar</button>
+      </form>
+
+      <form id="registerForm" class="auth-form hidden" onsubmit="registrarUsuario(event)">
+        <div class="form-group">
+          <label for="registerEmail">Correo electrónico</label>
+          <input id="registerEmail" class="form-control" type="email" autocomplete="email" required />
+        </div>
+        <div class="form-group">
+          <label for="registerPassword">Contraseña</label>
+          <input id="registerPassword" class="form-control" type="password" autocomplete="new-password" minlength="6" required />
+        </div>
+        <button class="btn btn-primary auth-submit" type="submit">Crear cuenta</button>
+      </form>
+
+      <div class="auth-divider"><span>o</span></div>
+
+      <button class="google-btn" type="button" onclick="ingresarConGoogle()">
+        Ingresar con Google
+      </button>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./auth.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", verificarSesionLogin);
+  </script>
+</body>
+</html>

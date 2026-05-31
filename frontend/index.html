@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitoreo de Gestión de Sílabos</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div>
+      <h1>Sistema de Monitoreo del Plan de Mejora Continua</h1>
+      <p>Programa de Ingeniería de Sistemas e Inteligencia Artificial - ISIA</p>
+    </div>
+    <div class="user-session">
+      <span id="usuarioSesion">Usuario</span>
+      <button class="btn btn-secondary" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="macroprocesosView" class="macroprocesos-view">
+      <div class="macro-hero">
+        <h2>Panel de Macroprocesos</h2>
+        <p>Seleccione el macroproceso que desea gestionar dentro del sistema de monitoreo del plan de mejora continua.</p>
+      </div>
+
+      <div class="macro-grid">
+        <article class="macro-card">
+          <span class="macro-status process">En proceso</span>
+          <h3>Planificación Estratégica</h3>
+          <p>Permitirá gestionar objetivos estratégicos, indicadores, metas, responsables, evidencias y seguimiento del plan de mejora continua.</p>
+          <p class="macro-note">Vista base disponible para carga progresiva de información.</p>
+          <button class="btn btn-primary" type="button" onclick="mostrarMacroproceso('planificacion')">Ingresar</button>
+        </article>
+
+        <article class="macro-card">
+          <span class="macro-status process">En proceso</span>
+          <h3>Gestión Académica del Programa de Estudio</h3>
+          <p>Permitirá analizar la malla curricular, perfil de egreso, competencias del programa y coherencia académica del plan de estudios.</p>
+          <p class="macro-note">Vista base disponible para carga progresiva de información.</p>
+          <button class="btn btn-primary" type="button" onclick="mostrarMacroproceso('gestionAcademica')">Ingresar</button>
+        </article>
+
+        <article class="macro-card featured">
+          <span class="macro-status ready">Implementado</span>
+          <h3>Gestión de Sílabos</h3>
+          <p>Registra, valida, analiza y monitorea sílabos mediante agentes IA, LangGraph, Gemini y Supabase.</p>
+          <p class="macro-note">MVP disponible para el programa ISIA.</p>
+          <button class="btn btn-primary" type="button" onclick="mostrarMacroproceso('gestionSilabos')">Ingresar</button>
+        </article>
+      </div>
+    </section>
+
+    <section id="macroPlanificacion" class="macro-module hidden">
+      <div class="module-header">
+        <div>
+          <h2>Planificación Estratégica</h2>
+          <p>Vista básica para el seguimiento de objetivos estratégicos, indicadores, evidencias y responsables del plan de mejora continua.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+      </div>
+
+      <section class="cards basic-module-grid">
+        <div class="card"><h3>Actividades planificadas</h3><p>4</p></div>
+        <div class="card"><h3>Evidencias registradas</h3><p>0</p></div>
+        <div class="card danger"><h3>Pendientes</h3><p>4</p></div>
+        <div class="card warning"><h3>En proceso</h3><p>0</p></div>
+        <div class="card success"><h3>Completadas</h3><p>0</p></div>
+      </section>
+
+      <section class="panel basic-table-card">
+        <h2>Seguimiento inicial</h2>
+        <div class="table-responsive">
+          <table class="basic-table">
+            <thead>
+              <tr>
+                <th>Actividad</th>
+                <th>Evidencia esperada</th>
+                <th>Responsable</th>
+                <th>Mes programado</th>
+                <th>Estado</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Revisión del plan estratégico del programa</td>
+                <td>Plan estratégico actualizado</td>
+                <td>Coordinación del programa</td>
+                <td>Mayo</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Información pendiente de carga</td>
+              </tr>
+              <tr>
+                <td>Actualización de matriz de coherencia</td>
+                <td>Matriz de coherencia institucional</td>
+                <td>Comité de calidad</td>
+                <td>Junio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de validación</td>
+              </tr>
+              <tr>
+                <td>Seguimiento de indicadores del plan de mejora</td>
+                <td>Reporte de indicadores</td>
+                <td>Coordinación académica</td>
+                <td>Julio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de carga</td>
+              </tr>
+              <tr>
+                <td>Elaboración de informe de avance</td>
+                <td>Informe de avance del PMC</td>
+                <td>Equipo del proyecto</td>
+                <td>Julio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>En espera de información</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="macroGestionAcademica" class="macro-module hidden">
+      <div class="module-header">
+        <div>
+          <h2>Gestión Académica del Programa de Estudio</h2>
+          <p>Vista básica para el seguimiento de evidencias académicas del programa: resolución, vacantes, convalidaciones, recursos y portafolio.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+      </div>
+
+      <section class="cards basic-module-grid">
+        <div class="card"><h3>Evidencias previstas</h3><p>5</p></div>
+        <div class="card danger"><h3>Pendientes</h3><p>5</p></div>
+        <div class="card warning"><h3>En proceso</h3><p>0</p></div>
+        <div class="card success"><h3>Completadas</h3><p>0</p></div>
+        <div class="card"><h3>Observadas</h3><p>0</p></div>
+      </section>
+
+      <section class="panel basic-table-card">
+        <h2>Seguimiento académico inicial</h2>
+        <div class="table-responsive">
+          <table class="basic-table">
+            <thead>
+              <tr>
+                <th>Actividad académica</th>
+                <th>Evidencia esperada</th>
+                <th>Responsable</th>
+                <th>Mes programado</th>
+                <th>Estado</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Revisión de resolución del programa</td>
+                <td>Resolución vigente del programa</td>
+                <td>Dirección de programa</td>
+                <td>Mayo</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Información pendiente de carga</td>
+              </tr>
+              <tr>
+                <td>Seguimiento de vacantes</td>
+                <td>Reporte de vacantes ofertadas</td>
+                <td>Coordinación académica</td>
+                <td>Junio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de información</td>
+              </tr>
+              <tr>
+                <td>Registro de convalidaciones</td>
+                <td>Reporte de convalidaciones</td>
+                <td>Secretaría académica</td>
+                <td>Junio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de carga</td>
+              </tr>
+              <tr>
+                <td>Revisión de recursos académicos</td>
+                <td>Informe de recursos académicos</td>
+                <td>Coordinación del programa</td>
+                <td>Julio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de validación</td>
+              </tr>
+              <tr>
+                <td>Seguimiento de portafolio académico</td>
+                <td>Portafolio académico del programa</td>
+                <td>Docentes responsables</td>
+                <td>Julio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de carga</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="macroGestionSilabos" class="macro-module hidden">
+      <div class="module-header">
+        <div>
+          <h2>Gestión de Sílabos</h2>
+          <p>MVP implementado para registrar, validar, analizar y monitorear sílabos del programa.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+      </div>
+
+    <section class="cards">
+      <div class="card">
+        <h3>Total de sílabos</h3>
+        <p id="totalSilabos">0</p>
+      </div>
+
+      <div class="card success">
+        <h3>Completos</h3>
+        <p id="silabosCompletos">0</p>
+      </div>
+
+      <div class="card warning">
+        <h3>Observados</h3>
+        <p id="silabosObservados">0</p>
+      </div>
+
+      <div class="card danger">
+        <h3>Pendientes</h3>
+        <p id="silabosPendientes">0</p>
+      </div>
+
+      <div class="card">
+        <h3>Cumplimiento promedio</h3>
+        <p id="cumplimientoPromedio">0%</p>
+      </div>
+    </section>
+
+    <section class="card analisis-curricular-card">
+      <div class="section-header">
+        <div>
+          <h2>Análisis curricular con LangGraph</h2>
+          <p>Evalúa la progresión curricular entre ciclos, detecta relaciones entre asignaturas y brechas formativas.</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-success" onclick="analizarTrazabilidadCurricular()">Analizar trazabilidad curricular</button>
+          <button class="btn btn-info" onclick="verTrazabilidadCurricular()">Ver trazabilidad</button>
+          <button class="btn btn-warning" onclick="verBrechasCurriculares()">Ver brechas</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card acciones-mejora-card">
+      <div class="section-header">
+        <div>
+          <h2>Acciones de mejora continua</h2>
+          <p>Realiza el seguimiento de acciones generadas a partir de brechas curriculares detectadas por los agentes.</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-success" onclick="generarAccionesDesdeBrechas()">Generar desde brechas</button>
+          <button class="btn btn-info" onclick="verAccionesMejora()">Ver acciones</button>
+          <button class="btn btn-secondary" onclick="cargarDashboardAccionesMejora()">Actualizar dashboard</button>
+        </div>
+      </div>
+      <div id="dashboardAccionesMejora" class="summary-grid"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Listado de Sílabos</h2>
+        <button onclick="cargarDatos()">Actualizar</button>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+        <thead>
+          <tr>
+            <th>Ciclo</th>
+            <th>Código</th>
+            <th>Asignatura</th>
+            <th>Estado</th>
+            <th>Cumplimiento</th>
+            <th>Archivo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaSilabos">
+          <tr>
+            <td colspan="7">Cargando datos...</td>
+          </tr>
+        </tbody>
+        </table>
+      </div>
+      <div id="paginacionSilabos" class="paginacion"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Registrar nuevo sílabo</h2>
+
+      <form id="formSilabo">
+        <div class="file-autofill-box">
+          <label for="archivoSilaboRegistro">Archivo del s&iacute;labo (opcional)</label>
+          <div class="file-autofill-actions">
+            <input type="file" id="archivoSilaboRegistro" accept=".docx,.pdf" />
+            <button type="button" class="btn btn-secondary" onclick="extraerDatosDesdeArchivoRegistro()">
+              Leer archivo y autocompletar
+            </button>
+          </div>
+          <small class="file-help-text">Puede subir un DOCX o PDF con texto para autocompletar los datos. Si falta alg&uacute;n dato, puede completarlo manualmente.</small>
+        </div>
+
+        <div class="form-grid">
+          <input type="text" id="semestre" placeholder="Semestre académico" value="202510" required />
+          <input type="text" id="facultad" placeholder="Facultad" value="Ingeniería" />
+          <input type="text" id="programa" placeholder="Programa de estudios" value="Ingeniería de Sistemas e Inteligencia Artificial" />
+          <input type="text" id="asignatura" placeholder="Asignatura" required />
+          <input type="text" id="codigo" placeholder="Código de asignatura" required />
+          <input type="number" id="ciclo" placeholder="Ciclo" min="1" max="10" required />
+          <input type="text" id="modalidad" placeholder="Modalidad" value="Presencial" />
+          <input type="number" id="creditos" placeholder="Créditos" min="0" />
+          <input type="number" id="horasSemestrales" placeholder="Horas semestrales" min="0" />
+          <input type="number" id="horasSemanales" placeholder="Horas semanales" min="0" />
+          <input type="date" id="fechaInicio" />
+          <input type="date" id="fechaFin" />
+          <input type="number" id="duracion" placeholder="Duración en semanas" min="1" value="17" />
+          <input type="text" id="docente" placeholder="Docente responsable" />
+          <input type="email" id="correo" placeholder="Correo docente" />
+        </div>
+
+        <textarea id="observacion" placeholder="Observación general"></textarea>
+
+        <button type="submit">Registrar sílabo</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Detalle del sílabo</h2>
+      <div id="detalleSilabo" class="detalle">
+        Selecciona un sílabo para ver su validación o historial.
+      </div>
+    </section>
+    </section>
+
+  </main>
+
+  <div id="modalEstado" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalEstado">
+    <div class="modal-card modal-card-small">
+      <div class="modal-header">
+        <h2 id="tituloModalEstado">Cambiar estado del sílabo</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalCambioEstado()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="estadoNuevo">Nuevo estado</label>
+          <select id="estadoNuevo" class="form-control">
+            <option value="pendiente">Pendiente</option>
+            <option value="completo">Completo</option>
+            <option value="observado">Observado</option>
+            <option value="incompleto">Incompleto</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="estadoObservacion">Observación general</label>
+          <textarea id="estadoObservacion" class="form-control" placeholder="Describe el motivo del cambio de estado"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalCambioEstado()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarCambioEstado()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalEditarSilabo" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalEditar">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="tituloModalEditar">Editar información del sílabo</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalEditarSilabo()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-form-grid">
+          <div class="form-group">
+            <label for="editarAsignatura">Asignatura</label>
+            <input id="editarAsignatura" class="form-control" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="editarCodigo">Código de asignatura</label>
+            <input id="editarCodigo" class="form-control" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="editarCiclo">Ciclo</label>
+            <input id="editarCiclo" class="form-control" type="number" min="1" max="10" required />
+          </div>
+          <div class="form-group">
+            <label for="editarCreditos">Créditos</label>
+            <input id="editarCreditos" class="form-control" type="number" min="0" />
+          </div>
+          <div class="form-group">
+            <label for="editarDocente">Docente responsable</label>
+            <input id="editarDocente" class="form-control" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="editarCorreo">Correo docente</label>
+            <input id="editarCorreo" class="form-control" type="email" />
+          </div>
+          <div class="form-group full-width">
+            <label for="editarArchivoUrl">Enlace del archivo en Google Drive o Supabase</label>
+            <input id="editarArchivoUrl" class="form-control" type="url" placeholder="https://..." />
+          </div>
+          <div class="form-group full-width">
+            <label for="editarObservacion">Observación general</label>
+            <textarea id="editarObservacion" class="form-control" placeholder="Observaciones del sílabo"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarSilabo()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarEdicionSilabo()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalAnalisis" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalAnalisis">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h2 id="tituloModalAnalisis">Análisis curricular del sílabo</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalAnalisis()">&times;</button>
+      </div>
+      <div id="contenidoAnalisis" class="modal-body">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalAnalisis()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalTrazabilidad" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalTrazabilidad">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalTrazabilidad">Trazabilidad curricular</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalTrazabilidad()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="resumenTrazabilidad" class="summary-grid"></div>
+        <div class="filters-bar">
+          <input id="buscarTrazabilidad" type="search" placeholder="Buscar asignatura..." />
+          <select id="filtroCoherenciaTrazabilidad">
+            <option value="todos">Todos los niveles</option>
+            <option value="alto">Alto</option>
+            <option value="medio">Medio</option>
+            <option value="bajo">Bajo</option>
+          </select>
+          <select id="filtroTipoTrazabilidad">
+            <option value="todos">Todos los tipos</option>
+            <option value="progresion_adecuada">Progresión adecuada</option>
+            <option value="continuidad_tematica">Continuidad temática</option>
+            <option value="repeticion">Repetición</option>
+            <option value="vacio_formativo">Vacío formativo</option>
+          </select>
+        </div>
+        <div id="contenidoTrazabilidad" class="cards-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalTrazabilidad()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalBrechas" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalBrechas">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalBrechas">Brechas curriculares detectadas</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalBrechas()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="resumenBrechas" class="summary-grid"></div>
+        <div class="filters-bar">
+          <input id="buscarBrechas" type="search" placeholder="Buscar asignatura..." />
+          <select id="filtroPrioridadBrechas">
+            <option value="todas">Todas las prioridades</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+          <select id="filtroTipoBrechas">
+            <option value="todos">Todos los tipos</option>
+          </select>
+        </div>
+        <div id="contenidoBrechas" class="cards-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalBrechas()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalAccionesMejora" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalAccionesMejora">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalAccionesMejora">Acciones de mejora continua</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalAccionesMejora()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="resumenAccionesMejora" class="summary-grid"></div>
+        <div class="filters-bar">
+          <input id="buscarAccionesMejora" type="text" placeholder="Buscar por asignatura, título o responsable..." />
+          <select id="filtroEstadoAcciones">
+            <option value="todos">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="en_proceso">En proceso</option>
+            <option value="atendida">Atendida</option>
+            <option value="descartada">Descartada</option>
+          </select>
+          <select id="filtroPrioridadAcciones">
+            <option value="todos">Todas las prioridades</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+        </div>
+        <div id="contenidoAccionesMejora" class="cards-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalAccionesMejora()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalConfirmacion" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="confirmacionTitulo">
+    <div class="modal-card modal-card-small">
+      <div class="modal-header">
+        <h2 id="confirmacionTitulo">Confirmar acción</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalConfirmacion(false)">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmacionMensaje" class="confirmacion-mensaje"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalConfirmacion(false)">Cancelar</button>
+        <button type="button" id="confirmacionAceptar" class="btn btn-primary" onclick="cerrarModalConfirmacion(true)">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./auth.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
