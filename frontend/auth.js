@@ -76,7 +76,7 @@ async function ingresarConGoogle() {
   const { error } = await supabaseAuth.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: window.location.origin + "/frontend/index.html"
+      redirectTo: window.location.origin + "/index.html"
     }
   });
 
