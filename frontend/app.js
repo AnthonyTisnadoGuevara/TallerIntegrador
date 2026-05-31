@@ -29,7 +29,11 @@ document.addEventListener("click", function(event) {
 
 function mostrarMacroproceso(nombre) {
   const macroprocesosView = document.getElementById("macroprocesosView");
-  const gestionSilabos = document.getElementById("macroGestionSilabos");
+  const modulos = {
+    planificacion: document.getElementById("macroPlanificacion"),
+    gestionAcademica: document.getElementById("macroGestionAcademica"),
+    gestionSilabos: document.getElementById("macroGestionSilabos")
+  };
 
   if (macroprocesosView) {
     macroprocesosView.classList.add("hidden");
@@ -39,8 +43,8 @@ function mostrarMacroproceso(nombre) {
     seccion.classList.add("hidden");
   });
 
-  if (nombre === "gestionSilabos" && gestionSilabos) {
-    gestionSilabos.classList.remove("hidden");
+  if (modulos[nombre]) {
+    modulos[nombre].classList.remove("hidden");
   }
 
   window.scrollTo({ top: 0, behavior: "smooth" });

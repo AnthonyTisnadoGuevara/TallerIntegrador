@@ -266,6 +266,11 @@ body {
   color: #92400e;
 }
 
+.macro-status.basic {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 .macro-module {
   padding: 24px 34px;
 }
@@ -436,6 +441,48 @@ table {
   width: 100%;
   overflow-x: auto;
   overflow-y: visible;
+}
+
+.basic-module-grid {
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
+}
+
+.basic-table-card {
+  margin-bottom: 0;
+}
+
+.basic-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.basic-table th {
+  background: #f1f5f9;
+  text-align: left;
+  padding: 12px;
+}
+
+.basic-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.status-pendiente {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 th, td {

@@ -26,20 +26,20 @@
       </div>
 
       <div class="macro-grid">
-        <article class="macro-card disabled">
-          <span class="macro-status pending">Próximamente</span>
+        <article class="macro-card">
+          <span class="macro-status basic">Vista básica</span>
           <h3>Planificación Estratégica</h3>
           <p>Permitirá gestionar objetivos estratégicos, indicadores, metas, responsables, evidencias y seguimiento del plan de mejora continua.</p>
-          <p class="macro-note">Este MVP aún no está implementado.</p>
-          <button class="btn btn-disabled" type="button" disabled>Próximamente</button>
+          <p class="macro-note">Vista base disponible para carga progresiva de información.</p>
+          <button class="btn btn-primary" type="button" onclick="mostrarMacroproceso('planificacion')">Ingresar</button>
         </article>
 
-        <article class="macro-card disabled">
-          <span class="macro-status pending">Próximamente</span>
+        <article class="macro-card">
+          <span class="macro-status basic">Vista básica</span>
           <h3>Gestión Académica del Programa de Estudio</h3>
           <p>Permitirá analizar la malla curricular, perfil de egreso, competencias del programa y coherencia académica del plan de estudios.</p>
-          <p class="macro-note">Este MVP aún no está implementado porque falta información institucional.</p>
-          <button class="btn btn-disabled" type="button" disabled>Próximamente</button>
+          <p class="macro-note">Vista base disponible para carga progresiva de información.</p>
+          <button class="btn btn-primary" type="button" onclick="mostrarMacroproceso('gestionAcademica')">Ingresar</button>
         </article>
 
         <article class="macro-card featured">
@@ -50,6 +50,154 @@
           <button class="btn btn-primary" type="button" onclick="mostrarMacroproceso('gestionSilabos')">Ingresar</button>
         </article>
       </div>
+    </section>
+
+    <section id="macroPlanificacion" class="macro-module hidden">
+      <div class="module-header">
+        <div>
+          <h2>PlanificaciÃ³n EstratÃ©gica</h2>
+          <p>Vista bÃ¡sica para el seguimiento de objetivos estratÃ©gicos, indicadores, evidencias y responsables del plan de mejora continua.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+      </div>
+
+      <section class="cards basic-module-grid">
+        <div class="card"><h3>Actividades planificadas</h3><p>4</p></div>
+        <div class="card"><h3>Evidencias registradas</h3><p>0</p></div>
+        <div class="card danger"><h3>Pendientes</h3><p>4</p></div>
+        <div class="card warning"><h3>En proceso</h3><p>0</p></div>
+        <div class="card success"><h3>Completadas</h3><p>0</p></div>
+      </section>
+
+      <section class="panel basic-table-card">
+        <h2>Seguimiento inicial</h2>
+        <div class="table-responsive">
+          <table class="basic-table">
+            <thead>
+              <tr>
+                <th>Actividad</th>
+                <th>Evidencia esperada</th>
+                <th>Responsable</th>
+                <th>Mes programado</th>
+                <th>Estado</th>
+                <th>ObservaciÃ³n</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>RevisiÃ³n del plan estratÃ©gico del programa</td>
+                <td>Plan estratÃ©gico actualizado</td>
+                <td>CoordinaciÃ³n del programa</td>
+                <td>Mayo</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>InformaciÃ³n pendiente de carga</td>
+              </tr>
+              <tr>
+                <td>ActualizaciÃ³n de matriz de coherencia</td>
+                <td>Matriz de coherencia institucional</td>
+                <td>ComitÃ© de calidad</td>
+                <td>Junio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de validaciÃ³n</td>
+              </tr>
+              <tr>
+                <td>Seguimiento de indicadores del plan de mejora</td>
+                <td>Reporte de indicadores</td>
+                <td>CoordinaciÃ³n acadÃ©mica</td>
+                <td>Julio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de carga</td>
+              </tr>
+              <tr>
+                <td>ElaboraciÃ³n de informe de avance</td>
+                <td>Informe de avance del PMC</td>
+                <td>Equipo del proyecto</td>
+                <td>Julio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>En espera de informaciÃ³n</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="macroGestionAcademica" class="macro-module hidden">
+      <div class="module-header">
+        <div>
+          <h2>GestiÃ³n AcadÃ©mica del Programa de Estudio</h2>
+          <p>Vista bÃ¡sica para el seguimiento de evidencias acadÃ©micas del programa: resoluciÃ³n, vacantes, convalidaciones, recursos y portafolio.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+      </div>
+
+      <section class="cards basic-module-grid">
+        <div class="card"><h3>Evidencias previstas</h3><p>5</p></div>
+        <div class="card danger"><h3>Pendientes</h3><p>5</p></div>
+        <div class="card warning"><h3>En proceso</h3><p>0</p></div>
+        <div class="card success"><h3>Completadas</h3><p>0</p></div>
+        <div class="card"><h3>Observadas</h3><p>0</p></div>
+      </section>
+
+      <section class="panel basic-table-card">
+        <h2>Seguimiento acadÃ©mico inicial</h2>
+        <div class="table-responsive">
+          <table class="basic-table">
+            <thead>
+              <tr>
+                <th>Actividad acadÃ©mica</th>
+                <th>Evidencia esperada</th>
+                <th>Responsable</th>
+                <th>Mes programado</th>
+                <th>Estado</th>
+                <th>ObservaciÃ³n</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>RevisiÃ³n de resoluciÃ³n del programa</td>
+                <td>ResoluciÃ³n vigente del programa</td>
+                <td>DirecciÃ³n de programa</td>
+                <td>Mayo</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>InformaciÃ³n pendiente de carga</td>
+              </tr>
+              <tr>
+                <td>Seguimiento de vacantes</td>
+                <td>Reporte de vacantes ofertadas</td>
+                <td>CoordinaciÃ³n acadÃ©mica</td>
+                <td>Junio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de informaciÃ³n</td>
+              </tr>
+              <tr>
+                <td>Registro de convalidaciones</td>
+                <td>Reporte de convalidaciones</td>
+                <td>SecretarÃ­a acadÃ©mica</td>
+                <td>Junio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de carga</td>
+              </tr>
+              <tr>
+                <td>RevisiÃ³n de recursos acadÃ©micos</td>
+                <td>Informe de recursos acadÃ©micos</td>
+                <td>CoordinaciÃ³n del programa</td>
+                <td>Julio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de validaciÃ³n</td>
+              </tr>
+              <tr>
+                <td>Seguimiento de portafolio acadÃ©mico</td>
+                <td>Portafolio acadÃ©mico del programa</td>
+                <td>Docentes responsables</td>
+                <td>Julio</td>
+                <td><span class="status-badge status-pendiente">pendiente</span></td>
+                <td>Pendiente de carga</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
 
     <section id="macroGestionSilabos" class="macro-module hidden">
