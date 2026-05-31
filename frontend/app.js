@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://tallerintegrador.onrender.com";
 let silabosGlobal = [];
 let paginaActual = 1;
 const SILABOS_POR_PAGINA = 10;
