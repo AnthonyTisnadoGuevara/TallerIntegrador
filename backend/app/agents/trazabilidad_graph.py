@@ -6,6 +6,7 @@ from typing import Any
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
+from app.agents.gemini_trazabilidad_recommender import enriquecer_trazabilidad_con_gemini
 from app.services.supabase_client import supabase
 
 
@@ -205,6 +206,8 @@ class TrazabilidadState(TypedDict, total=False):
     silabos_por_ciclo: dict
     relaciones: list
     brechas: list
+    modelo_trazabilidad: str
+    conclusion_general: str
     resultado_trazabilidad: list
     resultado_brechas: list
     error: str
@@ -308,6 +311,17 @@ def _entero_o_none(valor: Any) -> int | None:
         return int(valor)
     except (TypeError, ValueError):
         return None
+
+
+TIPOS_RELACION_VALIDOS = {
+    "continuidad_tematica",
+    "progresion_adecuada",
+    "repeticion",
+    "vacio_formativo",
+    "desorden_curricular",
+}
+NIVELES_COHERENCIA_VALIDOS = {"alto", "medio", "bajo"}
+PRIORIDADES_VALIDAS = {"alta", "media", "baja"}
 
 
 def normalizar_lista(valor):
@@ -651,6 +665,99 @@ def detectar_brechas(state: TrazabilidadState) -> TrazabilidadState:
     }
 
 
+def fusionar_relaciones_enriquecidas(relaciones_originales, relaciones_gemini):
+    enriquecidas_por_par = {
+        (item.get("silabo_origen_id"), item.get("silabo_destino_id")): item
+        for item in relaciones_gemini or []
+        if item.get("silabo_origen_id") and item.get("silabo_destino_id")
+    }
+    resultado = []
+
+    for relacion in relaciones_originales:
+        clave = (relacion.get("silabo_origen_id"), relacion.get("silabo_destino_id"))
+        enriquecida = enriquecidas_por_par.get(clave)
+        if not enriquecida:
+            resultado.append(relacion)
+            continue
+
+        fusionada = {**relacion}
+        if enriquecida.get("observacion"):
+            fusionada["observacion"] = enriquecida["observacion"]
+        if enriquecida.get("sugerencia"):
+            fusionada["sugerencia"] = enriquecida["sugerencia"]
+
+        tipo_relacion = enriquecida.get("tipo_relacion")
+        if tipo_relacion in TIPOS_RELACION_VALIDOS:
+            fusionada["tipo_relacion"] = tipo_relacion
+
+        nivel_coherencia = enriquecida.get("nivel_coherencia")
+        if nivel_coherencia in NIVELES_COHERENCIA_VALIDOS:
+            fusionada["nivel_coherencia"] = nivel_coherencia
+
+        resultado.append(fusionada)
+
+    return resultado
+
+
+def fusionar_brechas_enriquecidas(brechas_originales, brechas_gemini):
+    enriquecidas_por_clave = {
+        (item.get("silabo_id"), item.get("tipo_brecha")): item
+        for item in brechas_gemini or []
+        if item.get("silabo_id") and item.get("tipo_brecha")
+    }
+    resultado = []
+
+    for brecha in brechas_originales:
+        clave = (brecha.get("silabo_id"), brecha.get("tipo_brecha"))
+        enriquecida = enriquecidas_por_clave.get(clave)
+        if not enriquecida:
+            resultado.append(brecha)
+            continue
+
+        fusionada = {**brecha}
+        if enriquecida.get("descripcion"):
+            fusionada["descripcion"] = enriquecida["descripcion"]
+        if enriquecida.get("recomendacion"):
+            fusionada["recomendacion"] = enriquecida["recomendacion"]
+
+        prioridad = enriquecida.get("prioridad")
+        if prioridad in PRIORIDADES_VALIDAS:
+            fusionada["prioridad"] = prioridad
+
+        resultado.append(fusionada)
+
+    return resultado
+
+
+def enriquecer_con_gemini(state: TrazabilidadState) -> TrazabilidadState:
+    relaciones = state.get("relaciones", [])
+    brechas = state.get("brechas", [])
+    resumen_contexto = {
+        "total_relaciones": len(relaciones),
+        "total_brechas": len(brechas),
+        "ciclos_detectados": sorted(list(state.get("silabos_por_ciclo", {}).keys())),
+    }
+
+    resultado = enriquecer_trazabilidad_con_gemini(relaciones, brechas, resumen_contexto)
+    nuevo_estado = {
+        **state,
+        "modelo_trazabilidad": resultado.get("modelo_usado", "langgraph_reglas_trazabilidad_v1"),
+        "conclusion_general": resultado.get("conclusion_general"),
+    }
+
+    if resultado.get("activo"):
+        nuevo_estado["relaciones"] = fusionar_relaciones_enriquecidas(
+            relaciones,
+            resultado.get("relaciones", []),
+        )
+        nuevo_estado["brechas"] = fusionar_brechas_enriquecidas(
+            brechas,
+            resultado.get("brechas", []),
+        )
+
+    return nuevo_estado
+
+
 def guardar_trazabilidad(state: TrazabilidadState) -> TrazabilidadState:
     relaciones = state.get("relaciones", [])
 
@@ -699,6 +806,7 @@ def construir_grafo_trazabilidad():
     graph.add_node("agrupar_por_ciclo", agrupar_por_ciclo)
     graph.add_node("analizar_relaciones", analizar_relaciones)
     graph.add_node("detectar_brechas", detectar_brechas)
+    graph.add_node("enriquecer_con_gemini", enriquecer_con_gemini)
     graph.add_node("guardar_trazabilidad", guardar_trazabilidad)
     graph.add_node("guardar_brechas", guardar_brechas)
 
@@ -706,7 +814,8 @@ def construir_grafo_trazabilidad():
     graph.add_edge("obtener_silabos_y_analisis", "agrupar_por_ciclo")
     graph.add_edge("agrupar_por_ciclo", "analizar_relaciones")
     graph.add_edge("analizar_relaciones", "detectar_brechas")
-    graph.add_edge("detectar_brechas", "guardar_trazabilidad")
+    graph.add_edge("detectar_brechas", "enriquecer_con_gemini")
+    graph.add_edge("enriquecer_con_gemini", "guardar_trazabilidad")
     graph.add_edge("guardar_trazabilidad", "guardar_brechas")
     graph.add_edge("guardar_brechas", END)
 

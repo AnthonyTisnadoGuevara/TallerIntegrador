@@ -149,6 +149,9 @@ function renderizarTablaSilabos() {
   silabosPagina.forEach((silabo) => {
     const tr = document.createElement("tr");
     const archivoUrl = normalizarEnlaceArchivo(silabo.archivo_url);
+    const porcentaje = silabo.estado === "completo" && Number(silabo.porcentaje_cumplimiento || 0) === 0
+      ? 100
+      : Number(silabo.porcentaje_cumplimiento || 0);
     const botonArchivo = archivoUrl
       ? `<a class="btn btn-primary archivo-btn" href="${archivoUrl}" target="_blank" rel="noopener noreferrer">Ver archivo</a>`
       : `<button class="btn btn-disabled" disabled>Sin archivo</button>`;
@@ -158,7 +161,7 @@ function renderizarTablaSilabos() {
       <td>${silabo.codigo_asignatura}</td>
       <td>${silabo.asignatura}</td>
       <td><span class="estado ${silabo.estado}">${silabo.estado}</span></td>
-      <td>${silabo.porcentaje_cumplimiento}%</td>
+      <td>${porcentaje}%</td>
       <td>${archivoUrl ? "Disponible" : "Sin archivo"}</td>
       <td>
         <div class="acciones-compactas">
@@ -484,21 +487,21 @@ async function validarDocumento(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      alert(result.detail || "No se pudo validar el documento");
+      mostrarToast(result.detail || "No se pudo validar el documento.", "error");
       return;
     }
 
-    alert(`Documento validado. Cumplimiento: ${result.porcentaje_cumplimiento}%`);
+    mostrarToast(`Documento validado. Cumplimiento: ${result.porcentaje_cumplimiento}%.`, "success");
     await cargarDatos();
     await verValidacion(id);
   } catch (error) {
-    alert("Error al validar documento");
     console.error(error);
+    mostrarToast("Error al validar documento.", "error");
   }
 }
 
 async function eliminarSilabo(id) {
-  const confirmar = confirm("¿Seguro que deseas eliminar este sílabo?");
+  const confirmar = await confirmarAccion("¿Seguro que deseas eliminar este sílabo?");
 
   if (!confirmar) return;
 
@@ -511,11 +514,11 @@ async function eliminarSilabo(id) {
       throw new Error("Error al eliminar el sílabo");
     }
 
-    alert("Sílabo eliminado correctamente");
+    mostrarToast("Sílabo eliminado correctamente.", "success");
     await cargarDatos();
   } catch (error) {
-    alert("No se pudo eliminar el sílabo");
     console.error(error);
+    mostrarToast("No se pudo eliminar el sílabo.", "error");
   }
 }
 function seleccionarArchivo(id) {
@@ -527,7 +530,8 @@ function seleccionarArchivo(id) {
     const archivo = input.files[0];
 
     if (!archivo) return;
-    if (!confirm("Esto reemplazara el archivo actual del silabo. Desea continuar?")) return;
+    const confirmado = await confirmarAccion("Esto reemplazará el archivo actual del sílabo. ¿Desea continuar?");
+    if (!confirmado) return;
 
     await subirArchivoSilabo(id, archivo);
   };
@@ -560,26 +564,27 @@ function ocultarModal(modalId) {
 }
 
 function mostrarNotificacion(mensaje, tipo = "info") {
-  let contenedor = document.getElementById("notificaciones");
-  if (!contenedor) {
-    contenedor = document.createElement("div");
-    contenedor.id = "notificaciones";
-    contenedor.className = "notificaciones";
-    document.body.appendChild(contenedor);
-  }
-
-  const notificacion = document.createElement("div");
-  notificacion.className = `notificacion notificacion-${tipo}`;
-  notificacion.textContent = mensaje;
-  contenedor.appendChild(notificacion);
-
-  setTimeout(() => {
-    notificacion.remove();
-  }, 3500);
+  mostrarToast(mensaje, tipo);
 }
 
 function mostrarToast(mensaje, tipo = "info") {
-  mostrarNotificacion(mensaje, tipo);
+  let contenedor = document.getElementById("toastContainer");
+  if (!contenedor) {
+    contenedor = document.createElement("div");
+    contenedor.id = "toastContainer";
+    contenedor.className = "toast-container";
+    document.body.appendChild(contenedor);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${tipo}`;
+  toast.textContent = mensaje;
+  contenedor.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("toast-hide");
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
 function abrirModalConfirmacion({ titulo, mensaje, textoConfirmar = "Aceptar", tipo = "primary" }) {
@@ -604,6 +609,15 @@ function cerrarModalConfirmacion(resultado = false) {
     resolverConfirmacion(resultado);
     resolverConfirmacion = null;
   }
+}
+
+function confirmarAccion(mensaje) {
+  return abrirModalConfirmacion({
+    titulo: "Confirmar acción",
+    mensaje,
+    textoConfirmar: "Aceptar",
+    tipo: "danger"
+  });
 }
 
 function cambiarEstado(id) {
@@ -631,7 +645,7 @@ async function guardarCambioEstado() {
   const estadosValidos = ["pendiente", "completo", "observado", "incompleto"];
 
   if (!estadosValidos.includes(nuevoEstado)) {
-    alert("Estado inválido. Use: pendiente, completo, observado o incompleto.");
+    mostrarToast("Estado inválido. Use: pendiente, completo, observado o incompleto.", "warning");
     return;
   }
 
@@ -649,16 +663,16 @@ async function guardarCambioEstado() {
 
     const result = await response.json();
     if (!response.ok) {
-      alert(result.detail || "No se pudo actualizar el estado");
+      mostrarToast(result.detail || "No se pudo actualizar el estado.", "error");
       return;
     }
 
     cerrarModalCambioEstado();
-    alert("Estado actualizado correctamente");
+    mostrarToast("Estado actualizado correctamente.", "success");
     await cargarDatos();
     await verHistorial(id);
   } catch (error) {
-    alert("Error al actualizar el estado");
+    mostrarToast("Error al actualizar el estado.", "error");
     console.error(error);
   }
 }
@@ -673,7 +687,7 @@ async function abrirModalEditarSilabo(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      alert(result.detail || "No se pudo obtener el sílabo");
+      mostrarToast(result.detail || "No se pudo obtener el sílabo.", "error");
       return;
     }
 
@@ -689,7 +703,7 @@ async function abrirModalEditarSilabo(id) {
     document.getElementById("editarObservacion").value = silabo.observacion_general ?? "";
     mostrarModal("modalEditarSilabo");
   } catch (error) {
-    alert("Error al editar el sílabo");
+    mostrarToast("Error al editar el sílabo.", "error");
     console.error(error);
   }
 }
@@ -715,22 +729,22 @@ async function guardarEdicionSilabo() {
   const numeroCreditos = creditos ? Number(creditos) : null;
 
   if (!asignatura || !codigo || !ciclo) {
-    alert("Complete asignatura, código y ciclo.");
+    mostrarToast("Complete asignatura, código y ciclo.", "warning");
     return;
   }
 
   if (!Number.isInteger(numeroCiclo) || numeroCiclo < 1 || numeroCiclo > 10) {
-    alert("El ciclo debe ser un número entre 1 y 10.");
+    mostrarToast("El ciclo debe ser un número entre 1 y 10.", "warning");
     return;
   }
 
   if (numeroCreditos !== null && (!Number.isFinite(numeroCreditos) || numeroCreditos < 0)) {
-    alert("Los créditos deben ser un número válido.");
+    mostrarToast("Los créditos deben ser un número válido.", "warning");
     return;
   }
 
   if (archivoUrl && !normalizarEnlaceArchivo(archivoUrl)) {
-    alert("Ingrese un enlace válido de Google Drive o Supabase Storage.");
+    mostrarToast("Ingrese un enlace válido de Google Drive o Supabase Storage.", "warning");
     return;
   }
 
@@ -756,16 +770,16 @@ async function guardarEdicionSilabo() {
 
     const result = await response.json();
     if (!response.ok) {
-      alert(result.detail || "No se pudo actualizar el sílabo");
+      mostrarToast(result.detail || "No se pudo actualizar el sílabo.", "error");
       return;
     }
 
     cerrarModalEditarSilabo();
-    alert("Información del sílabo actualizada correctamente");
+    mostrarToast("Información del sílabo actualizada correctamente.", "success");
     await cargarDatos();
     await verHistorial(id);
   } catch (error) {
-    alert("Error al editar el sílabo");
+    mostrarToast("Error al editar el sílabo.", "error");
     console.error(error);
   }
 }
@@ -797,7 +811,7 @@ async function analizarSilaboIA(id) {
     await verAnalisisSilabo(id);
   } catch (error) {
     console.error("Error al analizar sílabo:", error);
-    alert("Error al analizar el sílabo: " + error.message);
+    mostrarToast("Error al analizar el sílabo: " + error.message, "error");
   }
 }
 
@@ -807,20 +821,20 @@ async function verAnalisisSilabo(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo obtener el análisis.");
+      throw new Error(result.detail || "No se pudo obtener el an?lisis.");
     }
 
     const analisis = result.data && result.data.length > 0 ? result.data[0] : null;
 
     if (!analisis) {
-      alert("Este sílabo todavía no tiene análisis. Presiona primero 'Analizar IA'.");
+      mostrarToast("Este sílabo todavía no tiene análisis. Presiona primero 'Analizar IA'.", "warning");
       return;
     }
 
     abrirModalAnalisis(analisis);
   } catch (error) {
-    console.error("Error al obtener análisis:", error);
-    alert("Error al obtener análisis: " + error.message);
+    console.error("Error al obtener an?lisis:", error);
+    mostrarToast("Error al obtener análisis: " + error.message, "error");
   }
 }
 
@@ -876,7 +890,7 @@ function abrirModalAnalisis(analisis) {
         <p>${escaparHtml(analisis.modelo_usado ?? "Sin modelo registrado")}</p>
       </div>
       <div>
-        <span class="section-label">Fecha de análisis</span>
+        <span class="section-label">Fecha de an?lisis</span>
         <p>${escaparHtml(fecha)}</p>
       </div>
     </div>
@@ -906,7 +920,7 @@ function abrirModalAnalisis(analisis) {
       ${renderLista(analisis.sugerencias)}
     </div>
     <div class="analisis-section">
-      <h3>Observación general</h3>
+      <h3>Observaci?n general</h3>
       ${renderTextoAnalisis(analisis.observacion_general)}
     </div>
   `;
@@ -1072,7 +1086,7 @@ function renderizarTrazabilidadFiltrada() {
 
   if (trazabilidadDataGlobal.length === 0) {
     contenedor.innerHTML = `
-      <p class="text-muted">No hay trazabilidad registrada. Primero ejecuta el análisis de trazabilidad curricular.</p>
+      <p class="text-muted">No hay trazabilidad registrada. Primero ejecuta el an?lisis de trazabilidad curricular.</p>
     `;
     return;
   }
@@ -1356,20 +1370,21 @@ async function actualizarEstadoAccion(id, estado) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo actualizar la acción.");
+      throw new Error(result.detail || "No se pudo actualizar la acci?n.");
     }
 
     mostrarToast("Estado actualizado correctamente.", "success");
     await verAccionesMejora();
     await cargarDashboardAccionesMejora();
   } catch (error) {
-    console.error("Error al actualizar acción:", error);
-    mostrarToast("Error al actualizar acción: " + error.message, "error");
+    console.error("Error al actualizar acci?n:", error);
+    mostrarToast("Error al actualizar acci?n: " + error.message, "error");
   }
 }
 
 async function eliminarAccionMejora(id) {
-  if (!confirm("¿Deseas eliminar esta acción de mejora?")) return;
+  const confirmado = await confirmarAccion("¿Deseas eliminar esta acción de mejora?");
+  if (!confirmado) return;
 
   try {
     const response = await fetch(`${API_URL}/api/acciones-mejora/${id}`, {
@@ -1378,14 +1393,17 @@ async function eliminarAccionMejora(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo eliminar la acción.");
+      throw new Error(result.detail || "No se pudo eliminar la acci?n.");
     }
 
     mostrarToast("Acción eliminada correctamente.", "success");
     await verAccionesMejora();
     await cargarDashboardAccionesMejora();
   } catch (error) {
-    console.error("Error al eliminar acción:", error);
-    mostrarToast("Error al eliminar acción: " + error.message, "error");
+    console.error("Error al eliminar acci?n:", error);
+    mostrarToast("Error al eliminar acci?n: " + error.message, "error");
   }
 }
+
+
+

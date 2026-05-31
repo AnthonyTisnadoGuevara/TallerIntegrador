@@ -62,13 +62,30 @@ class SilaboUpdate(BaseModel):
     archivo_url: Optional[str] = None
     observacion_general: Optional[str] = None
 
+def normalizar_porcentaje_por_estado(silabo: dict) -> dict:
+    estado = silabo.get("estado")
+    porcentaje = silabo.get("porcentaje_cumplimiento")
+    try:
+        porcentaje_numero = float(porcentaje or 0)
+    except (TypeError, ValueError):
+        porcentaje_numero = 0
+
+    if estado == "completo" and (porcentaje is None or porcentaje_numero == 0):
+        silabo["porcentaje_cumplimiento"] = 100
+    elif estado == "pendiente" and porcentaje is None:
+        silabo["porcentaje_cumplimiento"] = 0
+
+    return silabo
+
+
 @router.get("/")
 def listar_silabos():
     try:
         response = supabase.table("silabos").select("*").order("ciclo").execute()
+        silabos = [normalizar_porcentaje_por_estado(item) for item in (response.data or [])]
         return {
             "message": "Listado de sílabos obtenido correctamente",
-            "data": response.data
+            "data": silabos
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -165,9 +182,15 @@ def crear_silabo(silabo: SilaboCreate):
                 detail="El ciclo debe estar entre 1 y 10"
             )
 
+        datos_silabo = silabo.model_dump()
+        if datos_silabo["estado"] == "completo":
+            datos_silabo["porcentaje_cumplimiento"] = 100
+        elif datos_silabo["estado"] == "pendiente":
+            datos_silabo["porcentaje_cumplimiento"] = 0
+
         response = (
             supabase.table("silabos")
-            .insert(silabo.model_dump())
+            .insert(datos_silabo)
             .execute()
         )
 
@@ -204,13 +227,19 @@ def actualizar_estado_silabo(silabo_id: str, datos: EstadoUpdate):
             raise HTTPException(status_code=404, detail="Sílabo no encontrado")
 
         estado_anterior = silabo_actual.data[0]["estado"]
+        datos_actualizar = {
+            "estado": datos.estado,
+            "observacion_general": datos.observacion_general
+        }
+
+        if datos.estado == "completo":
+            datos_actualizar["porcentaje_cumplimiento"] = 100
+        elif datos.estado == "pendiente":
+            datos_actualizar["porcentaje_cumplimiento"] = 0
 
         response = (
             supabase.table("silabos")
-            .update({
-                "estado": datos.estado,
-                "observacion_general": datos.observacion_general
-            })
+            .update(datos_actualizar)
             .eq("id", silabo_id)
             .execute()
         )
