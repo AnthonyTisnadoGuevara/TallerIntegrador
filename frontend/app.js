@@ -821,7 +821,7 @@ async function verAnalisisSilabo(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo obtener el an?lisis.");
+      throw new Error(result.detail || "No se pudo obtener el análisis.");
     }
 
     const analisis = result.data && result.data.length > 0 ? result.data[0] : null;
@@ -833,7 +833,7 @@ async function verAnalisisSilabo(id) {
 
     abrirModalAnalisis(analisis);
   } catch (error) {
-    console.error("Error al obtener an?lisis:", error);
+    console.error("Error al obtener análisis:", error);
     mostrarToast("Error al obtener análisis: " + error.message, "error");
   }
 }
@@ -890,7 +890,7 @@ function abrirModalAnalisis(analisis) {
         <p>${escaparHtml(analisis.modelo_usado ?? "Sin modelo registrado")}</p>
       </div>
       <div>
-        <span class="section-label">Fecha de an?lisis</span>
+        <span class="section-label">Fecha de análisis</span>
         <p>${escaparHtml(fecha)}</p>
       </div>
     </div>
@@ -920,7 +920,7 @@ function abrirModalAnalisis(analisis) {
       ${renderLista(analisis.sugerencias)}
     </div>
     <div class="analisis-section">
-      <h3>Observaci?n general</h3>
+      <h3>Observación general</h3>
       ${renderTextoAnalisis(analisis.observacion_general)}
     </div>
   `;
@@ -1086,7 +1086,7 @@ function renderizarTrazabilidadFiltrada() {
 
   if (trazabilidadDataGlobal.length === 0) {
     contenedor.innerHTML = `
-      <p class="text-muted">No hay trazabilidad registrada. Primero ejecuta el an?lisis de trazabilidad curricular.</p>
+      <p class="text-muted">No hay trazabilidad registrada. Primero ejecuta el análisis de trazabilidad curricular.</p>
     `;
     return;
   }
@@ -1168,7 +1168,7 @@ function renderizarBrechasFiltradas() {
   const filtroTipo = document.getElementById("filtroTipoBrechas").value;
 
   if (brechasDataGlobal.length === 0) {
-    contenedor.innerHTML = `<p class="text-muted">No hay brechas registradas.</p>`;
+    contenedor.innerHTML = `<p class="text-muted">No se detectaron brechas curriculares críticas. Las relaciones analizadas presentan coherencia aceptable.</p>`;
     return;
   }
 
@@ -1180,7 +1180,7 @@ function renderizarBrechasFiltradas() {
   });
 
   if (filtrados.length === 0) {
-    contenedor.innerHTML = `<p class="text-muted">No se encontraron brechas con los filtros aplicados.</p>`;
+    contenedor.innerHTML = `<p class="text-muted">No se detectaron brechas curriculares críticas con los filtros aplicados.</p>`;
     return;
   }
 
@@ -1190,12 +1190,13 @@ function renderizarBrechasFiltradas() {
       <article class="brecha-card brecha-${prioridad}">
         <div class="brecha-header">
           <span class="cycle-badge">Ciclo ${escaparHtml(item.ciclo ?? "-")}</span>
-          ${renderBadge(item.prioridad)}
+          <span class="badge badge-${prioridad}">Prioridad ${escaparHtml(formatearTexto(item.prioridad || "-"))}</span>
         </div>
         <h3>${escaparHtml(item.asignatura ?? "-")}</h3>
         <p><strong>Tipo de brecha:</strong> ${escaparHtml(formatearTexto(item.tipo_brecha))}</p>
-        <p><strong>Descripción:</strong> ${escaparHtml(item.descripcion ?? "-")}</p>
-        <p><strong>Recomendación:</strong> ${escaparHtml(item.recomendacion ?? "-")}</p>
+        <p><strong>Problema detectado:</strong> ${escaparHtml(item.descripcion ?? "-")}</p>
+        <p><strong>Recomendación de mejora:</strong> ${escaparHtml(item.recomendacion ?? "-")}</p>
+        <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
         <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.estado))}</p>
       </article>
     `;
@@ -1370,15 +1371,15 @@ async function actualizarEstadoAccion(id, estado) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo actualizar la acci?n.");
+      throw new Error(result.detail || "No se pudo actualizar la acción.");
     }
 
     mostrarToast("Estado actualizado correctamente.", "success");
     await verAccionesMejora();
     await cargarDashboardAccionesMejora();
   } catch (error) {
-    console.error("Error al actualizar acci?n:", error);
-    mostrarToast("Error al actualizar acci?n: " + error.message, "error");
+    console.error("Error al actualizar acción:", error);
+    mostrarToast("Error al actualizar acción: " + error.message, "error");
   }
 }
 
@@ -1393,15 +1394,15 @@ async function eliminarAccionMejora(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo eliminar la acci?n.");
+      throw new Error(result.detail || "No se pudo eliminar la acción.");
     }
 
     mostrarToast("Acción eliminada correctamente.", "success");
     await verAccionesMejora();
     await cargarDashboardAccionesMejora();
   } catch (error) {
-    console.error("Error al eliminar acci?n:", error);
-    mostrarToast("Error al eliminar acci?n: " + error.message, "error");
+    console.error("Error al eliminar acción:", error);
+    mostrarToast("Error al eliminar acción: " + error.message, "error");
   }
 }
 
