@@ -83,13 +83,21 @@ def listar_brechas_curriculares():
         response = (
             supabase.table("brechas_curriculares")
             .select("*")
-            .order("created_at", desc=True)
             .execute()
+        )
+        prioridad_orden = {"alta": 0, "media": 1, "baja": 2}
+        brechas = sorted(
+            response.data or [],
+            key=lambda item: (
+                prioridad_orden.get(str(item.get("prioridad", "")).lower(), 3),
+                item.get("ciclo") or 0,
+                item.get("asignatura") or "",
+            ),
         )
 
         return {
             "message": "Brechas curriculares obtenidas correctamente",
-            "data": response.data,
+            "data": brechas,
         }
 
     except Exception as e:

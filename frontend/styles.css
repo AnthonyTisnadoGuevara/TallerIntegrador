@@ -1163,6 +1163,10 @@ textarea.form-control {
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
+.brecha-card {
+  background: #fffaf7;
+}
+
 .trace-card h3,
 .brecha-card h3,
 .accion-card h3 {

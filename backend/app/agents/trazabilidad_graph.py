@@ -319,6 +319,7 @@ TIPOS_RELACION_VALIDOS = {
     "repeticion",
     "vacio_formativo",
     "desorden_curricular",
+    "falta_trazabilidad",
 }
 NIVELES_COHERENCIA_VALIDOS = {"alto", "medio", "bajo"}
 PRIORIDADES_VALIDAS = {"alta", "media", "baja"}
@@ -600,12 +601,99 @@ def detectar_brechas(state: TrazabilidadState) -> TrazabilidadState:
         for item in state.get("analisis", [])
         if item.get("silabo_id")
     }
-    destinos_con_relacion = {
+    destinos_con_relacion_clara = {
         relacion.get("silabo_destino_id")
         for relacion in relaciones
-        if relacion.get("tipo_relacion") in {"continuidad_tematica", "progresion_adecuada"}
+        if relacion.get("tipo_relacion") == "progresion_adecuada"
+        or relacion.get("nivel_coherencia") == "alto"
     }
     brechas = []
+    claves_brecha = set()
+
+    def agregar_brecha(brecha: dict):
+        clave = (brecha.get("silabo_id"), brecha.get("tipo_brecha"), brecha.get("ciclo"))
+        if clave in claves_brecha:
+            return
+        claves_brecha.add(clave)
+        brecha.setdefault("estado", "pendiente")
+        brechas.append(brecha)
+
+    def agregar_brecha_desde_relacion(relacion: dict):
+        tipo_relacion = relacion.get("tipo_relacion")
+        nivel = relacion.get("nivel_coherencia")
+        observacion = _normalizar_texto(relacion.get("observacion"))
+
+        if tipo_relacion == "progresion_adecuada" or nivel == "alto":
+            return
+
+        if tipo_relacion == "repeticion":
+            tipo_brecha = "Repeticion de contenidos"
+            descripcion = (
+                "Se identifican contenidos similares entre cursos consecutivos sin evidencia "
+                "suficiente de mayor profundidad o complejidad."
+            )
+            recomendacion = (
+                "Diferenciar los resultados de aprendizaje, contenidos y productos esperados "
+                "para asegurar progresion curricular."
+            )
+            prioridad = "media"
+        elif tipo_relacion == "falta_trazabilidad":
+            tipo_brecha = "Falta de trazabilidad curricular"
+            descripcion = (
+                "No se evidencia una relacion curricular clara entre el curso y los cursos "
+                "previos analizados."
+            )
+            recomendacion = (
+                "Revisar el mapa curricular y explicitar prerrequisitos, competencias de "
+                "entrada y articulacion con cursos anteriores."
+            )
+            prioridad = "alta"
+        elif tipo_relacion == "vacio_formativo":
+            tipo_brecha = "Vacio formativo"
+            descripcion = (
+                "Se identifica una posible ausencia de contenidos o competencias necesarias "
+                "para continuar la progresion academica."
+            )
+            recomendacion = (
+                "Incorporar o reforzar contenidos puente antes de abordar competencias avanzadas."
+            )
+            prioridad = "alta"
+        elif nivel == "medio" or "ausencia de progresion" in observacion or "sin progresion" in observacion:
+            tipo_brecha = "Articulacion parcial"
+            descripcion = (
+                "Existe relacion tematica parcial, pero no se evidencia claramente la "
+                "progresion entre cursos."
+            )
+            recomendacion = (
+                "Precisar la secuencia de contenidos, prerrequisitos y resultados esperados."
+            )
+            prioridad = "media"
+        elif nivel == "bajo":
+            tipo_brecha = "Baja coherencia curricular"
+            descripcion = (
+                "La relacion entre cursos consecutivos presenta baja coherencia y requiere "
+                "revision curricular."
+            )
+            recomendacion = (
+                "Revisar competencias, contenidos y evidencias de aprendizaje para fortalecer "
+                "la articulacion entre cursos."
+            )
+            prioridad = "alta"
+        else:
+            return
+
+        agregar_brecha(
+            {
+                "silabo_id": relacion.get("silabo_destino_id"),
+                "ciclo": relacion.get("ciclo_destino"),
+                "asignatura": relacion.get("asignatura_destino"),
+                "tipo_brecha": tipo_brecha,
+                "descripcion": descripcion,
+                "recomendacion": recomendacion,
+                "prioridad": prioridad,
+                "estado": "pendiente",
+            }
+        )
 
     for silabo in silabos:
         silabo_id = silabo.get("id")
@@ -615,55 +703,40 @@ def detectar_brechas(state: TrazabilidadState) -> TrazabilidadState:
         secciones_faltantes = normalizar_lista(analisis.get("secciones_faltantes"))
 
         if analisis.get("nivel_riesgo") == "alto" or len(secciones_faltantes) >= 4:
-            brechas.append(
+            agregar_brecha(
                 {
                     "silabo_id": silabo_id,
                     "ciclo": ciclo,
                     "asignatura": asignatura,
-                    "tipo_brecha": "estructura_incompleta",
-                    "descripcion": "El sílabo presenta riesgo alto o varias secciones obligatorias faltantes.",
-                    "recomendacion": "Completar estructura institucional, evaluación, bibliografía y programación por unidades.",
+                    "tipo_brecha": "Estructura incompleta del silabo",
+                    "descripcion": "El silabo presenta riesgo alto o varias secciones obligatorias faltantes.",
+                    "recomendacion": "Completar estructura institucional, evaluacion, bibliografia y programacion por unidades.",
                     "prioridad": "alta",
                     "estado": "pendiente",
                 }
             )
 
-        if ciclo and ciclo >= 5 and silabo_id not in destinos_con_relacion:
-            brechas.append(
+        if ciclo and ciclo >= 5 and silabo_id not in destinos_con_relacion_clara:
+            agregar_brecha(
                 {
                     "silabo_id": silabo_id,
                     "ciclo": ciclo,
                     "asignatura": asignatura,
-                    "tipo_brecha": "falta_trazabilidad",
-                    "descripcion": "Curso avanzado sin relación curricular clara con cursos previos analizados.",
-                    "recomendacion": "Revisar mapa curricular y explicitar prerrequisitos o competencias de entrada.",
-                    "prioridad": "media",
+                    "tipo_brecha": "Falta de trazabilidad curricular",
+                    "descripcion": "No se evidencia una relacion curricular clara entre el curso y los cursos previos analizados.",
+                    "recomendacion": "Revisar el mapa curricular y explicitar prerrequisitos, competencias de entrada y articulacion con cursos anteriores.",
+                    "prioridad": "alta",
                     "estado": "pendiente",
                 }
             )
 
     for relacion in relaciones:
-        if relacion.get("tipo_relacion") not in {"vacio_formativo", "repeticion"}:
-            continue
-
-        brechas.append(
-            {
-                "silabo_id": relacion.get("silabo_destino_id"),
-                "ciclo": relacion.get("ciclo_destino"),
-                "asignatura": relacion.get("asignatura_destino"),
-                "tipo_brecha": relacion.get("tipo_relacion"),
-                "descripcion": relacion.get("descripcion"),
-                "recomendacion": relacion.get("sugerencia"),
-                "prioridad": "alta" if relacion.get("tipo_relacion") == "vacio_formativo" else "media",
-                "estado": "pendiente",
-            }
-        )
+        agregar_brecha_desde_relacion(relacion)
 
     return {
         **state,
         "brechas": brechas,
     }
-
 
 def fusionar_relaciones_enriquecidas(relaciones_originales, relaciones_gemini):
     enriquecidas_por_par = {
