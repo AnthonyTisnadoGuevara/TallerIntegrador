@@ -5,6 +5,34 @@ const SILABOS_POR_PAGINA = 10;
 let trazabilidadDataGlobal = [];
 let brechasDataGlobal = [];
 let accionesMejoraGlobal = [];
+let evidenciasMacroprocesosGlobal = {
+  planificacion_estrategica: [],
+  gestion_academica: []
+};
+let evidenciaMacroprocesoActual = null;
+
+const MACROPROCESOS_CONFIG = {
+  planificacion_estrategica: {
+    sectionKey: "planificacion",
+    dashboardId: "dashboardPlanificacion",
+    containerId: "evidenciasPlanificacion",
+    searchId: "buscarPlanificacion",
+    estadoId: "estadoPlanificacion",
+    prioridadId: "prioridadPlanificacion",
+    columns: ["codigo", "titulo", "responsable", "mes_programado", "prioridad", "estado", "avance", "acciones"],
+    summaryCards: ["total", "pendientes", "en_proceso", "completadas", "avance_promedio"]
+  },
+  gestion_academica: {
+    sectionKey: "gestionAcademica",
+    dashboardId: "dashboardGestionAcademica",
+    containerId: "evidenciasGestionAcademica",
+    searchId: "buscarGestionAcademica",
+    estadoId: "estadoGestionAcademica",
+    prioridadId: "prioridadGestionAcademica",
+    columns: ["codigo", "titulo", "tipo_evidencia", "responsable", "prioridad", "estado", "avance", "acciones"],
+    summaryCards: ["total", "pendientes", "en_proceso", "completadas", "observadas", "avance_promedio"]
+  }
+};
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (typeof protegerPagina === "function") {
@@ -27,7 +55,7 @@ document.addEventListener("click", function(event) {
   }
 });
 
-function mostrarMacroproceso(nombre) {
+async function mostrarMacroproceso(nombre) {
   const macroprocesosView = document.getElementById("macroprocesosView");
   const modulos = {
     planificacion: document.getElementById("macroPlanificacion"),
@@ -47,6 +75,14 @@ function mostrarMacroproceso(nombre) {
     modulos[nombre].classList.remove("hidden");
   }
 
+  if (nombre === "planificacion") {
+    await cargarVistaMacroproceso("planificacion_estrategica");
+  }
+
+  if (nombre === "gestionAcademica") {
+    await cargarVistaMacroproceso("gestion_academica");
+  }
+
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -61,6 +97,250 @@ function volverMacroprocesos() {
   }
 
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function cargarVistaMacroproceso(macroproceso) {
+  const config = MACROPROCESOS_CONFIG[macroproceso];
+  if (!config) return;
+
+  const contenedor = document.getElementById(config.containerId);
+  if (contenedor) {
+    contenedor.innerHTML = `<p class="text-muted">Cargando evidencias...</p>`;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/evidencias?macroproceso=${encodeURIComponent(macroproceso)}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo cargar las evidencias del macroproceso.");
+    }
+
+    evidenciasMacroprocesosGlobal[macroproceso] = Array.isArray(result.data) ? result.data : [];
+    renderDashboardMacroproceso(macroproceso);
+    renderEvidenciasMacroproceso(macroproceso);
+  } catch (error) {
+    console.error("Error al cargar macroproceso:", error);
+    mostrarToast("Error al cargar evidencias: " + error.message, "error");
+    if (contenedor) {
+      contenedor.innerHTML = `<p class="text-muted">No se pudieron cargar las evidencias.</p>`;
+    }
+  }
+}
+
+function calcularResumenMacroproceso(evidencias) {
+  const total = evidencias.length;
+  const avancePromedio = total
+    ? Math.round(evidencias.reduce((sum, item) => sum + Number(item.avance || 0), 0) / total)
+    : 0;
+
+  return {
+    total,
+    pendientes: contarPorCampo(evidencias, "estado", "pendiente"),
+    en_proceso: contarPorCampo(evidencias, "estado", "en_proceso"),
+    completadas: contarPorCampo(evidencias, "estado", "completado"),
+    observadas: contarPorCampo(evidencias, "estado", "observado"),
+    avance_promedio: avancePromedio
+  };
+}
+
+function renderDashboardMacroproceso(macroproceso) {
+  const config = MACROPROCESOS_CONFIG[macroproceso];
+  const contenedor = document.getElementById(config.dashboardId);
+  if (!contenedor) return;
+
+  const resumen = calcularResumenMacroproceso(evidenciasMacroprocesosGlobal[macroproceso] || []);
+  const titulos = {
+    total: "Total de evidencias",
+    pendientes: "Pendientes",
+    en_proceso: "En proceso",
+    completadas: "Completadas",
+    observadas: "Observadas",
+    avance_promedio: "Avance promedio"
+  };
+
+  contenedor.innerHTML = config.summaryCards.map((clave) => {
+    const valor = clave === "avance_promedio" ? `${resumen[clave]}%` : resumen[clave];
+    const clase = clave === "pendientes"
+      ? "danger"
+      : clave === "en_proceso"
+        ? "warning"
+        : clave === "completadas"
+          ? "success"
+          : "";
+
+    return `
+      <div class="card ${clase}">
+        <h3>${escaparHtml(titulos[clave])}</h3>
+        <p>${escaparHtml(valor)}</p>
+      </div>
+    `;
+  }).join("");
+}
+
+function obtenerEvidenciasFiltradas(macroproceso) {
+  const config = MACROPROCESOS_CONFIG[macroproceso];
+  const evidencias = evidenciasMacroprocesosGlobal[macroproceso] || [];
+  const busqueda = normalizarValor(document.getElementById(config.searchId)?.value || "");
+  const estado = document.getElementById(config.estadoId)?.value || "";
+  const prioridad = document.getElementById(config.prioridadId)?.value || "";
+
+  return evidencias.filter((item) => {
+    const texto = normalizarValor(`${item.titulo || ""} ${item.responsable || ""}`);
+    const coincideBusqueda = !busqueda || texto.includes(busqueda);
+    const coincideEstado = !estado || item.estado === estado;
+    const coincidePrioridad = !prioridad || item.prioridad === prioridad;
+    return coincideBusqueda && coincideEstado && coincidePrioridad;
+  });
+}
+
+function renderEvidenciasMacroproceso(macroproceso) {
+  const config = MACROPROCESOS_CONFIG[macroproceso];
+  const contenedor = document.getElementById(config.containerId);
+  if (!contenedor) return;
+
+  const evidencias = obtenerEvidenciasFiltradas(macroproceso);
+  if (evidencias.length === 0) {
+    contenedor.innerHTML = `<p class="text-muted">No se encontraron evidencias con los filtros aplicados.</p>`;
+    return;
+  }
+
+  contenedor.innerHTML = evidencias.map((item) => renderEvidenceCard(item, config.columns)).join("");
+}
+
+function renderEvidenceCard(evidencia, columnas) {
+  const avance = Math.min(100, Math.max(0, Number(evidencia.avance || 0)));
+  const id = escaparAtributo(evidencia.id);
+  const detalleSecundario = columnas.includes("tipo_evidencia")
+    ? `<p><strong>Tipo de evidencia:</strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</p>`
+    : `<p><strong>Mes programado:</strong> ${escaparHtml(evidencia.mes_programado || "-")}</p>`;
+
+  return `
+    <article class="evidence-card priority-${escaparAtributo(evidencia.prioridad || "media")}">
+      <div class="evidence-card-header">
+        <span class="evidence-code">${escaparHtml(evidencia.codigo || "-")}</span>
+        <div class="evidence-badges">
+          ${renderBadge(evidencia.prioridad || "media")}
+          <span class="badge badge-estado-${escaparAtributo(evidencia.estado || "pendiente")}">${escaparHtml(formatearTexto(evidencia.estado || "pendiente"))}</span>
+        </div>
+      </div>
+      <h3>${escaparHtml(evidencia.titulo || "Evidencia")}</h3>
+      <p><strong>Responsable:</strong> ${escaparHtml(evidencia.responsable || "Sin responsable")}</p>
+      ${detalleSecundario}
+      <p><strong>Origen:</strong> ${escaparHtml(evidencia.origen_documento || "-")}</p>
+      <div class="progress-block">
+        <div class="progress-meta">
+          <span>Avance</span>
+          <strong>${avance}%</strong>
+        </div>
+        <div class="progress-bar">
+          <span style="width: ${avance}%"></span>
+        </div>
+      </div>
+      <div class="evidence-actions">
+        <button class="btn btn-info" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'detalle')">Ver detalle</button>
+        <button class="btn btn-warning" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
+        <button class="btn btn-secondary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar avance</button>
+        <button class="btn btn-primary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observación</button>
+      </div>
+    </article>
+  `;
+}
+
+function buscarEvidenciaMacroproceso(id) {
+  return Object.values(evidenciasMacroprocesosGlobal)
+    .flat()
+    .find((item) => item.id === id);
+}
+
+function abrirModalEvidenciaMacroproceso(id, modo = "detalle") {
+  const evidencia = buscarEvidenciaMacroproceso(id);
+  if (!evidencia) {
+    mostrarToast("No se encontró la evidencia seleccionada.", "warning");
+    return;
+  }
+
+  evidenciaMacroprocesoActual = evidencia;
+  const esSoloDetalle = modo === "detalle";
+  const avance = Math.min(100, Math.max(0, Number(evidencia.avance || 0)));
+
+  document.getElementById("tituloModalEvidencia").textContent = esSoloDetalle
+    ? "Detalle de evidencia"
+    : "Actualizar evidencia";
+  document.getElementById("detalleEvidenciaMacroproceso").innerHTML = `
+    <div class="evidence-detail-grid">
+      <div><span>Código</span><strong>${escaparHtml(evidencia.codigo || "-")}</strong></div>
+      <div><span>Estado</span><strong>${escaparHtml(formatearTexto(evidencia.estado || "-"))}</strong></div>
+      <div><span>Prioridad</span><strong>${escaparHtml(formatearTexto(evidencia.prioridad || "-"))}</strong></div>
+      <div><span>Avance</span><strong>${avance}%</strong></div>
+    </div>
+    <h3>${escaparHtml(evidencia.titulo || "Evidencia")}</h3>
+    <p><strong>Descripción:</strong> ${escaparHtml(evidencia.descripcion || "Sin descripción registrada.")}</p>
+    <p><strong>Tipo de evidencia:</strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</p>
+    <p><strong>Responsable:</strong> ${escaparHtml(evidencia.responsable || "Sin responsable")}</p>
+    <p><strong>Mes programado:</strong> ${escaparHtml(evidencia.mes_programado || "-")}</p>
+    <p><strong>Origen:</strong> ${escaparHtml(evidencia.origen_documento || "-")}</p>
+    <p><strong>Observación:</strong> ${escaparHtml(evidencia.observacion || "Sin observación registrada.")}</p>
+  `;
+
+  document.getElementById("editorEvidenciaMacroproceso").classList.toggle("hidden", esSoloDetalle);
+  document.getElementById("botonGuardarEvidencia").classList.toggle("hidden", esSoloDetalle);
+  document.getElementById("evidenciaEstado").value = evidencia.estado || "pendiente";
+  document.getElementById("evidenciaAvance").value = avance;
+  document.getElementById("evidenciaObservacion").value = evidencia.observacion || "";
+
+  if (!esSoloDetalle) {
+    const focoPorModo = {
+      estado: "evidenciaEstado",
+      avance: "evidenciaAvance",
+      observacion: "evidenciaObservacion"
+    };
+    setTimeout(() => document.getElementById(focoPorModo[modo] || "evidenciaEstado")?.focus(), 100);
+  }
+
+  mostrarModal("modalEvidenciaMacroproceso");
+}
+
+function cerrarModalEvidenciaMacroproceso() {
+  evidenciaMacroprocesoActual = null;
+  ocultarModal("modalEvidenciaMacroproceso");
+}
+
+async function guardarEvidenciaMacroproceso() {
+  if (!evidenciaMacroprocesoActual) return;
+
+  const avance = Number(document.getElementById("evidenciaAvance").value);
+  if (!Number.isFinite(avance) || avance < 0 || avance > 100) {
+    mostrarToast("El avance debe estar entre 0 y 100.", "warning");
+    return;
+  }
+
+  const payload = {
+    estado: document.getElementById("evidenciaEstado").value,
+    avance,
+    observacion: document.getElementById("evidenciaObservacion").value.trim()
+  };
+
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/evidencias/${evidenciaMacroprocesoActual.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo actualizar la evidencia.");
+    }
+
+    const macroproceso = evidenciaMacroprocesoActual.macroproceso;
+    cerrarModalEvidenciaMacroproceso();
+    mostrarToast("Evidencia actualizada correctamente.", "success");
+    await cargarVistaMacroproceso(macroproceso);
+  } catch (error) {
+    console.error("Error al actualizar evidencia:", error);
+    mostrarToast("Error al actualizar evidencia: " + error.message, "error");
+  }
 }
 
 async function cargarDatos() {
