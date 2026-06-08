@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.agents.planificacion_graph import ejecutar_grafo_planificacion
 from app.services.supabase_client import supabase
 
 
@@ -155,6 +156,19 @@ def listar_evidencias(
         }
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/planificacion/analizar")
+def analizar_planificacion_estrategica():
+    try:
+        resultado = ejecutar_grafo_planificacion()
+
+        return {
+            "message": "Análisis de planificación estratégica generado correctamente",
+            "data": resultado,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 

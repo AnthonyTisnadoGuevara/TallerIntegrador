@@ -343,6 +343,123 @@ async function guardarEvidenciaMacroproceso() {
   }
 }
 
+async function analizarPlanificacionIA() {
+  try {
+    mostrarToast("Analizando planificación estratégica con IA...", "info");
+
+    const response = await fetch(`${API_URL}/api/macroprocesos/planificacion/analizar`, {
+      method: "POST"
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo generar el análisis de planificación.");
+    }
+
+    abrirModalPlanificacionIA(result.data || {});
+    mostrarToast("Análisis de planificación generado correctamente.", "success");
+  } catch (error) {
+    console.error("Error al analizar planificación:", error);
+    mostrarToast("Error al analizar planificación: " + error.message, "error");
+  }
+}
+
+function renderListaPlanificacion(items, vacio = "Sin información registrada.") {
+  if (!Array.isArray(items) || items.length === 0) {
+    return `<p class="text-muted">${escaparHtml(vacio)}</p>`;
+  }
+
+  return `
+    <ul>
+      ${items.map((item) => `<li>${escaparHtml(item)}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function renderAccionesPlanificacion(acciones) {
+  if (!Array.isArray(acciones) || acciones.length === 0) {
+    return `<p class="text-muted">Sin acciones sugeridas registradas.</p>`;
+  }
+
+  return `
+    <div class="planificacion-actions-grid">
+      ${acciones.map((accion) => {
+        const prioridad = accion.prioridad || "media";
+        return `
+          <article class="planificacion-action-card priority-${escaparAtributo(prioridad)}">
+            <div class="evidence-card-header">
+              ${renderBadge(prioridad)}
+              <span class="evidence-code">${escaparHtml(accion.evidencia_relacionada || "Sin código")}</span>
+            </div>
+            <h3>${escaparHtml(accion.titulo || "Acción sugerida")}</h3>
+            <p>${escaparHtml(accion.descripcion || "Sin descripción.")}</p>
+            <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Por definir")}</p>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function abrirModalPlanificacionIA(data) {
+  const nivelRiesgo = String(data.nivel_riesgo || "medio").toLowerCase();
+  const riesgoClase = ["bajo", "medio", "alto"].includes(nivelRiesgo) ? nivelRiesgo : "medio";
+  const dashboard = data.dashboard || {};
+
+  document.getElementById("contenidoPlanificacionIA").innerHTML = `
+    <div class="analisis-section analisis-summary">
+      <div>
+        <span class="section-label">Nivel de riesgo</span>
+        <span class="risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(nivelRiesgo)}</span>
+      </div>
+      <div>
+        <span class="section-label">Avance promedio</span>
+        <p>${escaparHtml(dashboard.avance_promedio ?? 0)}%</p>
+      </div>
+      <div>
+        <span class="section-label">Modelo usado</span>
+        <p>${escaparHtml(data.modelo_usado || "-")}</p>
+      </div>
+    </div>
+
+    <div class="analisis-section">
+      <h3>Resumen</h3>
+      <p>${escaparHtml(data.resumen || "Sin resumen generado.")}</p>
+    </div>
+
+    <div class="analisis-section">
+      <h3>Riesgos detectados</h3>
+      ${renderListaPlanificacion(data.riesgos)}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Evidencias críticas</h3>
+      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Recomendaciones</h3>
+      ${renderListaPlanificacion(data.recomendaciones)}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Acciones sugeridas</h3>
+      ${renderAccionesPlanificacion(data.acciones_sugeridas)}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Observación general</h3>
+      <p>${escaparHtml(data.observacion_general || "Sin observación general.")}</p>
+    </div>
+  `;
+
+  mostrarModal("modalPlanificacionIA");
+}
+
+function cerrarModalPlanificacionIA() {
+  ocultarModal("modalPlanificacionIA");
+}
+
 async function cargarDatos() {
   await cargarDashboard();
   await cargarSilabos();
