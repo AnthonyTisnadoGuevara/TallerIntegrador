@@ -58,7 +58,10 @@
           <h2>Planificaci&oacute;n Estrat&eacute;gica</h2>
           <p>Seguimiento del Plan General de Desarrollo 2025-2028.</p>
         </div>
-        <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+        <div class="section-actions">
+          <button class="btn btn-success" type="button" onclick="analizarPlanificacionIA()">Analizar planificaci&oacute;n con IA</button>
+          <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+        </div>
       </div>
 
       <section id="dashboardPlanificacion" class="cards macroprocess-dashboard"></section>
@@ -452,6 +455,21 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalAccionesMejora()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalPlanificacionIA" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalPlanificacionIA">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalPlanificacionIA">An&aacute;lisis IA de planificaci&oacute;n estrat&eacute;gica</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalPlanificacionIA()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="contenidoPlanificacionIA" class="planificacion-ai-content"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalPlanificacionIA()">Cerrar</button>
       </div>
     </div>
   </div>
