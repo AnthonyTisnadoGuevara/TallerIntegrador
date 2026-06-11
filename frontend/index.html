@@ -23,6 +23,7 @@
       <div class="macro-hero">
         <h2>Panel de Macroprocesos</h2>
         <p>Seleccione el macroproceso que desea gestionar dentro del sistema de monitoreo del plan de mejora continua.</p>
+        <button class="btn btn-success" type="button" onclick="analizarMejoraContinuaIA()">Analizar mejora continua con IA</button>
       </div>
 
       <div class="macro-grid">
@@ -458,6 +459,21 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalAccionesMejora()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalMejoraContinuaIA" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalMejoraContinuaIA">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalMejoraContinuaIA">Diagn&oacute;stico integral de mejora continua</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalMejoraContinuaIA()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="contenidoMejoraContinuaIA" class="coordinator-modal"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalMejoraContinuaIA()">Cerrar</button>
       </div>
     </div>
   </div>

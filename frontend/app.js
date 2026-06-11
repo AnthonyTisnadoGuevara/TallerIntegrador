@@ -596,6 +596,201 @@ function cerrarModalGestionAcademicaIA() {
   ocultarModal("modalGestionAcademicaIA");
 }
 
+async function analizarMejoraContinuaIA() {
+  try {
+    mostrarToast("Analizando mejora continua con IA...", "info");
+
+    const response = await fetch(`${API_URL}/api/macroprocesos/mejora-continua/analizar`, {
+      method: "POST"
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.detail
+        || "No se pudo generar el análisis integral de mejora continua. Revise la conexión con el backend o la configuración del agente coordinador."
+      );
+    }
+
+    abrirModalMejoraContinuaIA(result.data || {});
+    mostrarToast("Diagnóstico integral generado correctamente.", "success");
+  } catch (error) {
+    console.error("Error al analizar mejora continua:", error);
+    mostrarToast(
+      "No se pudo generar el análisis integral de mejora continua. Revise la conexión con el backend o la configuración del agente coordinador.",
+      "error"
+    );
+  }
+}
+
+function renderIndicadoresGenerales(indicadores) {
+  const items = [
+    ["Macroprocesos", indicadores.total_macroprocesos ?? 0],
+    ["Evidencias", indicadores.total_evidencias_macroprocesos ?? 0],
+    ["Sílabos", indicadores.total_silabos ?? 0],
+    ["Brechas", indicadores.total_brechas ?? 0],
+    ["Brechas alta prioridad", indicadores.brechas_alta_prioridad ?? 0],
+    ["Acciones de mejora", indicadores.total_acciones_mejora ?? 0],
+    ["Acciones pendientes", indicadores.acciones_pendientes ?? 0],
+    ["Acciones en proceso", indicadores.acciones_en_proceso ?? 0],
+    ["Acciones completadas", indicadores.acciones_completadas ?? 0]
+  ];
+
+  return `
+    <div class="general-indicator-grid">
+      ${items.map(([titulo, valor]) => `
+        <div class="summary-card">
+          <span>${escaparHtml(titulo)}</span>
+          <strong>${escaparHtml(valor)}</strong>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderEstadoMacroprocesos(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return `<p class="text-muted">No se encontraron estados por macroproceso.</p>`;
+  }
+
+  return `
+    <div class="macroprocess-status-grid">
+      ${items.map((item) => {
+        const riesgo = String(item.nivel_riesgo || "medio").toLowerCase();
+        const riesgoClase = ["bajo", "medio", "alto"].includes(riesgo) ? riesgo : "medio";
+        return `
+          <article class="macroprocess-status-card risk-${escaparAtributo(riesgoClase)}">
+            <div class="evidence-card-header">
+              <h3>${escaparHtml(item.macroproceso || "Macroproceso")}</h3>
+              <span class="risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(riesgoClase)}</span>
+            </div>
+            <p><strong>Avance promedio:</strong> ${escaparHtml(item.avance_promedio ?? 0)}%</p>
+            ${renderListaPlanificacion(item.hallazgos, "Sin hallazgos registrados.")}
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderAccionesPrioritarias(acciones) {
+  if (!Array.isArray(acciones) || acciones.length === 0) {
+    return `<p class="text-muted">Sin acciones prioritarias registradas.</p>`;
+  }
+
+  return `
+    <div class="priority-actions-grid">
+      ${acciones.map((accion) => {
+        const prioridad = accion.prioridad || "media";
+        return `
+          <article class="priority-action-card priority-${escaparAtributo(prioridad)}">
+            <div class="evidence-card-header">
+              ${renderBadge(prioridad)}
+              <span class="evidence-code">${escaparHtml(accion.macroproceso_relacionado || "Mejora continua")}</span>
+            </div>
+            <h3>${escaparHtml(accion.titulo || "Acción prioritaria")}</h3>
+            <p>${escaparHtml(accion.descripcion || "Sin descripción.")}</p>
+            <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Comité académico")}</p>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function abrirModalMejoraContinuaIA(data) {
+  const indicadores = data.indicadores_generales || {};
+  const totalDatos = Number(indicadores.total_evidencias_macroprocesos || 0)
+    + Number(indicadores.total_silabos || 0)
+    + Number(indicadores.total_brechas || 0)
+    + Number(indicadores.total_acciones_mejora || 0);
+  const nivelRiesgo = String(data.nivel_riesgo_general || "medio").toLowerCase();
+  const riesgoClase = ["bajo", "medio", "alto"].includes(nivelRiesgo) ? nivelRiesgo : "medio";
+
+  if (!totalDatos) {
+    document.getElementById("contenidoMejoraContinuaIA").innerHTML = `
+      <div class="analisis-section">
+        <p class="text-muted">No se encontraron datos suficientes para generar el diagnóstico integral.</p>
+      </div>
+    `;
+    mostrarModal("modalMejoraContinuaIA");
+    return;
+  }
+
+  document.getElementById("contenidoMejoraContinuaIA").innerHTML = `
+    <div class="analisis-section analisis-summary">
+      <div>
+        <span class="section-label">Nivel de riesgo general</span>
+        <span class="general-risk-badge risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(riesgoClase)}</span>
+      </div>
+      <div>
+        <span class="section-label">Macroprocesos</span>
+        <p>${escaparHtml(indicadores.total_macroprocesos ?? 3)}</p>
+      </div>
+      <div>
+        <span class="section-label">Modelo usado</span>
+        <p>${escaparHtml(data.modelo_usado || "-")}</p>
+      </div>
+    </div>
+
+    <div class="analisis-section">
+      <h3>Resumen general</h3>
+      <p>${escaparHtml(data.resumen_general || "Sin resumen generado.")}</p>
+    </div>
+
+    <div class="analisis-section">
+      <h3>Indicadores generales</h3>
+      ${renderIndicadoresGenerales(indicadores)}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Estado por macroproceso</h3>
+      ${renderEstadoMacroprocesos(data.estado_macroprocesos)}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Macroprocesos críticos</h3>
+      ${renderListaPlanificacion(data.macroprocesos_criticos, "Sin macroprocesos críticos registrados.")}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Hallazgos integrados</h3>
+      ${renderListaPlanificacion(data.hallazgos_integrados, "Sin hallazgos integrados registrados.")}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Evidencias críticas</h3>
+      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Acciones prioritarias</h3>
+      ${renderAccionesPrioritarias(data.acciones_prioritarias)}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Recomendaciones para el comité académico</h3>
+      ${renderListaPlanificacion(data.recomendaciones_comite, "Sin recomendaciones registradas.")}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Decisión sugerida</h3>
+      <p>${escaparHtml(data.decision_sugerida || "Sin decisión sugerida.")}</p>
+    </div>
+
+    <div class="analisis-section">
+      <h3>Observación general</h3>
+      <p>${escaparHtml(data.observacion_general || "Sin observación general.")}</p>
+    </div>
+  `;
+
+  mostrarModal("modalMejoraContinuaIA");
+}
+
+function cerrarModalMejoraContinuaIA() {
+  ocultarModal("modalMejoraContinuaIA");
+}
+
 async function cargarDatos() {
   await cargarDashboard();
   await cargarSilabos();

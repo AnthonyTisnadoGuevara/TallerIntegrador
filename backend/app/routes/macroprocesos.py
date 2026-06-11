@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.agents.gestion_academica_graph import ejecutar_grafo_gestion_academica
+from app.agents.mejora_continua_coordinator import ejecutar_grafo_coordinador_mejora_continua
 from app.agents.planificacion_graph import ejecutar_grafo_planificacion
 from app.services.supabase_client import supabase
 
@@ -181,6 +182,19 @@ def analizar_gestion_academica():
 
         return {
             "message": "Análisis de gestión académica generado correctamente",
+            "data": resultado,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/mejora-continua/analizar")
+def analizar_mejora_continua():
+    try:
+        resultado = ejecutar_grafo_coordinador_mejora_continua()
+
+        return {
+            "message": "Análisis integral de mejora continua generado correctamente",
             "data": resultado,
         }
     except Exception as e:
