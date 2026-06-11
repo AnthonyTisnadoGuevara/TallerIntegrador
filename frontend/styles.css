@@ -686,9 +686,16 @@ table {
   grid-column: 1 / -1;
 }
 
-.planificacion-ai-content {
+.planificacion-ai-content,
+.ai-analysis-modal {
   display: grid;
   gap: 14px;
+}
+
+.indicator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
 }
 
 .planificacion-actions-grid {
@@ -697,7 +704,8 @@ table {
   gap: 12px;
 }
 
-.planificacion-action-card {
+.planificacion-action-card,
+.action-suggestion-card {
   display: grid;
   gap: 10px;
   padding: 14px;
@@ -707,25 +715,30 @@ table {
   background: #ffffff;
 }
 
-.planificacion-action-card.priority-alta {
+.planificacion-action-card.priority-alta,
+.action-suggestion-card.priority-alta {
   border-left-color: #dc2626;
 }
 
-.planificacion-action-card.priority-media {
+.planificacion-action-card.priority-media,
+.action-suggestion-card.priority-media {
   border-left-color: #f59e0b;
 }
 
-.planificacion-action-card.priority-baja {
+.planificacion-action-card.priority-baja,
+.action-suggestion-card.priority-baja {
   border-left-color: #16a34a;
 }
 
-.planificacion-action-card h3 {
+.planificacion-action-card h3,
+.action-suggestion-card h3 {
   margin: 0;
   color: #0f172a;
   font-size: 16px;
 }
 
-.planificacion-action-card p {
+.planificacion-action-card p,
+.action-suggestion-card p {
   margin: 0;
   color: #475569;
   font-size: 14px;

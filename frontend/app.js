@@ -460,6 +460,142 @@ function cerrarModalPlanificacionIA() {
   ocultarModal("modalPlanificacionIA");
 }
 
+async function analizarGestionAcademicaIA() {
+  try {
+    mostrarToast("Analizando gestión académica con IA...", "info");
+
+    const response = await fetch(`${API_URL}/api/macroprocesos/gestion-academica/analizar`, {
+      method: "POST"
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.detail
+        || "No se pudo generar el análisis de gestión académica. Revise la conexión con el backend o la configuración del agente."
+      );
+    }
+
+    abrirModalGestionAcademicaIA(result.data || {});
+    mostrarToast("Análisis de gestión académica generado correctamente.", "success");
+  } catch (error) {
+    console.error("Error al analizar gestión académica:", error);
+    mostrarToast(
+      "No se pudo generar el análisis de gestión académica. Revise la conexión con el backend o la configuración del agente.",
+      "error"
+    );
+  }
+}
+
+function renderIndicadoresGestionAcademica(indicadores) {
+  const items = [
+    ["Total de evidencias", indicadores.total_evidencias ?? 0],
+    ["Pendientes", indicadores.pendientes ?? 0],
+    ["En proceso", indicadores.en_proceso ?? 0],
+    ["Completadas", indicadores.completadas ?? 0],
+    ["Observadas", indicadores.observadas ?? 0],
+    ["Avance promedio", `${indicadores.avance_promedio ?? 0}%`],
+    ["Prioridad alta", indicadores.prioridad_alta ?? 0],
+    ["Sin sustento documental", indicadores.sin_sustento_documental ?? 0]
+  ];
+
+  return `
+    <div class="indicator-grid">
+      ${items.map(([titulo, valor]) => `
+        <div class="summary-card">
+          <span>${escaparHtml(titulo)}</span>
+          <strong>${escaparHtml(valor)}</strong>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function abrirModalGestionAcademicaIA(data) {
+  const indicadores = data.indicadores || {};
+  const total = Number(indicadores.total_evidencias ?? 0);
+  const nivelRiesgo = String(data.nivel_riesgo || "medio").toLowerCase();
+  const riesgoClase = ["bajo", "medio", "alto"].includes(nivelRiesgo) ? nivelRiesgo : "medio";
+
+  if (!total) {
+    document.getElementById("contenidoGestionAcademicaIA").innerHTML = `
+      <div class="analisis-section">
+        <p class="text-muted">No se encontraron evidencias suficientes para analizar la gestión académica.</p>
+      </div>
+    `;
+    mostrarModal("modalGestionAcademicaIA");
+    return;
+  }
+
+  document.getElementById("contenidoGestionAcademicaIA").innerHTML = `
+    <div class="analisis-section analisis-summary">
+      <div>
+        <span class="section-label">Nivel de riesgo</span>
+        <span class="risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(nivelRiesgo)}</span>
+      </div>
+      <div>
+        <span class="section-label">Avance promedio</span>
+        <p>${escaparHtml(indicadores.avance_promedio ?? 0)}%</p>
+      </div>
+      <div>
+        <span class="section-label">Modelo usado</span>
+        <p>${escaparHtml(data.modelo_usado || "-")}</p>
+      </div>
+    </div>
+
+    <div class="analisis-section">
+      <h3>Resumen</h3>
+      <p>${escaparHtml(data.resumen || "Sin resumen generado.")}</p>
+    </div>
+
+    <div class="analisis-section">
+      <h3>Indicadores</h3>
+      ${renderIndicadoresGestionAcademica(indicadores)}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Riesgos detectados</h3>
+      ${renderListaPlanificacion(data.riesgos)}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Acuerdos pendientes</h3>
+      ${renderListaPlanificacion(data.acuerdos_pendientes, "Sin acuerdos pendientes registrados.")}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Observaciones académicas</h3>
+      ${renderListaPlanificacion(data.observaciones_academicas, "Sin observaciones académicas registradas.")}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Evidencias críticas</h3>
+      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Recomendaciones</h3>
+      ${renderListaPlanificacion(data.recomendaciones)}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Acciones sugeridas</h3>
+      ${renderAccionesPlanificacion(data.acciones_sugeridas)}
+    </div>
+
+    <div class="analisis-section">
+      <h3>Observación general</h3>
+      <p>${escaparHtml(data.observacion_general || "Sin observación general.")}</p>
+    </div>
+  `;
+
+  mostrarModal("modalGestionAcademicaIA");
+}
+
+function cerrarModalGestionAcademicaIA() {
+  ocultarModal("modalGestionAcademicaIA");
+}
+
 async function cargarDatos() {
   await cargarDashboard();
   await cargarSilabos();
