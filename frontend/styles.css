@@ -687,15 +687,72 @@ table {
 }
 
 .planificacion-ai-content,
-.ai-analysis-modal {
+.ai-analysis-modal,
+.coordinator-modal {
   display: grid;
   gap: 14px;
 }
 
-.indicator-grid {
+.indicator-grid,
+.general-indicator-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
+}
+
+.macroprocess-status-grid,
+.priority-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.macroprocess-status-card,
+.integrated-finding-card,
+.priority-action-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-left: 5px solid #64748b;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.macroprocess-status-card.risk-alto,
+.priority-action-card.priority-alta {
+  border-left-color: #dc2626;
+}
+
+.macroprocess-status-card.risk-medio,
+.priority-action-card.priority-media {
+  border-left-color: #f59e0b;
+}
+
+.macroprocess-status-card.risk-bajo,
+.priority-action-card.priority-baja {
+  border-left-color: #16a34a;
+}
+
+.macroprocess-status-card h3,
+.integrated-finding-card h3,
+.priority-action-card h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.macroprocess-status-card p,
+.integrated-finding-card p,
+.priority-action-card p {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.general-risk-badge {
+  font-size: 13px;
 }
 
 .planificacion-actions-grid {
