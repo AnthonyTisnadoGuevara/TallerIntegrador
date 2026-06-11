@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
+import os
+import uuid
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 
 from app.agents.gestion_academica_graph import ejecutar_grafo_gestion_academica
@@ -19,6 +21,20 @@ ESTADOS_VALIDOS = {"pendiente", "en_proceso", "completado", "observado"}
 PRIORIDADES_VALIDAS = {"alta", "media", "baja"}
 ORDEN_PRIORIDAD = {"alta": 0, "media": 1, "baja": 2}
 ORDEN_ESTADO = {"pendiente": 0, "en_proceso": 1, "observado": 2, "completado": 3}
+MACROPROCESOS_ACCIONES_VALIDOS = {"planificacion_estrategica", "gestion_academica"}
+CAMPOS_HISTORIAL = {
+    "estado",
+    "prioridad",
+    "avance",
+    "observacion",
+    "archivo_url",
+    "fecha_cumplimiento",
+    "responsable",
+    "descripcion",
+    "tipo_evidencia",
+}
+EXTENSIONES_EVIDENCIA = {".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg"}
+BUCKET_EVIDENCIAS = "silabos"
 
 
 class EvidenciaCreate(BaseModel):
@@ -130,6 +146,148 @@ def _resumen_evidencias(evidencias: list[dict]) -> dict:
     }
 
 
+def _obtener_evidencia_o_404(evidencia_id: str) -> dict:
+    response = (
+        supabase.table("macroproceso_evidencias")
+        .select("*")
+        .eq("id", evidencia_id)
+        .execute()
+    )
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Evidencia no encontrada.")
+    return response.data[0]
+
+
+def _valor_historial(valor) -> Optional[str]:
+    if valor is None:
+        return None
+    return str(valor)
+
+
+def _registrar_historial_evidencia(
+    evidencia: dict,
+    campo: str,
+    valor_anterior,
+    valor_nuevo,
+    observacion: Optional[str] = None,
+    usuario: str = "backend",
+) -> None:
+    if _valor_historial(valor_anterior) == _valor_historial(valor_nuevo):
+        return
+
+    supabase.table("historial_macroproceso_evidencias").insert(
+        {
+            "evidencia_id": evidencia.get("id"),
+            "macroproceso": evidencia.get("macroproceso"),
+            "codigo": evidencia.get("codigo"),
+            "titulo": evidencia.get("titulo"),
+            "campo_modificado": campo,
+            "valor_anterior": _valor_historial(valor_anterior),
+            "valor_nuevo": _valor_historial(valor_nuevo),
+            "observacion": observacion,
+            "usuario": usuario,
+        }
+    ).execute()
+
+
+def _registrar_historial_cambios(evidencia_actual: dict, data: dict, observacion: Optional[str] = None) -> None:
+    for campo in CAMPOS_HISTORIAL:
+        if campo not in data:
+            continue
+        _registrar_historial_evidencia(
+            evidencia_actual,
+            campo,
+            evidencia_actual.get(campo),
+            data.get(campo),
+            observacion,
+        )
+
+
+def _texto_evidencia(evidencia: dict) -> str:
+    partes = [
+        evidencia.get("codigo"),
+        evidencia.get("titulo"),
+        evidencia.get("descripcion"),
+        evidencia.get("tipo_evidencia"),
+        evidencia.get("responsable"),
+        evidencia.get("observacion"),
+    ]
+    return " ".join(str(parte or "") for parte in partes).lower()
+
+
+def _es_evidencia_critica(evidencia: dict) -> bool:
+    prioridad = evidencia.get("prioridad")
+    estado = evidencia.get("estado")
+    avance = int(evidencia.get("avance") or 0)
+    texto = _texto_evidencia(evidencia)
+    palabras_clave = ["acuerdo", "docente", "estudiante", "silabo", "sílabo", "portafolio", "plan anual"]
+
+    return (
+        (prioridad == "alta" and estado == "pendiente")
+        or estado == "observado"
+        or (avance < 30 and prioridad == "alta")
+        or (estado == "completado" and not evidencia.get("archivo_url"))
+        or (estado == "en_proceso" and avance < 50)
+        or (estado == "pendiente" and any(palabra in texto for palabra in palabras_clave))
+    )
+
+
+def _descripcion_accion_evidencia(evidencia: dict) -> str:
+    estado = evidencia.get("estado") or "sin estado"
+    avance = evidencia.get("avance") or 0
+    descripcion = (
+        f"La evidencia {evidencia.get('codigo') or ''} presenta una condicion critica: "
+        f"estado {estado}, prioridad {evidencia.get('prioridad') or 'media'} y avance {avance}%. "
+        "Se requiere revisar, documentar y cerrar la evidencia dentro del ciclo de mejora continua."
+    )
+    if evidencia.get("estado") == "completado" and not evidencia.get("archivo_url"):
+        descripcion += " La evidencia figura como completada, pero no tiene archivo de sustento."
+    return descripcion
+
+
+def _payload_accion_desde_evidencia(evidencia: dict) -> dict:
+    prioridad = evidencia.get("prioridad") or "media"
+    if evidencia.get("estado") == "observado":
+        prioridad = "alta"
+    if prioridad not in PRIORIDADES_VALIDAS:
+        prioridad = "media"
+
+    return {
+        "origen_tipo": "macroproceso_evidencia",
+        "origen_id": evidencia.get("id"),
+        "titulo": f"Atender evidencia crítica: {evidencia.get('codigo') or '-'} - {evidencia.get('titulo') or 'Evidencia'}",
+        "descripcion": _descripcion_accion_evidencia(evidencia),
+        "recomendacion": "Asignar responsable, fecha de cierre y sustento documental verificable.",
+        "prioridad": prioridad,
+        "estado": "pendiente",
+        "responsable": evidencia.get("responsable"),
+        "evidencia_url": evidencia.get("archivo_url"),
+        "observacion": f"Acción generada desde evidencia del macroproceso {evidencia.get('macroproceso')}.",
+    }
+
+
+def _accion_existente_para_evidencia(evidencia_id: str) -> list:
+    response = (
+        supabase.table("acciones_mejora")
+        .select("*")
+        .eq("origen_tipo", "macroproceso_evidencia")
+        .eq("origen_id", evidencia_id)
+        .execute()
+    )
+    return response.data or []
+
+
+def _generar_accion_desde_evidencia(evidencia: dict) -> tuple[bool, dict | None]:
+    existentes = _accion_existente_para_evidencia(evidencia.get("id"))
+    if existentes:
+        return False, existentes[0]
+
+    payload = _payload_accion_desde_evidencia(evidencia)
+    response = supabase.table("acciones_mejora").insert(payload).execute()
+    accion = response.data[0] if response.data else payload
+    return True, accion
+
+
 @router.get("/evidencias")
 def listar_evidencias(
     macroproceso: Optional[str] = Query(None),
@@ -204,19 +362,11 @@ def analizar_mejora_continua():
 @router.get("/evidencias/{evidencia_id}")
 def obtener_evidencia(evidencia_id: str):
     try:
-        response = (
-            supabase.table("macroproceso_evidencias")
-            .select("*")
-            .eq("id", evidencia_id)
-            .execute()
-        )
-
-        if not response.data:
-            raise HTTPException(status_code=404, detail="Evidencia no encontrada.")
+        evidencia = _obtener_evidencia_o_404(evidencia_id)
 
         return {
             "message": "Evidencia obtenida correctamente",
-            "data": response.data[0],
+            "data": evidencia,
         }
     except HTTPException:
         raise
@@ -243,6 +393,7 @@ def crear_evidencia(evidencia: EvidenciaCreate):
 @router.put("/evidencias/{evidencia_id}")
 def actualizar_evidencia(evidencia_id: str, evidencia: EvidenciaUpdate):
     try:
+        evidencia_actual = _obtener_evidencia_o_404(evidencia_id)
         data = evidencia.model_dump(exclude_unset=True)
         data = _normalizar_payload(data)
 
@@ -261,9 +412,166 @@ def actualizar_evidencia(evidencia_id: str, evidencia: EvidenciaUpdate):
         if not response.data:
             raise HTTPException(status_code=404, detail="Evidencia no encontrada.")
 
+        _registrar_historial_cambios(
+            evidencia_actual,
+            data,
+            observacion="Actualización de evidencia desde el sistema",
+        )
+
         return {
             "message": "Evidencia actualizada correctamente",
             "data": response.data,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/evidencias/{evidencia_id}/historial")
+def obtener_historial_evidencia(evidencia_id: str):
+    try:
+        _obtener_evidencia_o_404(evidencia_id)
+        response = (
+            supabase.table("historial_macroproceso_evidencias")
+            .select("*")
+            .eq("evidencia_id", evidencia_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        return {
+            "evidencia_id": evidencia_id,
+            "historial": response.data or [],
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/evidencias/{evidencia_id}/archivo")
+async def subir_archivo_evidencia(evidencia_id: str, archivo: UploadFile = File(...)):
+    try:
+        evidencia = _obtener_evidencia_o_404(evidencia_id)
+        nombre_original = archivo.filename or ""
+        extension = os.path.splitext(nombre_original)[1].lower()
+
+        if extension not in EXTENSIONES_EVIDENCIA:
+            raise HTTPException(
+                status_code=400,
+                detail="Formato no permitido. Solo se aceptan PDF, DOCX, XLSX, PNG, JPG o JPEG.",
+            )
+
+        contenido = await archivo.read()
+        if not contenido:
+            raise HTTPException(status_code=400, detail="El archivo esta vacio.")
+
+        nombre_seguro = os.path.basename(nombre_original).replace(" ", "_")
+        codigo = (evidencia.get("codigo") or evidencia_id).replace("/", "-").replace("\\", "-")
+        ruta_storage = (
+            f"macroprocesos/{evidencia.get('macroproceso')}/{codigo}/"
+            f"{uuid.uuid4()}_{nombre_seguro}"
+        )
+
+        supabase.storage.from_(BUCKET_EVIDENCIAS).upload(
+            path=ruta_storage,
+            file=contenido,
+            file_options={
+                "content-type": archivo.content_type or "application/octet-stream",
+                "upsert": "true",
+            },
+        )
+
+        archivo_url = supabase.storage.from_(BUCKET_EVIDENCIAS).get_public_url(ruta_storage)
+        response = (
+            supabase.table("macroproceso_evidencias")
+            .update({
+                "archivo_url": archivo_url,
+                "updated_at": _ahora_iso(),
+            })
+            .eq("id", evidencia_id)
+            .execute()
+        )
+
+        _registrar_historial_evidencia(
+            evidencia,
+            "archivo_url",
+            evidencia.get("archivo_url"),
+            archivo_url,
+            observacion="Archivo de evidencia actualizado",
+        )
+
+        return {
+            "message": "Evidencia documental subida correctamente.",
+            "archivo_url": archivo_url,
+            "data": response.data,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/evidencias/{evidencia_id}/generar-accion")
+def generar_accion_desde_evidencia(evidencia_id: str):
+    try:
+        evidencia = _obtener_evidencia_o_404(evidencia_id)
+        creada, accion = _generar_accion_desde_evidencia(evidencia)
+
+        if not creada:
+            return {
+                "message": "Ya existe una acción de mejora para esta evidencia.",
+                "accion_existente": accion,
+                "data": accion,
+            }
+
+        return {
+            "message": "Acción de mejora generada correctamente.",
+            "data": accion,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/{macroproceso}/generar-acciones-desde-evidencias")
+def generar_acciones_desde_evidencias_macroproceso(macroproceso: str):
+    try:
+        macroproceso_normalizado = macroproceso.strip().lower()
+        if macroproceso_normalizado not in MACROPROCESOS_ACCIONES_VALIDOS:
+            raise HTTPException(
+                status_code=400,
+                detail="Macroproceso no permitido. Use planificacion_estrategica o gestion_academica.",
+            )
+
+        response = (
+            supabase.table("macroproceso_evidencias")
+            .select("*")
+            .eq("macroproceso", macroproceso_normalizado)
+            .execute()
+        )
+        evidencias = response.data or []
+        criticas = [evidencia for evidencia in evidencias if _es_evidencia_critica(evidencia)]
+        acciones = []
+        acciones_creadas = 0
+        acciones_existentes = 0
+
+        for evidencia in criticas:
+            creada, accion = _generar_accion_desde_evidencia(evidencia)
+            if creada:
+                acciones_creadas += 1
+            else:
+                acciones_existentes += 1
+            if accion:
+                acciones.append(accion)
+
+        return {
+            "message": "Acciones de mejora generadas correctamente",
+            "acciones_creadas": acciones_creadas,
+            "acciones_existentes": acciones_existentes,
+            "acciones": acciones,
         }
     except HTTPException:
         raise

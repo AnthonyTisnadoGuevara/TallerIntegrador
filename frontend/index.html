@@ -61,6 +61,7 @@
         </div>
         <div class="section-actions">
           <button class="btn btn-success" type="button" onclick="analizarPlanificacionIA()">Analizar planificaci&oacute;n con IA</button>
+          <button class="btn btn-warning" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('planificacion_estrategica')">Generar acciones desde planificaci&oacute;n</button>
           <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
         </div>
       </div>
@@ -103,6 +104,7 @@
         </div>
         <div class="section-actions">
           <button class="btn btn-success" type="button" onclick="analizarGestionAcademicaIA()">Analizar gesti&oacute;n acad&eacute;mica con IA</button>
+          <button class="btn btn-warning" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('gestion_academica')">Generar acciones desde gesti&oacute;n acad&eacute;mica</button>
           <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
         </div>
       </div>
@@ -539,6 +541,21 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalEvidenciaMacroproceso()">Cerrar</button>
         <button type="button" id="botonGuardarEvidencia" class="btn btn-primary" onclick="guardarEvidenciaMacroproceso()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalHistorialEvidencia" class="modal-overlay hidden evidence-history-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalHistorialEvidencia">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h2 id="tituloModalHistorialEvidencia">Historial de evidencia</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalHistorialEvidencia()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="contenidoHistorialEvidencia" class="history-timeline"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialEvidencia()">Cerrar</button>
       </div>
     </div>
   </div>
