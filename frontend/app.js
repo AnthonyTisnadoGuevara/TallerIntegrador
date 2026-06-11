@@ -10,6 +10,7 @@ let evidenciasMacroprocesosGlobal = {
   gestion_academica: []
 };
 let evidenciaMacroprocesoActual = null;
+let macroprocesoHistorialIAActual = null;
 
 const MACROPROCESOS_CONFIG = {
   planificacion_estrategica: {
@@ -439,6 +440,140 @@ function abrirModalHistorialEvidencia(historial) {
 
 function cerrarModalHistorialEvidencia() {
   ocultarModal("modalHistorialEvidencia");
+}
+
+async function verHistorialAnalisisIA(macroproceso) {
+  macroprocesoHistorialIAActual = macroproceso;
+  document.getElementById("comparacionHistorialIA").classList.add("hidden");
+  document.getElementById("detalleHistorialIA").classList.add("hidden");
+  document.getElementById("contenidoHistorialIA").innerHTML = `<p class="text-muted">Cargando historial IA...</p>`;
+  mostrarModal("modalHistorialIA");
+
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/analisis-ia/historial?macroproceso=${encodeURIComponent(macroproceso)}&limit=10`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo cargar el historial IA.");
+    }
+
+    renderHistorialAnalisisIA(result.historial || []);
+  } catch (error) {
+    console.error("Error al cargar historial IA:", error);
+    mostrarToast("No se pudo cargar el historial IA.", "error");
+  }
+}
+
+function renderHistorialAnalisisIA(historial) {
+  const contenedor = document.getElementById("contenidoHistorialIA");
+  if (!Array.isArray(historial) || historial.length === 0) {
+    contenedor.innerHTML = `<p class="text-muted">No hay análisis IA registrados todavía.</p>`;
+    return;
+  }
+
+  contenedor.innerHTML = historial.map((item) => {
+    const riesgo = String(item.nivel_riesgo || "sin-dato").toLowerCase();
+    const riesgoClase = ["bajo", "medio", "alto"].includes(riesgo) ? riesgo : "sin-dato";
+    return `
+      <article class="ia-history-card">
+        <div class="history-item-header">
+          <strong>${escaparHtml(formatearTexto(item.tipo_analisis || "-"))}</strong>
+          <span>${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</span>
+        </div>
+        <div class="evidence-badges">
+          <span class="ia-risk-badge risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(riesgo)}</span>
+          <span class="evidence-code">${escaparHtml(formatearTexto(item.macroproceso || "-"))}</span>
+        </div>
+        <p><strong>Modelo:</strong> ${escaparHtml(item.modelo_usado || "-")}</p>
+        <p>${escaparHtml(item.resumen || "Sin resumen registrado.")}</p>
+        <div class="evidence-actions">
+          <button class="btn btn-info" type="button" onclick="verDetalleAnalisisIA('${escaparAtributo(item.id)}')">Ver detalle</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function verDetalleAnalisisIA(analisisId) {
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/analisis-ia/historial/${analisisId}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.detail || "No se pudo cargar el detalle del análisis IA.");
+    }
+
+    renderDetalleAnalisisIA(data);
+  } catch (error) {
+    console.error("Error al cargar detalle IA:", error);
+    mostrarToast("No se pudo cargar el detalle del análisis IA.", "error");
+  }
+}
+
+function renderDetalleAnalisisIA(analisis) {
+  const detalle = document.getElementById("detalleHistorialIA");
+  const data = analisis.resultado_json || {};
+  detalle.classList.remove("hidden");
+  detalle.innerHTML = `
+    <div class="analisis-section">
+      <h3>Detalle del análisis</h3>
+      <p><strong>Fecha:</strong> ${escaparHtml(analisis.created_at ? new Date(analisis.created_at).toLocaleString() : "Sin fecha")}</p>
+      <p><strong>Modelo usado:</strong> ${escaparHtml(analisis.modelo_usado || data.modelo_usado || "-")}</p>
+      <p><strong>Resumen:</strong> ${escaparHtml(analisis.resumen || data.resumen || data.resumen_general || "-")}</p>
+    </div>
+    <div class="analisis-section">
+      <h3>Riesgos</h3>
+      ${renderListaPlanificacion(data.riesgos || data.hallazgos_integrados || [])}
+    </div>
+    <div class="analisis-section">
+      <h3>Recomendaciones</h3>
+      ${renderListaPlanificacion(data.recomendaciones || data.recomendaciones_comite || [])}
+    </div>
+    <div class="analisis-section">
+      <h3>Acciones sugeridas</h3>
+      ${renderAccionesPlanificacion(data.acciones_sugeridas || data.acciones_prioritarias || [])}
+    </div>
+    <div class="analisis-section">
+      <h3>Observación general</h3>
+      <p>${escaparHtml(data.observacion_general || "-")}</p>
+    </div>
+    <div class="analisis-section">
+      <h3>Resultado estructurado</h3>
+      <pre class="ia-json-detail">${escaparHtml(JSON.stringify(data, null, 2))}</pre>
+    </div>
+  `;
+}
+
+async function compararUltimosAnalisisIA() {
+  if (!macroprocesoHistorialIAActual) return;
+
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/analisis-ia/comparar?macroproceso=${encodeURIComponent(macroprocesoHistorialIAActual)}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo comparar el historial IA.");
+    }
+
+    const comparacion = result.comparacion || {};
+    const contenedor = document.getElementById("comparacionHistorialIA");
+    contenedor.classList.remove("hidden");
+    contenedor.innerHTML = `
+      <h3>Comparación de últimos análisis</h3>
+      <p><strong>Riesgo anterior:</strong> ${escaparHtml(comparacion.riesgo_anterior || "-")}</p>
+      <p><strong>Riesgo actual:</strong> ${escaparHtml(comparacion.riesgo_actual || "-")}</p>
+      <p><strong>Cambio:</strong> ${escaparHtml(formatearTexto(comparacion.cambio_riesgo || "sin_datos"))}</p>
+      <p>${escaparHtml(comparacion.resumen || "Sin resumen de comparación.")}</p>
+    `;
+  } catch (error) {
+    console.error("Error al comparar análisis IA:", error);
+    mostrarToast("No se pudo comparar el historial IA.", "error");
+  }
+}
+
+function cerrarModalHistorialIA() {
+  macroprocesoHistorialIAActual = null;
+  ocultarModal("modalHistorialIA");
 }
 
 async function generarAccionDesdeEvidencia(evidenciaId) {

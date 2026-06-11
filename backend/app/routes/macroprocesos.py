@@ -22,6 +22,13 @@ PRIORIDADES_VALIDAS = {"alta", "media", "baja"}
 ORDEN_PRIORIDAD = {"alta": 0, "media": 1, "baja": 2}
 ORDEN_ESTADO = {"pendiente": 0, "en_proceso": 1, "observado": 2, "completado": 3}
 MACROPROCESOS_ACCIONES_VALIDOS = {"planificacion_estrategica", "gestion_academica"}
+MACROPROCESOS_ANALISIS_VALIDOS = {"planificacion_estrategica", "gestion_academica", "mejora_continua"}
+TIPOS_ANALISIS_VALIDOS = {
+    "analisis_planificacion",
+    "analisis_gestion_academica",
+    "analisis_integral_mejora_continua",
+}
+ORDEN_RIESGO = {"bajo": 1, "medio": 2, "alto": 3}
 CAMPOS_HISTORIAL = {
     "estado",
     "prioridad",
@@ -288,6 +295,52 @@ def _generar_accion_desde_evidencia(evidencia: dict) -> tuple[bool, dict | None]
     return True, accion
 
 
+def _guardar_historial_analisis_ia(
+    macroproceso: str,
+    tipo_analisis: str,
+    resultado: dict,
+    nivel_riesgo: Optional[str],
+    resumen: Optional[str],
+) -> None:
+    try:
+        supabase.table("analisis_ia_macroprocesos").insert(
+            {
+                "macroproceso": macroproceso,
+                "tipo_analisis": tipo_analisis,
+                "nivel_riesgo": nivel_riesgo,
+                "resumen": resumen,
+                "resultado_json": resultado,
+                "modelo_usado": resultado.get("modelo_usado"),
+                "usuario": "backend",
+            }
+        ).execute()
+        print("[Historial IA] Análisis guardado correctamente para:", macroproceso)
+    except Exception as e:
+        print("[Historial IA] No se pudo guardar el análisis:", type(e).__name__, str(e))
+
+
+def _resumen_historial_ia(item: dict) -> dict:
+    return {
+        "id": item.get("id"),
+        "macroproceso": item.get("macroproceso"),
+        "tipo_analisis": item.get("tipo_analisis"),
+        "nivel_riesgo": item.get("nivel_riesgo"),
+        "resumen": item.get("resumen"),
+        "modelo_usado": item.get("modelo_usado"),
+        "created_at": item.get("created_at"),
+    }
+
+
+def _comparar_riesgos(anterior: Optional[str], actual: Optional[str]) -> str:
+    if anterior not in ORDEN_RIESGO or actual not in ORDEN_RIESGO:
+        return "sin_datos"
+    if ORDEN_RIESGO[actual] < ORDEN_RIESGO[anterior]:
+        return "mejoro"
+    if ORDEN_RIESGO[actual] > ORDEN_RIESGO[anterior]:
+        return "empeoro"
+    return "se_mantuvo"
+
+
 @router.get("/evidencias")
 def listar_evidencias(
     macroproceso: Optional[str] = Query(None),
@@ -324,9 +377,16 @@ def listar_evidencias(
 def analizar_planificacion_estrategica():
     try:
         resultado = ejecutar_grafo_planificacion()
+        _guardar_historial_analisis_ia(
+            macroproceso="planificacion_estrategica",
+            tipo_analisis="analisis_planificacion",
+            resultado=resultado,
+            nivel_riesgo=resultado.get("nivel_riesgo"),
+            resumen=resultado.get("resumen"),
+        )
 
         return {
-            "message": "Análisis de planificación estratégica generado correctamente",
+            "message": "An?lisis de planificaci?n estrat?gica generado correctamente",
             "data": resultado,
         }
     except Exception as e:
@@ -337,9 +397,16 @@ def analizar_planificacion_estrategica():
 def analizar_gestion_academica():
     try:
         resultado = ejecutar_grafo_gestion_academica()
+        _guardar_historial_analisis_ia(
+            macroproceso="gestion_academica",
+            tipo_analisis="analisis_gestion_academica",
+            resultado=resultado,
+            nivel_riesgo=resultado.get("nivel_riesgo"),
+            resumen=resultado.get("resumen"),
+        )
 
         return {
-            "message": "Análisis de gestión académica generado correctamente",
+            "message": "An?lisis de gesti?n acad?mica generado correctamente",
             "data": resultado,
         }
     except Exception as e:
@@ -350,11 +417,118 @@ def analizar_gestion_academica():
 def analizar_mejora_continua():
     try:
         resultado = ejecutar_grafo_coordinador_mejora_continua()
+        _guardar_historial_analisis_ia(
+            macroproceso="mejora_continua",
+            tipo_analisis="analisis_integral_mejora_continua",
+            resultado=resultado,
+            nivel_riesgo=resultado.get("nivel_riesgo_general"),
+            resumen=resultado.get("resumen_general"),
+        )
 
         return {
-            "message": "Análisis integral de mejora continua generado correctamente",
+            "message": "An?lisis integral de mejora continua generado correctamente",
             "data": resultado,
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/analisis-ia/historial")
+def listar_historial_analisis_ia(
+    macroproceso: Optional[str] = Query(None),
+    tipo_analisis: Optional[str] = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+):
+    try:
+        query = supabase.table("analisis_ia_macroprocesos").select("*")
+
+        if macroproceso:
+            macroproceso_normalizado = macroproceso.strip().lower()
+            if macroproceso_normalizado not in MACROPROCESOS_ANALISIS_VALIDOS:
+                raise HTTPException(status_code=400, detail="Macroproceso de analisis IA no valido.")
+            query = query.eq("macroproceso", macroproceso_normalizado)
+
+        if tipo_analisis:
+            tipo_normalizado = tipo_analisis.strip().lower()
+            if tipo_normalizado not in TIPOS_ANALISIS_VALIDOS:
+                raise HTTPException(status_code=400, detail="Tipo de analisis IA no valido.")
+            query = query.eq("tipo_analisis", tipo_normalizado)
+
+        response = query.order("created_at", desc=True).limit(limit).execute()
+        return {
+            "historial": [_resumen_historial_ia(item) for item in (response.data or [])],
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/analisis-ia/historial/{analisis_id}")
+def obtener_detalle_historial_analisis_ia(analisis_id: str):
+    try:
+        response = (
+            supabase.table("analisis_ia_macroprocesos")
+            .select("*")
+            .eq("id", analisis_id)
+            .execute()
+        )
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Analisis IA no encontrado.")
+
+        return response.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/analisis-ia/comparar")
+def comparar_historial_analisis_ia(macroproceso: str = Query(...)):
+    try:
+        macroproceso_normalizado = macroproceso.strip().lower()
+        if macroproceso_normalizado not in MACROPROCESOS_ANALISIS_VALIDOS:
+            raise HTTPException(status_code=400, detail="Macroproceso de analisis IA no valido.")
+
+        response = (
+            supabase.table("analisis_ia_macroprocesos")
+            .select("*")
+            .eq("macroproceso", macroproceso_normalizado)
+            .order("created_at", desc=True)
+            .limit(2)
+            .execute()
+        )
+        registros = response.data or []
+        actual = registros[0] if len(registros) >= 1 else None
+        anterior = registros[1] if len(registros) >= 2 else None
+
+        if not actual or not anterior:
+            cambio = "sin_datos"
+            resumen = "No hay dos analisis IA disponibles para comparar."
+        else:
+            cambio = _comparar_riesgos(anterior.get("nivel_riesgo"), actual.get("nivel_riesgo"))
+            if cambio == "mejoro":
+                resumen = f"El riesgo mejoro de {anterior.get('nivel_riesgo')} a {actual.get('nivel_riesgo')}."
+            elif cambio == "empeoro":
+                resumen = f"El riesgo empeoro de {anterior.get('nivel_riesgo')} a {actual.get('nivel_riesgo')}."
+            elif cambio == "se_mantuvo":
+                resumen = f"El riesgo se mantuvo en {actual.get('nivel_riesgo')}."
+            else:
+                resumen = "No se pudo determinar el cambio de riesgo."
+
+        return {
+            "macroproceso": macroproceso_normalizado,
+            "analisis_actual": _resumen_historial_ia(actual) if actual else None,
+            "analisis_anterior": _resumen_historial_ia(anterior) if anterior else None,
+            "comparacion": {
+                "riesgo_anterior": anterior.get("nivel_riesgo") if anterior else None,
+                "riesgo_actual": actual.get("nivel_riesgo") if actual else None,
+                "cambio_riesgo": cambio,
+                "resumen": resumen,
+            },
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
