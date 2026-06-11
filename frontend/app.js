@@ -211,9 +211,13 @@ function renderEvidenciasMacroproceso(macroproceso) {
 function renderEvidenceCard(evidencia, columnas) {
   const avance = Math.min(100, Math.max(0, Number(evidencia.avance || 0)));
   const id = escaparAtributo(evidencia.id);
+  const archivoUrl = normalizarEnlaceArchivo(evidencia.archivo_url);
   const detalleSecundario = columnas.includes("tipo_evidencia")
     ? `<p><strong>Tipo de evidencia:</strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</p>`
     : `<p><strong>Mes programado:</strong> ${escaparHtml(evidencia.mes_programado || "-")}</p>`;
+  const bloqueArchivo = archivoUrl
+    ? `<button class="btn btn-info evidence-file-badge" type="button" onclick="verArchivoEvidencia('${escaparAtributo(archivoUrl)}')">Ver evidencia</button>`
+    : `<span class="no-file-warning">Sin archivo de sustento</span>`;
 
   return `
     <article class="evidence-card priority-${escaparAtributo(evidencia.prioridad || "media")}">
@@ -228,6 +232,9 @@ function renderEvidenceCard(evidencia, columnas) {
       <p><strong>Responsable:</strong> ${escaparHtml(evidencia.responsable || "Sin responsable")}</p>
       ${detalleSecundario}
       <p><strong>Origen:</strong> ${escaparHtml(evidencia.origen_documento || "-")}</p>
+      <div class="evidence-file-row">
+        ${bloqueArchivo}
+      </div>
       <div class="progress-block">
         <div class="progress-meta">
           <span>Avance</span>
@@ -241,7 +248,10 @@ function renderEvidenceCard(evidencia, columnas) {
         <button class="btn btn-info" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'detalle')">Ver detalle</button>
         <button class="btn btn-warning" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
         <button class="btn btn-secondary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar avance</button>
-        <button class="btn btn-primary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observación</button>
+        <button class="btn btn-primary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observaci?n</button>
+        <button class="btn btn-success evidence-upload-btn" type="button" onclick="subirArchivoEvidenciaMacroproceso('${id}')">Subir evidencia</button>
+        <button class="btn btn-secondary" type="button" onclick="verHistorialEvidenciaMacroproceso('${id}')">Ver historial</button>
+        <button class="btn btn-warning" type="button" onclick="generarAccionDesdeEvidencia('${id}')">Generar acci?n</button>
       </div>
     </article>
   `;
@@ -340,6 +350,135 @@ async function guardarEvidenciaMacroproceso() {
   } catch (error) {
     console.error("Error al actualizar evidencia:", error);
     mostrarToast("Error al actualizar evidencia: " + error.message, "error");
+  }
+}
+
+function verArchivoEvidencia(url) {
+  const archivoUrl = normalizarEnlaceArchivo(url);
+  if (!archivoUrl) {
+    mostrarToast("La evidencia no tiene un enlace válido.", "warning");
+    return;
+  }
+  window.open(archivoUrl, "_blank", "noopener");
+}
+
+function subirArchivoEvidenciaMacroproceso(evidenciaId) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".pdf,.docx,.xlsx,.png,.jpg,.jpeg";
+  input.onchange = async () => {
+    const archivo = input.files?.[0];
+    if (!archivo) return;
+    await enviarArchivoEvidenciaMacroproceso(evidenciaId, archivo);
+  };
+  input.click();
+}
+
+async function enviarArchivoEvidenciaMacroproceso(evidenciaId, archivo) {
+  const evidencia = buscarEvidenciaMacroproceso(evidenciaId);
+  const formData = new FormData();
+  formData.append("archivo", archivo);
+
+  try {
+    mostrarToast("Subiendo evidencia documental...", "info");
+    const response = await fetch(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/archivo`, {
+      method: "POST",
+      body: formData
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo subir la evidencia documental.");
+    }
+
+    mostrarToast("Evidencia documental subida correctamente.", "success");
+    if (evidencia?.macroproceso) {
+      await cargarVistaMacroproceso(evidencia.macroproceso);
+    }
+  } catch (error) {
+    console.error("Error al subir evidencia documental:", error);
+    mostrarToast("No se pudo subir la evidencia documental.", "error");
+  }
+}
+
+async function verHistorialEvidenciaMacroproceso(evidenciaId) {
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/historial`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo obtener el historial.");
+    }
+
+    abrirModalHistorialEvidencia(result.historial || []);
+  } catch (error) {
+    console.error("Error al cargar historial de evidencia:", error);
+    mostrarToast("No se pudo cargar el historial de la evidencia.", "error");
+  }
+}
+
+function abrirModalHistorialEvidencia(historial) {
+  const contenedor = document.getElementById("contenidoHistorialEvidencia");
+  if (!Array.isArray(historial) || historial.length === 0) {
+    contenedor.innerHTML = `<p class="text-muted">No hay cambios registrados para esta evidencia.</p>`;
+  } else {
+    contenedor.innerHTML = historial.map((item) => `
+      <article class="history-item">
+        <div class="history-item-header">
+          <strong>${escaparHtml(item.campo_modificado || "-")}</strong>
+          <span>${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</span>
+        </div>
+        <p><strong>Valor anterior:</strong> ${escaparHtml(item.valor_anterior ?? "-")}</p>
+        <p><strong>Valor nuevo:</strong> ${escaparHtml(item.valor_nuevo ?? "-")}</p>
+        <p><strong>Observación:</strong> ${escaparHtml(item.observacion || "-")}</p>
+      </article>
+    `).join("");
+  }
+  mostrarModal("modalHistorialEvidencia");
+}
+
+function cerrarModalHistorialEvidencia() {
+  ocultarModal("modalHistorialEvidencia");
+}
+
+async function generarAccionDesdeEvidencia(evidenciaId) {
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/generar-accion`, {
+      method: "POST"
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo generar la acción de mejora.");
+    }
+
+    mostrarToast(result.message || "Acción de mejora generada correctamente.", "success");
+    await cargarDashboardAccionesMejora();
+  } catch (error) {
+    console.error("Error al generar acción desde evidencia:", error);
+    mostrarToast("No se pudo generar la acción de mejora.", "error");
+  }
+}
+
+async function generarAccionesDesdeEvidenciasMacroproceso(macroproceso) {
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/${macroproceso}/generar-acciones-desde-evidencias`, {
+      method: "POST"
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudieron generar acciones de mejora.");
+    }
+
+    mostrarToast(
+      `Se crearon ${result.acciones_creadas || 0} acciones de mejora. Ya existían ${result.acciones_existentes || 0} acciones.`,
+      "success"
+    );
+    await cargarDashboardAccionesMejora();
+  } catch (error) {
+    console.error("Error al generar acciones desde evidencias:", error);
+    mostrarToast("No se pudieron generar acciones de mejora desde evidencias.", "error");
   }
 }
 
