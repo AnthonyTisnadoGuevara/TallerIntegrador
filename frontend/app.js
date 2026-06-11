@@ -620,40 +620,76 @@ async function cargarAlertasActivasMacroproceso(macroproceso) {
 
 async function generarAlertasInteligentes() {
   try {
-    mostrarToast("Generando alertas inteligentes...", "info");
-    const response = await fetch(`${API_URL}/api/macroprocesos/alertas/generar`, {
-      method: "POST"
+    mostrarNotificacion("Generando alertas inteligentes...", "info");
+
+    const url = `${API_URL}/api/macroprocesos/alertas/generar`;
+    console.log("[Frontend Alertas] API_URL:", API_URL);
+    console.log("[Frontend Alertas] Llamando a:", url);
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
     });
-    const result = await response.json();
+    const data = await response.json();
+    console.log("[Frontend Alertas] Respuesta:", data);
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudieron generar alertas inteligentes.");
+      throw new Error(data.detail || data.message || "No se pudieron generar alertas inteligentes.");
     }
 
-    mostrarToast(`Alertas creadas: ${result.alertas_creadas || 0}`, "success");
-    await cargarSemaforoCumplimiento();
-    await verAlertasInteligentes();
+    mostrarNotificacion(
+      `Alertas generadas correctamente. Creadas: ${data.alertas_creadas || 0}. Existentes: ${data.alertas_existentes || 0}.`,
+      "success"
+    );
+
+    await cargarSemaforoMacroprocesos();
+
+    if (typeof cargarAlertasInteligentes === "function") {
+      await cargarAlertasInteligentes();
+    }
   } catch (error) {
-    console.error("Error al generar alertas inteligentes:", error);
-    mostrarToast("Error al generar alertas: " + error.message, "error");
+    console.error("[Frontend Alertas] Error:", error);
+    mostrarNotificacion(error.message || "No se pudieron generar alertas inteligentes.", "error");
+  }
+}
+
+async function cargarAlertasInteligentes() {
+  try {
+    const url = `${API_URL}/api/macroprocesos/alertas?estado=activa`;
+    console.log("[Frontend Alertas] Llamando a:", url);
+
+    const response = await fetch(url);
+    const data = await response.json();
+    console.log("[Frontend Alertas] Respuesta:", data);
+
+    if (!response.ok) {
+      throw new Error(data.detail || data.message || "No se pudieron cargar las alertas.");
+    }
+
+    alertasInteligentesGlobal = data.alertas || [];
+    renderAlertasInteligentes(alertasInteligentesGlobal);
+    refrescarBadgesAlertasEvidencias();
+    return alertasInteligentesGlobal;
+  } catch (error) {
+    console.error("[Frontend Alertas] Error:", error);
+    mostrarNotificacion(error.message || "No se pudieron cargar las alertas inteligentes.", "error");
+    return [];
   }
 }
 
 async function verAlertasInteligentes() {
-  try {
-    const response = await fetch(`${API_URL}/api/macroprocesos/alertas?estado=activa`);
-    const result = await response.json();
+  await cargarAlertasInteligentes();
+  mostrarModal("modalAlertasInteligentes");
+}
 
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudieron cargar las alertas.");
-    }
-
-    alertasInteligentesGlobal = result.alertas || [];
-    renderAlertasInteligentes(alertasInteligentesGlobal);
-    mostrarModal("modalAlertasInteligentes");
-  } catch (error) {
-    console.error("Error al cargar alertas inteligentes:", error);
-    mostrarToast("No se pudieron cargar las alertas inteligentes.", "error");
+function refrescarBadgesAlertasEvidencias() {
+  if (!document.getElementById("macroPlanificacion")?.classList.contains("hidden")) {
+    renderEvidenciasMacroproceso("planificacion_estrategica");
+  }
+  if (!document.getElementById("macroGestionAcademica")?.classList.contains("hidden")) {
+    renderEvidenciasMacroproceso("gestion_academica");
   }
 }
 
@@ -712,6 +748,10 @@ async function actualizarAlertaInteligente(alertaId, estado) {
 
 function cerrarModalAlertasInteligentes() {
   ocultarModal("modalAlertasInteligentes");
+}
+
+async function cargarSemaforoMacroprocesos() {
+  await cargarSemaforoCumplimiento();
 }
 
 async function cargarSemaforoCumplimiento() {
