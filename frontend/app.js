@@ -213,30 +213,45 @@ function renderEvidenceCard(evidencia, columnas) {
   const avance = Math.min(100, Math.max(0, Number(evidencia.avance || 0)));
   const id = escaparAtributo(evidencia.id);
   const archivoUrl = normalizarEnlaceArchivo(evidencia.archivo_url);
+  const nombreArchivo = archivoUrl ? obtenerNombreArchivoEvidencia(archivoUrl) : "";
   const detalleSecundario = columnas.includes("tipo_evidencia")
-    ? `<p><strong>Tipo de evidencia:</strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</p>`
-    : `<p><strong>Mes programado:</strong> ${escaparHtml(evidencia.mes_programado || "-")}</p>`;
-  const bloqueArchivo = archivoUrl
-    ? `<button class="btn btn-info evidence-file-badge" type="button" onclick="verArchivoEvidencia('${escaparAtributo(archivoUrl)}')">Ver evidencia</button>`
-    : `<span class="no-file-warning">Sin archivo de sustento</span>`;
+    ? `<p><span>Tipo de evidencia</span><strong>${escaparHtml(evidencia.tipo_evidencia || "-")}</strong></p>`
+    : `<p><span>Mes programado</span><strong>${escaparHtml(evidencia.mes_programado || "-")}</strong></p>`;
+  const validarButton = archivoUrl
+    ? `<button class="btn btn-primary" type="button" onclick="validarEvidenciaIA('${id}')">Validar evidencia con IA</button>`
+    : `<button class="btn btn-secondary" type="button" onclick="mostrarToast('Primero suba un archivo de sustento para validar esta evidencia.', 'warning')">Validar evidencia con IA</button>`;
 
   return `
-    <article class="evidence-card priority-${escaparAtributo(evidencia.prioridad || "media")}">
-      <div class="evidence-card-header">
-        <span class="evidence-code">${escaparHtml(evidencia.codigo || "-")}</span>
+    <article class="evidence-card evidence-card-modern priority-${escaparAtributo(evidencia.prioridad || "media")}">
+      <div class="evidence-card-header evidence-card-top">
+        <div class="evidence-title-group">
+          <span class="evidence-code">${escaparHtml(evidencia.codigo || "-")}</span>
+          <h3>${escaparHtml(evidencia.titulo || "Evidencia")}</h3>
+        </div>
         <div class="evidence-badges">
           ${renderBadge(evidencia.prioridad || "media")}
           <span class="badge badge-estado-${escaparAtributo(evidencia.estado || "pendiente")}">${escaparHtml(formatearTexto(evidencia.estado || "pendiente"))}</span>
         </div>
       </div>
-      <h3>${escaparHtml(evidencia.titulo || "Evidencia")}</h3>
-      <p><strong>Responsable:</strong> ${escaparHtml(evidencia.responsable || "Sin responsable")}</p>
-      ${detalleSecundario}
-      <p><strong>Origen:</strong> ${escaparHtml(evidencia.origen_documento || "-")}</p>
-      <div class="evidence-file-row">
-        ${bloqueArchivo}
+
+      <div class="evidence-card-body">
+        <p><span>Responsable</span><strong>${escaparHtml(evidencia.responsable || "Sin responsable")}</strong></p>
+        ${detalleSecundario}
+        <p><span>Origen</span><strong>${escaparHtml(evidencia.origen_documento || "-")}</strong></p>
       </div>
-      <div class="progress-block">
+
+      <div class="evidence-file-panel ${archivoUrl ? "has-file" : "no-file"}">
+        <div>
+          <span class="section-label">Sustento documental</span>
+          <strong>${archivoUrl ? "Archivo registrado" : "Sin archivo de sustento"}</strong>
+          <small>${archivoUrl ? escaparHtml(nombreArchivo) : "Suba un PDF o DOCX para validar la evidencia con IA."}</small>
+        </div>
+        ${archivoUrl
+          ? `<button class="btn btn-info evidence-file-badge" type="button" onclick="verArchivoEvidencia('${escaparAtributo(archivoUrl)}')">Ver evidencia</button>`
+          : `<span class="no-file-warning">Pendiente de carga</span>`}
+      </div>
+
+      <div class="progress-block evidence-progress">
         <div class="progress-meta">
           <span>Avance</span>
           <strong>${avance}%</strong>
@@ -245,17 +260,32 @@ function renderEvidenceCard(evidencia, columnas) {
           <span style="width: ${avance}%"></span>
         </div>
       </div>
-      <div class="evidence-actions">
+
+      <div class="evidence-actions evidence-actions-primary">
         <button class="btn btn-info" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'detalle')">Ver detalle</button>
         <button class="btn btn-warning" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
+        ${validarButton}
+      </div>
+      <div class="evidence-actions evidence-actions-secondary">
         <button class="btn btn-secondary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar avance</button>
-        <button class="btn btn-primary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observaci?n</button>
+        <button class="btn btn-secondary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observaci&oacute;n</button>
         <button class="btn btn-success evidence-upload-btn" type="button" onclick="subirArchivoEvidenciaMacroproceso('${id}')">Subir evidencia</button>
+        <button class="btn btn-secondary" type="button" onclick="verUltimaValidacionEvidenciaIA('${id}')">Ver &uacute;ltima validaci&oacute;n IA</button>
         <button class="btn btn-secondary" type="button" onclick="verHistorialEvidenciaMacroproceso('${id}')">Ver historial</button>
-        <button class="btn btn-warning" type="button" onclick="generarAccionDesdeEvidencia('${id}')">Generar acci?n</button>
+        <button class="btn btn-secondary" type="button" onclick="generarAccionDesdeEvidencia('${id}')">Generar acci&oacute;n</button>
       </div>
     </article>
   `;
+}
+
+function obtenerNombreArchivoEvidencia(url) {
+  try {
+    const pathname = new URL(url).pathname;
+    const nombre = decodeURIComponent(pathname.split("/").pop() || "Archivo de sustento");
+    return nombre.replace(/^[a-f0-9-]{8,}_/i, "") || "Archivo de sustento";
+  } catch {
+    return "Archivo de sustento";
+  }
 }
 
 function buscarEvidenciaMacroproceso(id) {
@@ -440,6 +470,118 @@ function abrirModalHistorialEvidencia(historial) {
 
 function cerrarModalHistorialEvidencia() {
   ocultarModal("modalHistorialEvidencia");
+}
+
+async function validarEvidenciaIA(evidenciaId) {
+  const evidencia = buscarEvidenciaMacroproceso(evidenciaId);
+  if (!normalizarEnlaceArchivo(evidencia?.archivo_url)) {
+    mostrarToast("Primero suba un archivo de sustento para validar esta evidencia.", "warning");
+    return;
+  }
+
+  try {
+    mostrarToast("Validando evidencia documental con IA...", "info");
+    const response = await fetch(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/validar-ia`, {
+      method: "POST"
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo validar la evidencia con IA.");
+    }
+
+    mostrarToast("Validacion IA generada correctamente.", "success");
+    abrirModalValidacionEvidenciaIA(result.data || {});
+  } catch (error) {
+    console.error("Error al validar evidencia con IA:", error);
+    mostrarToast("Error al validar evidencia: " + error.message, "error");
+  }
+}
+
+async function verUltimaValidacionEvidenciaIA(evidenciaId) {
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/validacion-ia`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo obtener la validacion IA.");
+    }
+
+    if (!result.data) {
+      mostrarToast("Esta evidencia todavia no tiene validaciones IA.", "info");
+      return;
+    }
+
+    abrirModalValidacionEvidenciaIA(result.data);
+  } catch (error) {
+    console.error("Error al obtener validacion IA:", error);
+    mostrarToast("No se pudo obtener la validacion IA.", "error");
+  }
+}
+
+function abrirModalValidacionEvidenciaIA(validacion) {
+  const contenedor = document.getElementById("contenidoValidacionEvidenciaIA");
+  if (!contenedor) return;
+
+  const nivel = String(validacion.nivel_validez || "sin-dato").toLowerCase();
+  const nivelClase = ["alto", "medio", "bajo"].includes(nivel) ? nivel : "sin-dato";
+  const pertinencia = String(validacion.pertinencia || "sin dato").replaceAll("_", " ");
+  const fecha = validacion.created_at
+    ? new Date(validacion.created_at).toLocaleString()
+    : "Sin fecha registrada";
+
+  contenedor.innerHTML = `
+    <div class="analisis-section validation-summary">
+      <div>
+        <span class="section-label">Nivel de validez</span>
+        <span class="ia-validity-badge validity-${escaparAtributo(nivelClase)}">${escaparHtml(formatearTexto(nivel))}</span>
+      </div>
+      <div>
+        <span class="section-label">Pertinencia</span>
+        <strong>${escaparHtml(formatearTexto(pertinencia))}</strong>
+      </div>
+      <div>
+        <span class="section-label">Fecha</span>
+        <strong>${escaparHtml(fecha)}</strong>
+      </div>
+    </div>
+    <div class="analisis-section">
+      <h3>Resumen</h3>
+      ${renderTextoAnalisis(validacion.resumen)}
+    </div>
+    <div class="validation-detail-grid">
+      <div class="analisis-section">
+        <h3>Elementos detectados</h3>
+        ${renderLista(validacion.elementos_detectados)}
+      </div>
+      <div class="analisis-section">
+        <h3>Elementos faltantes</h3>
+        ${renderLista(validacion.elementos_faltantes)}
+      </div>
+      <div class="analisis-section">
+        <h3>Observaciones</h3>
+        ${renderLista(validacion.observaciones)}
+      </div>
+      <div class="analisis-section">
+        <h3>Recomendaciones</h3>
+        ${renderLista(validacion.recomendaciones)}
+      </div>
+    </div>
+    <div class="analisis-section">
+      <h3>Acci&oacute;n sugerida</h3>
+      ${renderTextoAnalisis(validacion.accion_sugerida)}
+    </div>
+    <div class="analisis-section">
+      <h3>Modelo usado</h3>
+      <p>${escaparHtml(validacion.modelo_usado || "-")}</p>
+    </div>
+  `;
+
+  mostrarModal("modalValidacionEvidenciaIA");
+}
+
+function cerrarModalValidacionEvidenciaIA() {
+  ocultarModal("modalValidacionEvidenciaIA");
 }
 
 async function verHistorialAnalisisIA(macroproceso) {
