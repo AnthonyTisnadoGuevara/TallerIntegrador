@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.agents.gestion_academica_graph import ejecutar_grafo_gestion_academica
 from app.agents.planificacion_graph import ejecutar_grafo_planificacion
 from app.services.supabase_client import supabase
 
@@ -167,6 +168,19 @@ def analizar_planificacion_estrategica():
 
         return {
             "message": "Análisis de planificación estratégica generado correctamente",
+            "data": resultado,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/gestion-academica/analizar")
+def analizar_gestion_academica():
+    try:
+        resultado = ejecutar_grafo_gestion_academica()
+
+        return {
+            "message": "Análisis de gestión académica generado correctamente",
             "data": resultado,
         }
     except Exception as e:

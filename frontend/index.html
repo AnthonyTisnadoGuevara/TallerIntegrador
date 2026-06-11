@@ -100,7 +100,10 @@
           <h2>Gesti&oacute;n Acad&eacute;mica del Programa de Estudio</h2>
           <p>Seguimiento de actualizaci&oacute;n curricular, actas, acuerdos y evidencias acad&eacute;micas.</p>
         </div>
-        <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+        <div class="section-actions">
+          <button class="btn btn-success" type="button" onclick="analizarGestionAcademicaIA()">Analizar gesti&oacute;n acad&eacute;mica con IA</button>
+          <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+        </div>
       </div>
 
       <section id="dashboardGestionAcademica" class="cards macroprocess-dashboard"></section>
@@ -470,6 +473,21 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalPlanificacionIA()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalGestionAcademicaIA" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalGestionAcademicaIA">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalGestionAcademicaIA">An&aacute;lisis IA de gesti&oacute;n acad&eacute;mica</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalGestionAcademicaIA()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="contenidoGestionAcademicaIA" class="ai-analysis-modal"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalGestionAcademicaIA()">Cerrar</button>
       </div>
     </div>
   </div>
