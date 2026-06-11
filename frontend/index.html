@@ -24,6 +24,7 @@
         <h2>Panel de Macroprocesos</h2>
         <p>Seleccione el macroproceso que desea gestionar dentro del sistema de monitoreo del plan de mejora continua.</p>
         <button class="btn btn-success" type="button" onclick="analizarMejoraContinuaIA()">Analizar mejora continua con IA</button>
+        <button class="btn btn-secondary" type="button" onclick="verHistorialAnalisisIA('mejora_continua')">Ver historial integral IA</button>
       </div>
 
       <div class="macro-grid">
@@ -61,6 +62,7 @@
         </div>
         <div class="section-actions">
           <button class="btn btn-success" type="button" onclick="analizarPlanificacionIA()">Analizar planificaci&oacute;n con IA</button>
+          <button class="btn btn-info" type="button" onclick="verHistorialAnalisisIA('planificacion_estrategica')">Ver historial IA</button>
           <button class="btn btn-warning" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('planificacion_estrategica')">Generar acciones desde planificaci&oacute;n</button>
           <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
         </div>
@@ -104,6 +106,7 @@
         </div>
         <div class="section-actions">
           <button class="btn btn-success" type="button" onclick="analizarGestionAcademicaIA()">Analizar gesti&oacute;n acad&eacute;mica con IA</button>
+          <button class="btn btn-info" type="button" onclick="verHistorialAnalisisIA('gestion_academica')">Ver historial IA</button>
           <button class="btn btn-warning" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('gestion_academica')">Generar acciones desde gesti&oacute;n acad&eacute;mica</button>
           <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
         </div>
@@ -556,6 +559,26 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialEvidencia()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalHistorialIA" class="modal-overlay hidden ia-history-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalHistorialIA">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalHistorialIA">Historial de an&aacute;lisis IA</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalHistorialIA()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="section-actions ia-history-actions">
+          <button type="button" class="btn btn-info" onclick="compararUltimosAnalisisIA()">Comparar &uacute;ltimos an&aacute;lisis</button>
+        </div>
+        <div id="comparacionHistorialIA" class="ia-comparison-box hidden"></div>
+        <div id="contenidoHistorialIA" class="ia-timeline"></div>
+        <div id="detalleHistorialIA" class="ia-history-detail hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialIA()">Cerrar</button>
       </div>
     </div>
   </div>

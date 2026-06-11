@@ -763,6 +763,64 @@ table {
   line-height: 1.5;
 }
 
+.ia-timeline {
+  display: grid;
+  gap: 12px;
+}
+
+.ia-history-actions {
+  justify-content: flex-start;
+  margin-bottom: 12px;
+}
+
+.ia-history-card,
+.ia-history-detail,
+.ia-comparison-box {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-left: 5px solid #2563eb;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.ia-history-card p,
+.ia-history-detail p,
+.ia-comparison-box p {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ia-comparison-box {
+  margin-bottom: 14px;
+  background: #f8fafc;
+}
+
+.ia-comparison-box h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.ia-risk-badge {
+  font-size: 12px;
+}
+
+.ia-json-detail {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
 .modal-field-full {
   grid-column: 1 / -1;
 }
