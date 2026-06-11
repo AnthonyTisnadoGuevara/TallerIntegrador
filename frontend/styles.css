@@ -559,6 +559,47 @@ table {
   line-height: 1.35;
 }
 
+.evidence-card-modern {
+  gap: 14px;
+  border-radius: 16px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
+.evidence-card-top {
+  align-items: flex-start;
+}
+
+.evidence-title-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.evidence-card-body {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.evidence-card-body p {
+  display: grid;
+  gap: 3px;
+}
+
+.evidence-card-body span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.evidence-card-body strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
 .evidence-card p {
   margin: 0;
   color: #475569;
@@ -571,6 +612,47 @@ table {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.evidence-file-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.evidence-file-panel.has-file {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.evidence-file-panel.no-file {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.evidence-file-panel strong,
+.evidence-file-panel small {
+  display: block;
+}
+
+.evidence-file-panel strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.evidence-file-panel small {
+  max-width: 260px;
+  margin-top: 3px;
+  color: #64748b;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .evidence-upload-btn {
@@ -634,6 +716,10 @@ table {
   background: linear-gradient(90deg, #2563eb, #16a34a);
 }
 
+.evidence-progress {
+  padding: 4px 2px 0;
+}
+
 .evidence-actions {
   display: flex;
   flex-wrap: wrap;
@@ -644,6 +730,31 @@ table {
 .evidence-actions .btn {
   padding: 8px 10px;
   font-size: 12px;
+}
+
+.evidence-actions-primary {
+  margin-top: 2px;
+  padding-top: 2px;
+}
+
+.evidence-actions-primary .btn {
+  min-height: 36px;
+}
+
+.evidence-actions-secondary {
+  margin-top: 0;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.evidence-actions-secondary .btn {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.evidence-actions-secondary .btn:hover {
+  background: #e2e8f0;
 }
 
 .badge-alta {
@@ -806,6 +917,49 @@ table {
 
 .ia-risk-badge {
   font-size: 12px;
+}
+
+.validation-summary,
+.validation-detail-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.validation-summary {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  background: #ffffff;
+}
+
+.validation-detail-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.ia-validity-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.validity-alto {
+  background: #16a34a;
+}
+
+.validity-medio {
+  background: #f59e0b;
+}
+
+.validity-bajo {
+  background: #dc2626;
+}
+
+.validity-sin-dato {
+  background: #64748b;
 }
 
 .ia-json-detail {

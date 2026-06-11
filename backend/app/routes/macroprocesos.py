@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from app.agents.gestion_academica_graph import ejecutar_grafo_gestion_academica
 from app.agents.mejora_continua_coordinator import ejecutar_grafo_coordinador_mejora_continua
 from app.agents.planificacion_graph import ejecutar_grafo_planificacion
+from app.agents.validacion_evidencia_graph import ejecutar_grafo_validacion_evidencia
 from app.services.supabase_client import supabase
 
 
@@ -541,6 +542,78 @@ def obtener_evidencia(evidencia_id: str):
         return {
             "message": "Evidencia obtenida correctamente",
             "data": evidencia,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/evidencias/{evidencia_id}/validar-ia")
+def validar_evidencia_con_ia(evidencia_id: str):
+    try:
+        evidencia = _obtener_evidencia_o_404(evidencia_id)
+        if not evidencia.get("archivo_url"):
+            raise HTTPException(
+                status_code=400,
+                detail="Primero suba un archivo de sustento para validar esta evidencia.",
+            )
+
+        try:
+            resultado = ejecutar_grafo_validacion_evidencia(evidencia_id)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+        return {
+            "message": "Validacion IA de evidencia generada correctamente",
+            "data": resultado,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/evidencias/{evidencia_id}/validacion-ia")
+def obtener_ultima_validacion_evidencia_ia(evidencia_id: str):
+    try:
+        _obtener_evidencia_o_404(evidencia_id)
+        response = (
+            supabase.table("validacion_ia_macroproceso_evidencias")
+            .select("*")
+            .eq("evidencia_id", evidencia_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+
+        return {
+            "message": "Ultima validacion IA obtenida correctamente"
+            if response.data
+            else "No hay validaciones IA registradas para esta evidencia.",
+            "data": response.data[0] if response.data else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/evidencias/{evidencia_id}/validacion-ia/historial")
+def obtener_historial_validacion_evidencia_ia(evidencia_id: str):
+    try:
+        _obtener_evidencia_o_404(evidencia_id)
+        response = (
+            supabase.table("validacion_ia_macroproceso_evidencias")
+            .select("*")
+            .eq("evidencia_id", evidencia_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        return {
+            "evidencia_id": evidencia_id,
+            "historial": response.data or [],
         }
     except HTTPException:
         raise
