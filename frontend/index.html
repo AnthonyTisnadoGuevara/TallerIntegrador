@@ -25,7 +25,22 @@
         <p>Seleccione el macroproceso que desea gestionar dentro del sistema de monitoreo del plan de mejora continua.</p>
         <button class="btn btn-success" type="button" onclick="analizarMejoraContinuaIA()">Analizar mejora continua con IA</button>
         <button class="btn btn-secondary" type="button" onclick="verHistorialAnalisisIA('mejora_continua')">Ver historial integral IA</button>
+        <button class="btn btn-warning" type="button" onclick="generarAlertasInteligentes()">Generar alertas inteligentes</button>
+        <button class="btn btn-info" type="button" onclick="verAlertasInteligentes()">Ver alertas inteligentes</button>
       </div>
+
+      <section class="traffic-light-dashboard">
+        <div class="panel-header macroprocess-panel-header">
+          <div>
+            <h2>Sem&aacute;foro de cumplimiento</h2>
+            <p>Vista r&aacute;pida de avance, alertas activas y riesgo IA por macroproceso.</p>
+          </div>
+          <button class="btn btn-secondary" type="button" onclick="cargarSemaforoCumplimiento()">Actualizar</button>
+        </div>
+        <div id="semaforoCumplimiento" class="traffic-light-grid">
+          <p class="text-muted">Cargando sem&aacute;foro de cumplimiento...</p>
+        </div>
+      </section>
 
       <div class="macro-grid">
         <article class="macro-card">
@@ -559,6 +574,21 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialEvidencia()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalAlertasInteligentes" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalAlertasInteligentes">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalAlertasInteligentes">Alertas inteligentes activas</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalAlertasInteligentes()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="contenidoAlertasInteligentes" class="alerts-panel"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalAlertasInteligentes()">Cerrar</button>
       </div>
     </div>
   </div>

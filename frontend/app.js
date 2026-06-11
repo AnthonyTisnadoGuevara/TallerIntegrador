@@ -5,6 +5,7 @@ const SILABOS_POR_PAGINA = 10;
 let trazabilidadDataGlobal = [];
 let brechasDataGlobal = [];
 let accionesMejoraGlobal = [];
+let alertasInteligentesGlobal = [];
 let evidenciasMacroprocesosGlobal = {
   planificacion_estrategica: [],
   gestion_academica: []
@@ -118,6 +119,7 @@ async function cargarVistaMacroproceso(macroproceso) {
     }
 
     evidenciasMacroprocesosGlobal[macroproceso] = Array.isArray(result.data) ? result.data : [];
+    await cargarAlertasActivasMacroproceso(macroproceso);
     renderDashboardMacroproceso(macroproceso);
     renderEvidenciasMacroproceso(macroproceso);
   } catch (error) {
@@ -214,6 +216,7 @@ function renderEvidenceCard(evidencia, columnas) {
   const id = escaparAtributo(evidencia.id);
   const archivoUrl = normalizarEnlaceArchivo(evidencia.archivo_url);
   const nombreArchivo = archivoUrl ? obtenerNombreArchivoEvidencia(archivoUrl) : "";
+  const alerta = obtenerAlertaActivaEvidencia(evidencia.id);
   const detalleSecundario = columnas.includes("tipo_evidencia")
     ? `<p><span>Tipo de evidencia</span><strong>${escaparHtml(evidencia.tipo_evidencia || "-")}</strong></p>`
     : `<p><span>Mes programado</span><strong>${escaparHtml(evidencia.mes_programado || "-")}</strong></p>`;
@@ -235,6 +238,7 @@ function renderEvidenceCard(evidencia, columnas) {
       </div>
 
       <div class="evidence-card-body">
+        ${alerta ? renderBadgeAlertaEvidencia(alerta) : ""}
         <p><span>Responsable</span><strong>${escaparHtml(evidencia.responsable || "Sin responsable")}</strong></p>
         ${detalleSecundario}
         <p><span>Origen</span><strong>${escaparHtml(evidencia.origen_documento || "-")}</strong></p>
@@ -276,6 +280,20 @@ function renderEvidenceCard(evidencia, columnas) {
       </div>
     </article>
   `;
+}
+
+function obtenerAlertaActivaEvidencia(evidenciaId) {
+  return alertasInteligentesGlobal.find((alerta) =>
+    alerta.estado === "activa"
+    && alerta.origen_id === evidenciaId
+    && String(alerta.origen_tipo || "").includes("evidencia")
+  );
+}
+
+function renderBadgeAlertaEvidencia(alerta) {
+  const nivel = alerta.nivel_alerta || "media";
+  const texto = nivel === "critica" ? "Alerta critica" : "Alerta activa";
+  return `<span class="alert-badge alert-${escaparAtributo(nivel)}">${escaparHtml(texto)}</span>`;
 }
 
 function obtenerNombreArchivoEvidencia(url) {
@@ -582,6 +600,166 @@ function abrirModalValidacionEvidenciaIA(validacion) {
 
 function cerrarModalValidacionEvidenciaIA() {
   ocultarModal("modalValidacionEvidenciaIA");
+}
+
+async function cargarAlertasActivasMacroproceso(macroproceso) {
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/alertas?macroproceso=${encodeURIComponent(macroproceso)}&estado=activa`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudieron cargar las alertas.");
+    }
+
+    const otrasAlertas = alertasInteligentesGlobal.filter((item) => item.macroproceso !== macroproceso);
+    alertasInteligentesGlobal = otrasAlertas.concat(result.alertas || []);
+  } catch (error) {
+    console.error("Error al cargar alertas del macroproceso:", error);
+  }
+}
+
+async function generarAlertasInteligentes() {
+  try {
+    mostrarToast("Generando alertas inteligentes...", "info");
+    const response = await fetch(`${API_URL}/api/macroprocesos/alertas/generar`, {
+      method: "POST"
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudieron generar alertas inteligentes.");
+    }
+
+    mostrarToast(`Alertas creadas: ${result.alertas_creadas || 0}`, "success");
+    await cargarSemaforoCumplimiento();
+    await verAlertasInteligentes();
+  } catch (error) {
+    console.error("Error al generar alertas inteligentes:", error);
+    mostrarToast("Error al generar alertas: " + error.message, "error");
+  }
+}
+
+async function verAlertasInteligentes() {
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/alertas?estado=activa`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudieron cargar las alertas.");
+    }
+
+    alertasInteligentesGlobal = result.alertas || [];
+    renderAlertasInteligentes(alertasInteligentesGlobal);
+    mostrarModal("modalAlertasInteligentes");
+  } catch (error) {
+    console.error("Error al cargar alertas inteligentes:", error);
+    mostrarToast("No se pudieron cargar las alertas inteligentes.", "error");
+  }
+}
+
+function renderAlertasInteligentes(alertas) {
+  const contenedor = document.getElementById("contenidoAlertasInteligentes");
+  if (!contenedor) return;
+
+  if (!Array.isArray(alertas) || alertas.length === 0) {
+    contenedor.innerHTML = `<p class="text-muted">No hay alertas activas.</p>`;
+    return;
+  }
+
+  contenedor.innerHTML = alertas.map((alerta) => {
+    const nivel = alerta.nivel_alerta || "media";
+    const fecha = alerta.created_at ? new Date(alerta.created_at).toLocaleString() : "Sin fecha";
+    return `
+      <article class="alert-card alert-${escaparAtributo(nivel)}">
+        <div class="alert-card-header">
+          <span class="alert-badge alert-${escaparAtributo(nivel)}">${escaparHtml(formatearTexto(nivel))}</span>
+          <span class="evidence-code">${escaparHtml(formatearTexto(alerta.macroproceso || "-"))}</span>
+        </div>
+        <h3>${escaparHtml(alerta.titulo || "Alerta inteligente")}</h3>
+        <p><strong>Descripcion:</strong> ${escaparHtml(alerta.descripcion || "-")}</p>
+        <p><strong>Recomendacion:</strong> ${escaparHtml(alerta.recomendacion || "-")}</p>
+        <p><strong>Fecha:</strong> ${escaparHtml(fecha)}</p>
+        <div class="alert-actions">
+          <button class="btn btn-success" type="button" onclick="actualizarAlertaInteligente('${escaparAtributo(alerta.id)}', 'atendida')">Marcar como atendida</button>
+          <button class="btn btn-secondary" type="button" onclick="actualizarAlertaInteligente('${escaparAtributo(alerta.id)}', 'descartada')">Descartar</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function actualizarAlertaInteligente(alertaId, estado) {
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/alertas/${alertaId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estado })
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo actualizar la alerta.");
+    }
+
+    mostrarToast("Alerta actualizada correctamente.", "success");
+    await cargarSemaforoCumplimiento();
+    await verAlertasInteligentes();
+  } catch (error) {
+    console.error("Error al actualizar alerta:", error);
+    mostrarToast("No se pudo actualizar la alerta.", "error");
+  }
+}
+
+function cerrarModalAlertasInteligentes() {
+  ocultarModal("modalAlertasInteligentes");
+}
+
+async function cargarSemaforoCumplimiento() {
+  const contenedor = document.getElementById("semaforoCumplimiento");
+  if (!contenedor) return;
+
+  contenedor.innerHTML = `<p class="text-muted">Cargando semaforo de cumplimiento...</p>`;
+  try {
+    const response = await fetch(`${API_URL}/api/macroprocesos/semaforo`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo cargar el semaforo.");
+    }
+
+    renderSemaforoCumplimiento(result.semaforos || []);
+  } catch (error) {
+    console.error("Error al cargar semaforo:", error);
+    contenedor.innerHTML = `<p class="text-muted">No se pudo cargar el semaforo de cumplimiento.</p>`;
+  }
+}
+
+function renderSemaforoCumplimiento(semaforos) {
+  const contenedor = document.getElementById("semaforoCumplimiento");
+  if (!contenedor) return;
+
+  if (!Array.isArray(semaforos) || semaforos.length === 0) {
+    contenedor.innerHTML = `<p class="text-muted">No hay datos para el semaforo.</p>`;
+    return;
+  }
+
+  contenedor.innerHTML = semaforos.map((item) => `
+    <article class="traffic-light-card traffic-${escaparAtributo(item.color || "yellow")}">
+      <div class="traffic-light-header">
+        <span class="traffic-light-dot traffic-${escaparAtributo(item.color || "yellow")}"></span>
+        <div>
+          <h3>${escaparHtml(item.nombre || formatearTexto(item.macroproceso))}</h3>
+          <p>${escaparHtml(item.mensaje || "-")}</p>
+        </div>
+      </div>
+      <div class="traffic-light-metrics">
+        <span>Avance <strong>${escaparHtml(item.avance_promedio ?? 0)}%</strong></span>
+        <span>Criticas <strong>${escaparHtml(item.alertas_criticas ?? 0)}</strong></span>
+        <span>Altas <strong>${escaparHtml(item.alertas_altas ?? 0)}</strong></span>
+        <span>Riesgo IA <strong>${escaparHtml(formatearTexto(item.riesgo_ia || "sin_datos"))}</strong></span>
+      </div>
+    </article>
+  `).join("");
 }
 
 async function verHistorialAnalisisIA(macroproceso) {
@@ -1211,6 +1389,7 @@ async function cargarDatos() {
   await cargarDashboard();
   await cargarSilabos();
   await cargarDashboardAccionesMejora();
+  await cargarSemaforoCumplimiento();
 }
 
 function normalizarEnlaceArchivo(enlace) {

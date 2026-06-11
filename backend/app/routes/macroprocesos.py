@@ -20,10 +20,18 @@ router = APIRouter(
 
 ESTADOS_VALIDOS = {"pendiente", "en_proceso", "completado", "observado"}
 PRIORIDADES_VALIDAS = {"alta", "media", "baja"}
+NIVELES_ALERTA_VALIDOS = {"baja", "media", "alta", "critica"}
+ESTADOS_ALERTA_VALIDOS = {"activa", "atendida", "descartada"}
 ORDEN_PRIORIDAD = {"alta": 0, "media": 1, "baja": 2}
 ORDEN_ESTADO = {"pendiente": 0, "en_proceso": 1, "observado": 2, "completado": 3}
+ORDEN_ALERTA = {"critica": 0, "alta": 1, "media": 2, "baja": 3}
 MACROPROCESOS_ACCIONES_VALIDOS = {"planificacion_estrategica", "gestion_academica"}
 MACROPROCESOS_ANALISIS_VALIDOS = {"planificacion_estrategica", "gestion_academica", "mejora_continua"}
+MACROPROCESOS_SEMAFORO = {
+    "planificacion_estrategica": "Planificacion Estrategica",
+    "gestion_academica": "Gestion Academica",
+    "gestion_silabos": "Gestion de Silabos",
+}
 TIPOS_ANALISIS_VALIDOS = {
     "analisis_planificacion",
     "analisis_gestion_academica",
@@ -81,6 +89,11 @@ class EvidenciaUpdate(BaseModel):
     origen_documento: Optional[str] = None
 
 
+class AlertaUpdate(BaseModel):
+    estado: Optional[str] = None
+    recomendacion: Optional[str] = None
+
+
 def _ahora_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -109,6 +122,32 @@ def _normalizar_prioridad(prioridad: Optional[str]) -> Optional[str]:
             detail="La prioridad debe ser: alta, media o baja.",
         )
     return prioridad_normalizada
+
+
+def _normalizar_nivel_alerta(nivel_alerta: Optional[str]) -> Optional[str]:
+    if nivel_alerta is None:
+        return None
+
+    nivel_normalizado = nivel_alerta.strip().lower()
+    if nivel_normalizado not in NIVELES_ALERTA_VALIDOS:
+        raise HTTPException(
+            status_code=400,
+            detail="El nivel de alerta debe ser: baja, media, alta o critica.",
+        )
+    return nivel_normalizado
+
+
+def _normalizar_estado_alerta(estado: Optional[str]) -> Optional[str]:
+    if estado is None:
+        return None
+
+    estado_normalizado = estado.strip().lower()
+    if estado_normalizado not in ESTADOS_ALERTA_VALIDOS:
+        raise HTTPException(
+            status_code=400,
+            detail="El estado de alerta debe ser: activa, atendida o descartada.",
+        )
+    return estado_normalizado
 
 
 def _normalizar_payload(data: dict) -> dict:
@@ -164,6 +203,310 @@ def _obtener_evidencia_o_404(evidencia_id: str) -> dict:
     if not response.data:
         raise HTTPException(status_code=404, detail="Evidencia no encontrada.")
     return response.data[0]
+
+
+def _safe_select_table(tabla: str, columnas: str = "*") -> list[dict]:
+    try:
+        response = supabase.table(tabla).select(columnas).execute()
+        return response.data or []
+    except Exception as e:
+        print(f"[Alertas macroprocesos] No se pudo leer {tabla}:", type(e).__name__, str(e))
+        return []
+
+
+def _macroproceso_accion(accion: dict, evidencias_por_id: dict) -> str:
+    origen_id = accion.get("origen_id")
+    if accion.get("origen_tipo") == "macroproceso_evidencia" and origen_id in evidencias_por_id:
+        return evidencias_por_id[origen_id].get("macroproceso") or "mejora_continua"
+    if accion.get("origen_tipo") == "brecha_curricular" or accion.get("silabo_id") or accion.get("ciclo"):
+        return "gestion_silabos"
+    return accion.get("macroproceso") or "mejora_continua"
+
+
+def _alerta_key(alerta: dict) -> tuple[str, str, str]:
+    return (
+        str(alerta.get("macroproceso") or ""),
+        str(alerta.get("origen_tipo") or ""),
+        str(alerta.get("origen_id") or alerta.get("codigo") or alerta.get("titulo") or ""),
+    )
+
+
+def _crear_alerta_candidata(
+    macroproceso: str,
+    origen_tipo: str,
+    origen_id: Optional[str],
+    codigo: Optional[str],
+    titulo: str,
+    descripcion: str,
+    nivel_alerta: str,
+    recomendacion: str,
+) -> dict:
+    return {
+        "macroproceso": macroproceso,
+        "origen_tipo": origen_tipo,
+        "origen_id": origen_id,
+        "codigo": codigo,
+        "titulo": titulo,
+        "descripcion": descripcion,
+        "nivel_alerta": nivel_alerta,
+        "estado": "activa",
+        "recomendacion": recomendacion,
+    }
+
+
+def _ultimas_validaciones_por_evidencia(validaciones: list[dict]) -> dict:
+    ordenadas = sorted(validaciones, key=lambda item: item.get("created_at") or "", reverse=True)
+    ultimas = {}
+    for item in ordenadas:
+        evidencia_id = item.get("evidencia_id")
+        if evidencia_id and evidencia_id not in ultimas:
+            ultimas[evidencia_id] = item
+    return ultimas
+
+
+def _ultimos_analisis_por_macroproceso(analisis: list[dict]) -> dict:
+    ordenados = sorted(analisis, key=lambda item: item.get("created_at") or "", reverse=True)
+    ultimos = {}
+    for item in ordenados:
+        macroproceso = item.get("macroproceso")
+        if macroproceso and macroproceso not in ultimos:
+            ultimos[macroproceso] = item
+    return ultimos
+
+
+def _generar_candidatas_alertas() -> list[dict]:
+    evidencias = _safe_select_table("macroproceso_evidencias")
+    acciones = _safe_select_table("acciones_mejora")
+    validaciones = _safe_select_table("validacion_ia_macroproceso_evidencias")
+    brechas = _safe_select_table("brechas_curriculares")
+    analisis = _safe_select_table("analisis_ia_macroprocesos")
+
+    evidencias_por_id = {item.get("id"): item for item in evidencias if item.get("id")}
+    ultimas_validaciones = _ultimas_validaciones_por_evidencia(validaciones)
+    origenes_acciones = {
+        str(item.get("origen_id"))
+        for item in acciones
+        if item.get("origen_id") and item.get("estado") not in {"atendida", "descartada"}
+    }
+    candidatos = []
+
+    for evidencia in evidencias:
+        evidencia_id = evidencia.get("id")
+        macroproceso = evidencia.get("macroproceso") or "mejora_continua"
+        codigo = evidencia.get("codigo")
+        titulo = evidencia.get("titulo") or "Evidencia de macroproceso"
+        prioridad = evidencia.get("prioridad")
+        estado = evidencia.get("estado")
+        avance = int(evidencia.get("avance") or 0)
+        archivo_url = evidencia.get("archivo_url")
+
+        if prioridad == "alta" and estado == "pendiente":
+            candidatos.append(_crear_alerta_candidata(
+                macroproceso,
+                "macroproceso_evidencia",
+                evidencia_id,
+                codigo,
+                titulo,
+                "Evidencia de prioridad alta pendiente de atencion.",
+                "alta",
+                "Asignar responsable y fecha de cierre para atender la evidencia.",
+            ))
+        if prioridad == "alta" and avance < 30:
+            candidatos.append(_crear_alerta_candidata(
+                macroproceso,
+                "macroproceso_evidencia_avance",
+                evidencia_id,
+                codigo,
+                titulo,
+                "Evidencia de prioridad alta con avance menor a 30%.",
+                "alta",
+                "Priorizar acciones inmediatas para incrementar el avance documentado.",
+            ))
+        if estado == "completado" and not archivo_url:
+            candidatos.append(_crear_alerta_candidata(
+                macroproceso,
+                "macroproceso_evidencia_sin_archivo",
+                evidencia_id,
+                codigo,
+                titulo,
+                "La evidencia figura como completada, pero no tiene archivo de sustento.",
+                "critica",
+                "Subir el archivo de sustento o corregir el estado de la evidencia.",
+            ))
+        if prioridad == "alta" and not archivo_url:
+            candidatos.append(_crear_alerta_candidata(
+                macroproceso,
+                "macroproceso_evidencia_sustento",
+                evidencia_id,
+                codigo,
+                titulo,
+                "Evidencia de prioridad alta sin archivo de sustento.",
+                "alta",
+                "Solicitar el documento de sustento al responsable.",
+            ))
+        if estado == "en_proceso" and avance < 50:
+            candidatos.append(_crear_alerta_candidata(
+                macroproceso,
+                "macroproceso_evidencia_en_proceso",
+                evidencia_id,
+                codigo,
+                titulo,
+                "Evidencia en proceso con avance menor a 50%.",
+                "media",
+                "Revisar el avance y registrar evidencias parciales verificables.",
+            ))
+        if estado == "observado":
+            candidatos.append(_crear_alerta_candidata(
+                macroproceso,
+                "macroproceso_evidencia_observada",
+                evidencia_id,
+                codigo,
+                titulo,
+                "La evidencia se encuentra observada y requiere subsanacion.",
+                "critica",
+                "Atender las observaciones y registrar el sustento corregido.",
+            ))
+
+        validacion = ultimas_validaciones.get(evidencia_id)
+        if validacion:
+            nivel = validacion.get("nivel_validez")
+            pertinencia = validacion.get("pertinencia")
+            if nivel == "bajo" or pertinencia == "no_corresponde":
+                candidatos.append(_crear_alerta_candidata(
+                    macroproceso,
+                    "validacion_ia_evidencia",
+                    evidencia_id,
+                    codigo,
+                    titulo,
+                    "La ultima validacion IA detecto baja validez o falta de correspondencia documental.",
+                    "critica",
+                    validacion.get("accion_sugerida") or "Reemplazar o complementar el documento de sustento.",
+                ))
+            elif nivel == "medio":
+                candidatos.append(_crear_alerta_candidata(
+                    macroproceso,
+                    "validacion_ia_evidencia",
+                    evidencia_id,
+                    codigo,
+                    titulo,
+                    "La ultima validacion IA indica validez documental parcial.",
+                    "media",
+                    validacion.get("accion_sugerida") or "Completar elementos documentales faltantes.",
+                ))
+
+    fecha_actual = datetime.now(timezone.utc).date()
+    for accion in acciones:
+        estado = accion.get("estado")
+        prioridad = accion.get("prioridad")
+        accion_id = accion.get("id")
+        macroproceso = _macroproceso_accion(accion, evidencias_por_id)
+        titulo = accion.get("titulo") or "Accion de mejora"
+        fecha_limite = accion.get("fecha_limite")
+
+        if prioridad == "alta" and estado == "pendiente":
+            candidatos.append(_crear_alerta_candidata(
+                macroproceso,
+                "accion_mejora",
+                accion_id,
+                None,
+                titulo,
+                "Accion de mejora de prioridad alta pendiente de atencion.",
+                "alta",
+                "Definir fecha de cierre y evidencias de cumplimiento.",
+            ))
+        if prioridad == "alta" and estado == "en_proceso":
+            candidatos.append(_crear_alerta_candidata(
+                macroproceso,
+                "accion_mejora_en_proceso",
+                accion_id,
+                None,
+                titulo,
+                "Accion de mejora de prioridad alta en proceso.",
+                "media",
+                "Monitorear el cierre y actualizar el avance de la accion.",
+            ))
+        if estado == "observada":
+            candidatos.append(_crear_alerta_candidata(
+                macroproceso,
+                "accion_mejora_observada",
+                accion_id,
+                None,
+                titulo,
+                "Accion de mejora observada.",
+                "critica",
+                "Subsanar la observacion de la accion de mejora.",
+            ))
+        if fecha_limite:
+            try:
+                fecha = datetime.fromisoformat(str(fecha_limite)).date()
+                if fecha < fecha_actual and estado not in {"atendida", "descartada"}:
+                    candidatos.append(_crear_alerta_candidata(
+                        macroproceso,
+                        "accion_mejora_vencida",
+                        accion_id,
+                        None,
+                        titulo,
+                        "Accion de mejora vencida segun la fecha limite registrada.",
+                        "critica",
+                        "Reprogramar o cerrar la accion con sustento verificable.",
+                    ))
+            except ValueError:
+                pass
+
+    for brecha in brechas:
+        brecha_id = brecha.get("id")
+        titulo = brecha.get("tipo_brecha") or "Brecha curricular"
+        if brecha.get("prioridad") == "alta":
+            candidatos.append(_crear_alerta_candidata(
+                "gestion_silabos",
+                "brecha_curricular",
+                brecha_id,
+                None,
+                titulo,
+                brecha.get("descripcion") or "Brecha curricular de prioridad alta.",
+                "alta",
+                brecha.get("recomendacion") or "Atender la brecha curricular con una accion de mejora.",
+            ))
+        if brecha_id and str(brecha_id) not in origenes_acciones:
+            candidatos.append(_crear_alerta_candidata(
+                "gestion_silabos",
+                "brecha_curricular_sin_accion",
+                brecha_id,
+                None,
+                titulo,
+                "Brecha curricular sin accion de mejora asociada.",
+                "media",
+                "Generar o asociar una accion de mejora para cerrar la brecha.",
+            ))
+
+    ultimos_analisis = _ultimos_analisis_por_macroproceso(analisis)
+    for macroproceso, item in ultimos_analisis.items():
+        riesgo = item.get("nivel_riesgo")
+        tipo_analisis = item.get("tipo_analisis") or "analisis_ia"
+        if macroproceso == "mejora_continua" and riesgo == "alto":
+            candidatos.append(_crear_alerta_candidata(
+                "mejora_continua",
+                "analisis_ia_integral",
+                item.get("id"),
+                None,
+                "Riesgo alto en analisis integral de mejora continua",
+                item.get("resumen") or "El ultimo analisis integral reporta riesgo alto.",
+                "critica",
+                "Revisar hallazgos integrales y priorizar acciones de mejora.",
+            ))
+        elif macroproceso in MACROPROCESOS_SEMAFORO and riesgo == "alto":
+            candidatos.append(_crear_alerta_candidata(
+                macroproceso,
+                "analisis_ia_macroproceso",
+                item.get("id"),
+                None,
+                f"Riesgo alto en {tipo_analisis}",
+                item.get("resumen") or "El ultimo analisis IA del macroproceso reporta riesgo alto.",
+                "alta",
+                "Revisar el diagnostico IA y ejecutar acciones correctivas.",
+            ))
+
+    return candidatos
 
 
 def _valor_historial(valor) -> Optional[str]:
@@ -530,6 +873,181 @@ def comparar_historial_analisis_ia(macroproceso: str = Query(...)):
         }
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/alertas/generar")
+def generar_alertas_inteligentes():
+    try:
+        candidatas = _generar_candidatas_alertas()
+        existentes_response = (
+            supabase.table("alertas_inteligentes_macroprocesos")
+            .select("*")
+            .eq("estado", "activa")
+            .execute()
+        )
+        existentes = existentes_response.data or []
+        claves_existentes = {_alerta_key(item) for item in existentes}
+        nuevas = []
+        alertas_existentes = 0
+
+        for alerta in candidatas:
+            clave = _alerta_key(alerta)
+            if clave in claves_existentes:
+                alertas_existentes += 1
+                continue
+            nuevas.append(alerta)
+            claves_existentes.add(clave)
+
+        creadas = []
+        if nuevas:
+            insert_response = supabase.table("alertas_inteligentes_macroprocesos").insert(nuevas).execute()
+            creadas = insert_response.data or nuevas
+
+        alertas = sorted(
+            creadas + existentes,
+            key=lambda item: (
+                ORDEN_ALERTA.get(item.get("nivel_alerta"), 99),
+                item.get("created_at") or "",
+            ),
+        )
+
+        return {
+            "message": "Alertas inteligentes generadas correctamente",
+            "alertas_creadas": len(creadas),
+            "alertas_existentes": alertas_existentes,
+            "alertas": alertas,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/alertas")
+def listar_alertas_inteligentes(
+    macroproceso: Optional[str] = Query(None),
+    nivel_alerta: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=500),
+):
+    try:
+        query = supabase.table("alertas_inteligentes_macroprocesos").select("*")
+
+        if macroproceso:
+            query = query.eq("macroproceso", macroproceso.strip().lower())
+        if nivel_alerta:
+            query = query.eq("nivel_alerta", _normalizar_nivel_alerta(nivel_alerta))
+        if estado:
+            query = query.eq("estado", _normalizar_estado_alerta(estado))
+
+        response = query.order("created_at", desc=True).limit(limit).execute()
+        alertas = sorted(
+            response.data or [],
+            key=lambda item: (
+                ORDEN_ALERTA.get(item.get("nivel_alerta"), 99),
+                item.get("created_at") or "",
+            ),
+        )
+        return {"alertas": alertas}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.put("/alertas/{alerta_id}")
+def actualizar_alerta_inteligente(alerta_id: str, alerta: AlertaUpdate):
+    try:
+        data = alerta.model_dump(exclude_unset=True)
+        if not data:
+            raise HTTPException(status_code=400, detail="No hay datos para actualizar.")
+
+        if "estado" in data:
+            data["estado"] = _normalizar_estado_alerta(data.get("estado"))
+        data["updated_at"] = _ahora_iso()
+
+        response = (
+            supabase.table("alertas_inteligentes_macroprocesos")
+            .update(data)
+            .eq("id", alerta_id)
+            .execute()
+        )
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Alerta no encontrada.")
+
+        return {
+            "message": "Alerta actualizada correctamente",
+            "data": response.data,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/semaforo")
+def obtener_semaforo_macroprocesos():
+    try:
+        evidencias = _safe_select_table("macroproceso_evidencias")
+        silabos = _safe_select_table("silabos")
+        alertas_activas = (
+            supabase.table("alertas_inteligentes_macroprocesos")
+            .select("*")
+            .eq("estado", "activa")
+            .execute()
+            .data
+            or []
+        )
+        ultimos_analisis = _ultimos_analisis_por_macroproceso(_safe_select_table("analisis_ia_macroprocesos"))
+
+        semaforos = []
+        for macroproceso, nombre in MACROPROCESOS_SEMAFORO.items():
+            if macroproceso == "gestion_silabos":
+                total = len(silabos)
+                completos = sum(1 for item in silabos if item.get("estado") == "completo")
+                avance_promedio = round((completos / total) * 100) if total else 0
+            else:
+                evidencias_macro = [item for item in evidencias if item.get("macroproceso") == macroproceso]
+                avance_promedio = _resumen_evidencias(evidencias_macro)["avance_promedio"]
+
+            alertas_macro = [item for item in alertas_activas if item.get("macroproceso") == macroproceso]
+            alertas_criticas = sum(1 for item in alertas_macro if item.get("nivel_alerta") == "critica")
+            alertas_altas = sum(1 for item in alertas_macro if item.get("nivel_alerta") == "alta")
+            riesgo_ia = (ultimos_analisis.get(macroproceso) or {}).get("nivel_riesgo") or "sin_datos"
+
+            if alertas_criticas > 0 or avance_promedio < 40 or riesgo_ia == "alto":
+                color = "rojo"
+                mensaje = "Requiere atencion prioritaria por bajo avance, alertas criticas o riesgo IA alto."
+            elif avance_promedio >= 70 and alertas_criticas == 0 and alertas_altas <= 2:
+                color = "verde"
+                mensaje = "Cumplimiento aceptable, mantener seguimiento y evidencias actualizadas."
+            else:
+                color = "amarillo"
+                mensaje = "Seguimiento preventivo requerido por avance intermedio o alertas activas."
+
+            semaforos.append(
+                {
+                    "macroproceso": macroproceso,
+                    "nombre": nombre,
+                    "color": color,
+                    "avance_promedio": avance_promedio,
+                    "alertas_criticas": alertas_criticas,
+                    "alertas_altas": alertas_altas,
+                    "riesgo_ia": riesgo_ia,
+                    "mensaje": mensaje,
+                }
+            )
+
+        resumen = {
+            "verde": sum(1 for item in semaforos if item["color"] == "verde"),
+            "amarillo": sum(1 for item in semaforos if item["color"] == "amarillo"),
+            "rojo": sum(1 for item in semaforos if item["color"] == "rojo"),
+        }
+
+        return {
+            "semaforos": semaforos,
+            "resumen": resumen,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
