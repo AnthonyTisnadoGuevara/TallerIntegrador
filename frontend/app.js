@@ -10,6 +10,7 @@ let brechasDataGlobal = [];
 let accionesMejoraGlobal = [];
 let alertasInteligentesGlobal = [];
 let macroprocesoAccionesActual = null;
+let macroprocesoRegistroAccionActual = null;
 let evidenciasMacroprocesosGlobal = {
   planificacion_estrategica: [],
   gestion_academica: []
@@ -780,7 +781,7 @@ function renderSemaforoCumplimiento(semaforos) {
       </div>
       <div class="traffic-light-metrics">
         <span>Avance <strong>${escaparHtml(item.avance_promedio ?? 0)}%</strong></span>
-        <span>Criticas <strong>${escaparHtml(item.alertas_criticas ?? 0)}</strong></span>
+        <span>Cr&iacute;ticas <strong>${escaparHtml(item.alertas_criticas ?? 0)}</strong></span>
         <span>Altas <strong>${escaparHtml(item.alertas_altas ?? 0)}</strong></span>
         <span>Riesgo IA <strong>${escaparHtml(formatearTexto(item.riesgo_ia || "sin_datos"))}</strong></span>
       </div>
@@ -938,19 +939,126 @@ async function generarAccionesDesdeEvidenciasMacroproceso(macroproceso) {
   }
 }
 
+function abrirModalRegistroAccionMacroproceso(macroproceso) {
+  macroprocesoRegistroAccionActual = macroproceso;
+  limpiarFormularioAccionMacroproceso();
+  poblarEvidenciasAccionMacroproceso(macroproceso);
+
+  const titulo = document.getElementById("tituloModalRegistroAccionMacroproceso");
+  if (titulo) {
+    titulo.textContent = `Registrar acci\u00f3n - ${nombreMacroproceso(macroproceso)}`;
+  }
+
+  mostrarModal("modalRegistroAccionMacroproceso");
+}
+
+function cerrarModalRegistroAccionMacroproceso() {
+  macroprocesoRegistroAccionActual = null;
+  limpiarFormularioAccionMacroproceso();
+  ocultarModal("modalRegistroAccionMacroproceso");
+}
+
+function limpiarFormularioAccionMacroproceso() {
+  const form = document.getElementById("formAccionMacroproceso");
+  if (form) form.reset();
+
+  const prioridad = document.getElementById("accionMacroPrioridad");
+  if (prioridad) prioridad.value = "media";
+
+  const estado = document.getElementById("accionMacroEstado");
+  if (estado) estado.value = "pendiente";
+}
+
+function poblarEvidenciasAccionMacroproceso(macroproceso) {
+  const select = document.getElementById("accionMacroEvidencia");
+  if (!select) return;
+
+  const evidencias = evidenciasMacroprocesosGlobal[macroproceso] || [];
+  select.innerHTML = `<option value="">Sin evidencia relacionada</option>`;
+
+  evidencias.forEach((evidencia) => {
+    const option = document.createElement("option");
+    option.value = evidencia.id || "";
+    option.textContent = `${evidencia.codigo || "Sin c\u00f3digo"} - ${evidencia.titulo || "Sin t\u00edtulo"}`;
+    select.appendChild(option);
+  });
+}
+
+function obtenerEvidenciaMacroprocesoPorId(macroproceso, evidenciaId) {
+  const evidencias = evidenciasMacroprocesosGlobal[macroproceso] || [];
+  return evidencias.find((item) => item.id === evidenciaId) || null;
+}
+
+async function guardarAccionMacroproceso(event) {
+  event.preventDefault();
+
+  if (!macroprocesoRegistroAccionActual) {
+    mostrarToast("No se pudo identificar el macroproceso.", "error");
+    return;
+  }
+
+  const titulo = document.getElementById("accionMacroTitulo")?.value.trim();
+  const descripcion = document.getElementById("accionMacroDescripcion")?.value.trim();
+  const responsable = document.getElementById("accionMacroResponsable")?.value.trim();
+  const prioridad = document.getElementById("accionMacroPrioridad")?.value || "media";
+  const estado = document.getElementById("accionMacroEstado")?.value || "pendiente";
+  const fechaLimite = document.getElementById("accionMacroFechaLimite")?.value || null;
+  const observacion = document.getElementById("accionMacroObservacion")?.value.trim();
+  const evidenciaId = document.getElementById("accionMacroEvidencia")?.value || null;
+  const evidencia = evidenciaId
+    ? obtenerEvidenciaMacroprocesoPorId(macroprocesoRegistroAccionActual, evidenciaId)
+    : null;
+
+  if (!titulo || !descripcion) {
+    mostrarToast("Complete los campos obligatorios.", "warning");
+    return;
+  }
+
+  const payload = {
+    macroproceso: macroprocesoRegistroAccionActual,
+    origen_tipo: "manual_macroproceso",
+    origen_id: evidenciaId || macroprocesoRegistroAccionActual,
+    titulo,
+    descripcion,
+    responsable: responsable || null,
+    prioridad,
+    estado,
+    fecha_limite: fechaLimite,
+    observacion: observacion || null,
+    evidencia_url: evidencia?.archivo_url || null
+  };
+
+  try {
+    const macroproceso = macroprocesoRegistroAccionActual;
+    await fetchJson(`${API_URL}/api/acciones-mejora/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    mostrarToast("Acci\u00f3n de mejora registrada correctamente.", "success");
+    cerrarModalRegistroAccionMacroproceso();
+    await cargarDashboardAccionesMejora();
+    await verAccionesMacroproceso(macroproceso);
+  } catch (error) {
+    console.error("Error al registrar acci\u00f3n de macroproceso:", error);
+    mostrarToast("No se pudo registrar la acci\u00f3n de mejora: " + error.message, "error");
+  }
+}
+
 async function analizarPlanificacionIA() {
   try {
-    mostrarToast("Analizando planificaci?n estrat?gica con IA...", "info");
+    mostrarToast("Analizando planificaci\u00f3n estrat\u00e9gica con IA...", "info");
 
     const result = await fetchJson(`${API_URL}/api/macroprocesos/planificacion/analizar`, {
       method: "POST"
     });
 
     abrirModalPlanificacionIA(result.data || {});
-    mostrarToast("Análisis de planificaci?n generado correctamente.", "success");
+    mostrarToast("An\u00e1lisis de planificaci\u00f3n generado correctamente.", "success");
   } catch (error) {
-    console.error("Error al analizar planificaci?n:", error);
-    mostrarToast("Error al analizar planificaci?n: " + error.message, "error");
+    console.error("Error al analizar planificaci\u00f3n:", error);
+    mostrarToast("Error al analizar planificaci\u00f3n: " + error.message, "error");
   }
 }
 
@@ -2412,10 +2520,10 @@ function renderizarTrazabilidadFiltrada() {
     return `
       <article class="trace-card trace-${coherencia}">
         <div class="trace-header">
-          <span class="cycle-badge">Ciclo ${escaparHtml(item.ciclo_origen ?? "-")} ? Ciclo ${escaparHtml(item.ciclo_destino ?? "-")}</span>
+          <span class="cycle-badge">Ciclo ${escaparHtml(item.ciclo_origen ?? "-")} - Ciclo ${escaparHtml(item.ciclo_destino ?? "-")}</span>
           ${renderBadge(item.nivel_coherencia)}
         </div>
-        <h3>${escaparHtml(item.asignatura_origen ?? "-")} ? ${escaparHtml(item.asignatura_destino ?? "-")}</h3>
+        <h3>${escaparHtml(item.asignatura_origen ?? "-")} - ${escaparHtml(item.asignatura_destino ?? "-")}</h3>
         <p><strong>Tipo:</strong> ${escaparHtml(formatearTexto(item.tipo_relacion))}</p>
         <p><strong>Observación:</strong> ${escaparHtml(item.observacion ?? "-")}</p>
         <p><strong>Sugerencia:</strong> ${escaparHtml(item.sugerencia ?? "-")}</p>
@@ -2498,7 +2606,7 @@ function renderizarBrechasFiltradas() {
         <h3>${escaparHtml(item.asignatura ?? "-")}</h3>
         <p><strong>Tipo de brecha:</strong> ${escaparHtml(formatearTexto(item.tipo_brecha))}</p>
         <p><strong>Problema detectado:</strong> ${escaparHtml(item.descripcion ?? "-")}</p>
-        <p><strong>Recomendaci?n de mejora:</strong> ${escaparHtml(item.recomendacion ?? "-")}</p>
+        <p><strong>Recomendaci&oacute;n de mejora:</strong> ${escaparHtml(item.recomendacion ?? "-")}</p>
         <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
         <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.estado))}</p>
       </article>
@@ -2582,7 +2690,7 @@ async function verAccionesMacroproceso(macroproceso) {
   try {
     macroprocesoAccionesActual = macroproceso;
     const result = await fetchJson(
-      `${API_URL}/api/acciones-mejora/?macroproceso=${encodeURIComponent(macroproceso)}&origen_tipo=macroproceso_evidencia`
+      `${API_URL}/api/acciones-mejora/?macroproceso=${encodeURIComponent(macroproceso)}`
     );
 
     accionesMejoraGlobal = result.data || [];
@@ -2677,6 +2785,10 @@ function renderizarTarjetasAcciones(data) {
     const estado = accion.estado || "pendiente";
     const evidenciaRelacionada = accion.evidencia_relacionada || {};
     const macroproceso = accion.macroproceso || macroprocesoAccionesActual || "-";
+    const origenId = accion.origen_id === macroproceso ? "-" : accion.origen_id || "-";
+    const cicloBadge = accion.ciclo
+      ? `<span class="cycle-badge">Ciclo ${escaparHtml(accion.ciclo)}</span>`
+      : "";
     const fechaCreacion = accion.created_at
       ? new Date(accion.created_at).toLocaleString()
       : "Sin fecha";
@@ -2684,7 +2796,7 @@ function renderizarTarjetasAcciones(data) {
     return `
       <article class="accion-card accion-prioridad-${escaparAtributo(prioridad)}">
         <div class="accion-header">
-          <span class="cycle-badge">Ciclo ${escaparHtml(accion.ciclo || "-")}</span>
+          ${cicloBadge}
           <div class="accion-badges">
             ${renderBadge(prioridad)}
             <span class="badge badge-estado-${escaparAtributo(estado)}">${escaparHtml(formatearTexto(estado))}</span>
@@ -2696,7 +2808,7 @@ function renderizarTarjetasAcciones(data) {
         <p><strong>Evidencia relacionada:</strong> ${escaparHtml(
           evidenciaRelacionada.codigo
             ? `${evidenciaRelacionada.codigo} - ${evidenciaRelacionada.titulo || ""}`
-            : accion.origen_id || "-"
+            : origenId
         )}</p>
         <p><strong>Asignatura:</strong> ${escaparHtml(accion.asignatura || "-")}</p>
         <p><strong>Descripci&oacute;n:</strong> ${escaparHtml(accion.descripcion || "-")}</p>
@@ -2705,6 +2817,7 @@ function renderizarTarjetasAcciones(data) {
         <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(estado))}</p>
         <p><strong>Responsable:</strong> ${escaparHtml(accion.responsable || "Sin responsable")}</p>
         <p><strong>Fecha l&iacute;mite:</strong> ${escaparHtml(accion.fecha_limite || "No definida")}</p>
+        <p><strong>Observaci&oacute;n:</strong> ${escaparHtml(accion.observacion || "-")}</p>
         <p><strong>Fecha de creaci&oacute;n:</strong> ${escaparHtml(fechaCreacion)}</p>
         <div class="accion-actions">
           <button class="btn btn-warning" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'en_proceso')">En proceso</button>

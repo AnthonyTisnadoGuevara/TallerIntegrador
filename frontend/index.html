@@ -79,6 +79,7 @@
           <button class="btn btn-success" type="button" onclick="analizarPlanificacionIA()">Analizar planificaci&oacute;n con IA</button>
           <button class="btn btn-info" type="button" onclick="verHistorialAnalisisIA('planificacion_estrategica')">Ver historial IA</button>
           <button class="btn btn-warning" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('planificacion_estrategica')">Generar acciones desde planificaci&oacute;n</button>
+          <button class="btn btn-primary" type="button" onclick="abrirModalRegistroAccionMacroproceso('planificacion_estrategica')">Registrar nueva acci&oacute;n</button>
           <button class="btn btn-info" type="button" onclick="verAccionesMacroproceso('planificacion_estrategica')">Ver acciones de planificaci&oacute;n</button>
           <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
         </div>
@@ -124,6 +125,7 @@
           <button class="btn btn-success" type="button" onclick="analizarGestionAcademicaIA()">Analizar gesti&oacute;n acad&eacute;mica con IA</button>
           <button class="btn btn-info" type="button" onclick="verHistorialAnalisisIA('gestion_academica')">Ver historial IA</button>
           <button class="btn btn-warning" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('gestion_academica')">Generar acciones desde gesti&oacute;n acad&eacute;mica</button>
+          <button class="btn btn-primary" type="button" onclick="abrirModalRegistroAccionMacroproceso('gestion_academica')">Registrar nueva acci&oacute;n</button>
           <button class="btn btn-info" type="button" onclick="verAccionesMacroproceso('gestion_academica')">Ver acciones de gesti&oacute;n acad&eacute;mica</button>
           <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
         </div>
@@ -481,6 +483,67 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalAccionesMejora()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalRegistroAccionMacroproceso" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalRegistroAccionMacroproceso">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h2 id="tituloModalRegistroAccionMacroproceso">Registrar acci&oacute;n de mejora</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalRegistroAccionMacroproceso()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="formAccionMacroproceso" class="macro-action-form" onsubmit="guardarAccionMacroproceso(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="accionMacroTitulo">T&iacute;tulo de la acci&oacute;n *</label>
+              <input id="accionMacroTitulo" type="text" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="accionMacroResponsable">Responsable</label>
+              <input id="accionMacroResponsable" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="accionMacroPrioridad">Prioridad *</label>
+              <select id="accionMacroPrioridad" class="form-control" required>
+                <option value="alta">Alta</option>
+                <option value="media" selected>Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="accionMacroEstado">Estado *</label>
+              <select id="accionMacroEstado" class="form-control" required>
+                <option value="pendiente" selected>Pendiente</option>
+                <option value="en_proceso">En proceso</option>
+                <option value="atendida">Completada</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="accionMacroFechaLimite">Fecha programada</label>
+              <input id="accionMacroFechaLimite" type="date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="accionMacroEvidencia">Evidencia relacionada</label>
+              <select id="accionMacroEvidencia" class="form-control">
+                <option value="">Sin evidencia relacionada</option>
+              </select>
+            </div>
+            <div class="form-group form-group-full">
+              <label for="accionMacroDescripcion">Descripci&oacute;n *</label>
+              <textarea id="accionMacroDescripcion" class="form-control" rows="4" required></textarea>
+            </div>
+            <div class="form-group form-group-full">
+              <label for="accionMacroObservacion">Observaci&oacute;n</label>
+              <textarea id="accionMacroObservacion" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalRegistroAccionMacroproceso()">Cancelar</button>
+        <button type="submit" form="formAccionMacroproceso" class="btn btn-primary">Guardar acci&oacute;n</button>
       </div>
     </div>
   </div>
