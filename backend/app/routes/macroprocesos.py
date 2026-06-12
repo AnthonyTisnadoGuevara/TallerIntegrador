@@ -26,6 +26,7 @@ ORDEN_PRIORIDAD = {"alta": 0, "media": 1, "baja": 2}
 ORDEN_ESTADO = {"pendiente": 0, "en_proceso": 1, "observado": 2, "completado": 3}
 ORDEN_ALERTA = {"critica": 0, "alta": 1, "media": 2, "baja": 3}
 MACROPROCESOS_ACCIONES_VALIDOS = {"planificacion_estrategica", "gestion_academica"}
+MACROPROCESOS_EVIDENCIAS_VALIDOS = {"planificacion_estrategica", "gestion_academica"}
 MACROPROCESOS_ANALISIS_VALIDOS = {"planificacion_estrategica", "gestion_academica", "mejora_continua"}
 MACROPROCESOS_SEMAFORO = {
     "planificacion_estrategica": "Planificación Estratégica",
@@ -1253,10 +1254,50 @@ def obtener_historial_validacion_evidencia_ia(evidencia_id: str):
 def crear_evidencia(evidencia: EvidenciaCreate):
     try:
         data = _normalizar_payload(evidencia.model_dump())
+        macroproceso = data.get("macroproceso")
+        codigo = (data.get("codigo") or "").strip()
+
+        if macroproceso not in MACROPROCESOS_EVIDENCIAS_VALIDOS:
+            raise HTTPException(
+                status_code=400,
+                detail="El macroproceso debe ser planificacion_estrategica o gestion_academica.",
+            )
+
+        if not codigo:
+            raise HTTPException(status_code=400, detail="El código de evidencia es obligatorio.")
+
+        data["codigo"] = codigo
+
+        existente = (
+            supabase.table("macroproceso_evidencias")
+            .select("id")
+            .eq("macroproceso", macroproceso)
+            .eq("codigo", codigo)
+            .limit(1)
+            .execute()
+        )
+        if existente.data:
+            raise HTTPException(
+                status_code=400,
+                detail="Ya existe una evidencia con ese código en este macroproceso.",
+            )
+
         response = supabase.table("macroproceso_evidencias").insert(data).execute()
+        evidencia_creada = response.data[0] if response.data else data
+
+        try:
+            _registrar_historial_evidencia(
+                evidencia_creada,
+                "creacion",
+                None,
+                "Evidencia registrada",
+                "Registro inicial de evidencia manual",
+            )
+        except Exception as historial_error:
+            print("[Historial evidencias] No se pudo registrar historial inicial:", type(historial_error).__name__)
 
         return {
-            "message": "Evidencia creada correctamente",
+            "message": "Evidencia registrada correctamente",
             "data": response.data,
         }
     except HTTPException:

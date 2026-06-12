@@ -1368,6 +1368,10 @@ td:last-child {
   gap: 12px;
 }
 
+.form-group-full {
+  grid-column: 1 / -1;
+}
+
 input, textarea {
   width: 100%;
   padding: 11px;

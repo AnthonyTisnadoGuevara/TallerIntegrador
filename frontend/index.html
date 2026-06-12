@@ -94,7 +94,10 @@
             <h2>Evidencias de planificaci&oacute;n</h2>
             <p>Filtre y actualice el seguimiento de evidencias del macroproceso.</p>
           </div>
-          <button class="btn btn-secondary" type="button" onclick="cargarVistaMacroproceso('planificacion_estrategica')">Actualizar</button>
+          <div class="section-actions">
+            <button class="btn btn-primary" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('planificacion_estrategica')">Registrar nueva evidencia</button>
+            <button class="btn btn-secondary" type="button" onclick="cargarVistaMacroproceso('planificacion_estrategica')">Actualizar</button>
+          </div>
         </div>
         <div class="macroprocess-filters">
           <input type="search" id="buscarPlanificacion" class="form-control" placeholder="Buscar por t&iacute;tulo o responsable" oninput="renderEvidenciasMacroproceso('planificacion_estrategica')" />
@@ -140,7 +143,10 @@
             <h2>Evidencias acad&eacute;micas</h2>
             <p>Revise y actualice las evidencias asociadas a la gesti&oacute;n acad&eacute;mica del programa.</p>
           </div>
-          <button class="btn btn-secondary" type="button" onclick="cargarVistaMacroproceso('gestion_academica')">Actualizar</button>
+          <div class="section-actions">
+            <button class="btn btn-primary" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('gestion_academica')">Registrar nueva evidencia</button>
+            <button class="btn btn-secondary" type="button" onclick="cargarVistaMacroproceso('gestion_academica')">Actualizar</button>
+          </div>
         </div>
         <div class="macroprocess-filters">
           <input type="search" id="buscarGestionAcademica" class="form-control" placeholder="Buscar por t&iacute;tulo o responsable" oninput="renderEvidenciasMacroproceso('gestion_academica')" />
@@ -642,6 +648,82 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalEvidenciaMacroproceso()">Cerrar</button>
         <button type="button" id="botonGuardarEvidencia" class="btn btn-primary" onclick="guardarEvidenciaMacroproceso()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalRegistroEvidenciaMacroproceso" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalRegistroEvidenciaMacroproceso">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h2 id="tituloModalRegistroEvidenciaMacroproceso">Registrar nueva evidencia</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalRegistroEvidenciaMacroproceso()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="formRegistroEvidenciaMacroproceso" class="macro-evidence-form" onsubmit="guardarNuevaEvidenciaMacroproceso(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="nuevaEvidenciaCodigo">C&oacute;digo de evidencia *</label>
+              <input id="nuevaEvidenciaCodigo" type="text" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="nuevaEvidenciaTitulo">T&iacute;tulo de la evidencia *</label>
+              <input id="nuevaEvidenciaTitulo" type="text" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="nuevaEvidenciaTipo">Tipo de evidencia</label>
+              <input id="nuevaEvidenciaTipo" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="nuevaEvidenciaResponsable">Responsable</label>
+              <input id="nuevaEvidenciaResponsable" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="nuevaEvidenciaMes">Mes programado</label>
+              <input id="nuevaEvidenciaMes" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="nuevaEvidenciaFecha">Fecha programada</label>
+              <input id="nuevaEvidenciaFecha" type="date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="nuevaEvidenciaEstado">Estado *</label>
+              <select id="nuevaEvidenciaEstado" class="form-control" required>
+                <option value="pendiente">Pendiente</option>
+                <option value="en_proceso">En proceso</option>
+                <option value="completado">Completado</option>
+                <option value="observado">Observado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="nuevaEvidenciaPrioridad">Prioridad *</label>
+              <select id="nuevaEvidenciaPrioridad" class="form-control" required>
+                <option value="alta">Alta</option>
+                <option value="media" selected>Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="nuevaEvidenciaAvance">Avance</label>
+              <input id="nuevaEvidenciaAvance" type="number" class="form-control" min="0" max="100" value="0" />
+            </div>
+            <div class="form-group form-group-full">
+              <label for="nuevaEvidenciaDescripcion">Descripci&oacute;n</label>
+              <textarea id="nuevaEvidenciaDescripcion" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group form-group-full">
+              <label for="nuevaEvidenciaObservacion">Observaci&oacute;n</label>
+              <textarea id="nuevaEvidenciaObservacion" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group form-group-full">
+              <label for="nuevaEvidenciaOrigen">Origen del documento</label>
+              <input id="nuevaEvidenciaOrigen" type="text" class="form-control" placeholder="Registro manual" />
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalRegistroEvidenciaMacroproceso()">Cancelar</button>
+        <button type="submit" form="formRegistroEvidenciaMacroproceso" class="btn btn-primary">Guardar evidencia</button>
       </div>
     </div>
   </div>
