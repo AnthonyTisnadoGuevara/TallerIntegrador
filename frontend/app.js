@@ -11,6 +11,7 @@ let accionesMejoraGlobal = [];
 let alertasInteligentesGlobal = [];
 let macroprocesoAccionesActual = null;
 let macroprocesoRegistroAccionActual = null;
+let macroprocesoRegistroEvidenciaActual = null;
 let reporteIntegralActual = null;
 let evidenciasMacroprocesosGlobal = {
   planificacion_estrategica: [],
@@ -335,10 +336,120 @@ function buscarEvidenciaMacroproceso(id) {
     .find((item) => item.id === id);
 }
 
+function abrirModalRegistroEvidenciaMacroproceso(macroproceso) {
+  if (!MACROPROCESOS_CONFIG[macroproceso]) {
+    mostrarToast("No se pudo identificar el macroproceso.", "error");
+    return;
+  }
+
+  macroprocesoRegistroEvidenciaActual = macroproceso;
+  limpiarFormularioRegistroEvidencia();
+
+  const titulo = document.getElementById("tituloModalRegistroEvidenciaMacroproceso");
+  if (titulo) {
+    titulo.textContent = `Registrar nueva evidencia - ${nombreMacroproceso(macroproceso)}`;
+  }
+
+  mostrarModal("modalRegistroEvidenciaMacroproceso");
+}
+
+function cerrarModalRegistroEvidenciaMacroproceso() {
+  macroprocesoRegistroEvidenciaActual = null;
+  limpiarFormularioRegistroEvidencia();
+  ocultarModal("modalRegistroEvidenciaMacroproceso");
+}
+
+function limpiarFormularioRegistroEvidencia() {
+  const form = document.getElementById("formRegistroEvidenciaMacroproceso");
+  if (form) form.reset();
+
+  const estado = document.getElementById("nuevaEvidenciaEstado");
+  if (estado) estado.value = "pendiente";
+
+  const prioridad = document.getElementById("nuevaEvidenciaPrioridad");
+  if (prioridad) prioridad.value = "media";
+
+  const avance = document.getElementById("nuevaEvidenciaAvance");
+  if (avance) avance.value = "0";
+
+  const origen = document.getElementById("nuevaEvidenciaOrigen");
+  if (origen) origen.value = "Registro manual";
+}
+
+function existeCodigoEvidenciaEnMacroproceso(macroproceso, codigo) {
+  const codigoNormalizado = normalizarValor(codigo);
+  return (evidenciasMacroprocesosGlobal[macroproceso] || []).some((item) =>
+    normalizarValor(item.codigo || "") === codigoNormalizado
+  );
+}
+
+async function guardarNuevaEvidenciaMacroproceso(event) {
+  event.preventDefault();
+
+  const macroproceso = macroprocesoRegistroEvidenciaActual;
+  if (!macroproceso) {
+    mostrarToast("No se pudo identificar el macroproceso.", "error");
+    return;
+  }
+
+  const codigo = document.getElementById("nuevaEvidenciaCodigo")?.value.trim();
+  const titulo = document.getElementById("nuevaEvidenciaTitulo")?.value.trim();
+  const estado = document.getElementById("nuevaEvidenciaEstado")?.value || "pendiente";
+  const prioridad = document.getElementById("nuevaEvidenciaPrioridad")?.value || "media";
+  const avance = Number(document.getElementById("nuevaEvidenciaAvance")?.value || 0);
+
+  if (!codigo || !titulo) {
+    mostrarToast("Complete el código y título de la evidencia.", "warning");
+    return;
+  }
+
+  if (!Number.isFinite(avance) || avance < 0 || avance > 100) {
+    mostrarToast("El avance debe estar entre 0 y 100.", "warning");
+    return;
+  }
+
+  if (existeCodigoEvidenciaEnMacroproceso(macroproceso, codigo)) {
+    mostrarToast("Ya existe una evidencia con ese código en este macroproceso.", "error");
+    return;
+  }
+
+  const payload = {
+    macroproceso,
+    codigo,
+    titulo,
+    descripcion: document.getElementById("nuevaEvidenciaDescripcion")?.value.trim() || null,
+    tipo_evidencia: document.getElementById("nuevaEvidenciaTipo")?.value.trim() || null,
+    responsable: document.getElementById("nuevaEvidenciaResponsable")?.value.trim() || null,
+    mes_programado: document.getElementById("nuevaEvidenciaMes")?.value.trim() || null,
+    fecha_programada: document.getElementById("nuevaEvidenciaFecha")?.value || null,
+    estado,
+    prioridad,
+    avance,
+    observacion: document.getElementById("nuevaEvidenciaObservacion")?.value.trim() || null,
+    origen_documento: document.getElementById("nuevaEvidenciaOrigen")?.value.trim() || "Registro manual"
+  };
+
+  try {
+    await fetchJson(`${API_URL}/api/macroprocesos/evidencias`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    mostrarToast("Evidencia registrada correctamente.", "success");
+    cerrarModalRegistroEvidenciaMacroproceso();
+    await cargarVistaMacroproceso(macroproceso);
+    await cargarSemaforoCumplimiento();
+  } catch (error) {
+    console.error("Error al registrar evidencia:", error);
+    mostrarToast(error.message || "No se pudo registrar la evidencia.", "error");
+  }
+}
+
 function abrirModalEvidenciaMacroproceso(id, modo = "detalle") {
   const evidencia = buscarEvidenciaMacroproceso(id);
   if (!evidencia) {
-    mostrarToast("No se encontr? la evidencia seleccionada.", "warning");
+    mostrarToast("No se encontró la evidencia seleccionada.", "warning");
     return;
   }
 
