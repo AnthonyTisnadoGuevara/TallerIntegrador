@@ -1780,6 +1780,82 @@ textarea {
   padding-left: 20px;
 }
 
+.metrics-modal {
+  max-height: 92vh;
+}
+
+.metrics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.metric-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.metric-section h3 {
+  margin: 0 0 12px;
+  color: #111827;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.metric-card,
+.macroprocess-metric-card,
+.key-indicator-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.metric-value {
+  display: block;
+  color: #0f172a;
+  font-size: 1.8rem;
+  line-height: 1.1;
+}
+
+.metric-label {
+  display: block;
+  color: #64748b;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.macroprocess-metric-card h4 {
+  margin: 0 0 10px;
+  color: #111827;
+}
+
+.macroprocess-metric-card p {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 7px 0;
+}
+
+.macroprocess-metric-card span,
+.key-indicator-card p {
+  color: #64748b;
+}
+
+.key-indicator-card .metric-value {
+  margin: 8px 0;
+}
+
+.metrics-actions {
+  gap: 10px;
+}
+
 @media print {
   body * {
     visibility: hidden;

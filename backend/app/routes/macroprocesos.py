@@ -1062,6 +1062,142 @@ def obtener_semaforo_macroprocesos():
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@router.get("/metricas-finales")
+def obtener_metricas_finales_sistema():
+    try:
+        evidencias = _safe_select_table_reporte("macroproceso_evidencias")
+        acciones = _safe_select_table_reporte("acciones_mejora")
+        alertas = _safe_select_table_reporte("alertas_inteligentes_macroprocesos")
+        analisis = _safe_select_table_reporte("analisis_ia_macroprocesos")
+        validaciones = _safe_select_table_reporte("validacion_ia_macroproceso_evidencias")
+        _safe_select_table_reporte("historial_macroproceso_evidencias")
+        brechas = _safe_select_table_reporte("brechas_curriculares")
+        silabos = _safe_select_table_reporte("silabos")
+
+        evidencias_por_id = {
+            item.get("id"): item
+            for item in evidencias
+            if item.get("id")
+        }
+        alertas_activas = [item for item in alertas if item.get("estado") == "activa"]
+
+        total_evidencias = len(evidencias)
+        evidencias_con_archivo = sum(1 for item in evidencias if item.get("archivo_url"))
+        evidencias_sin_archivo = total_evidencias - evidencias_con_archivo
+        acciones_pendientes = sum(1 for item in acciones if item.get("estado") == "pendiente")
+        acciones_en_proceso = sum(1 for item in acciones if item.get("estado") == "en_proceso")
+        acciones_completadas = sum(
+            1 for item in acciones if item.get("estado") in {"atendida", "completada", "completado"}
+        )
+        alertas_criticas = sum(1 for item in alertas_activas if item.get("nivel_alerta") == "critica")
+        validaciones_altas = sum(1 for item in validaciones if item.get("nivel_validez") == "alto")
+        validaciones_medias = sum(1 for item in validaciones if item.get("nivel_validez") == "medio")
+        validaciones_bajas = sum(1 for item in validaciones if item.get("nivel_validez") == "bajo")
+        brechas_alta_prioridad = sum(1 for item in brechas if item.get("prioridad") == "alta")
+
+        avance_general = round(
+            sum(int(item.get("avance") or 0) for item in evidencias) / total_evidencias
+        ) if total_evidencias else 0
+        cobertura_documental = round((evidencias_con_archivo / total_evidencias) * 100) if total_evidencias else 0
+
+        por_macroproceso = []
+        for macroproceso, nombre in MACROPROCESOS_SEMAFORO.items():
+            if macroproceso == "gestion_silabos":
+                total_silabos = len(silabos)
+                silabos_completos = sum(1 for item in silabos if item.get("estado") == "completo")
+                avance_promedio = round((silabos_completos / total_silabos) * 100) if total_silabos else 0
+                total_evidencias_macro = total_silabos
+            else:
+                evidencias_macro = [
+                    item for item in evidencias if item.get("macroproceso") == macroproceso
+                ]
+                total_evidencias_macro = len(evidencias_macro)
+                avance_promedio = round(
+                    sum(int(item.get("avance") or 0) for item in evidencias_macro) / total_evidencias_macro
+                ) if total_evidencias_macro else 0
+
+            acciones_macro = [
+                item
+                for item in acciones
+                if _macroproceso_accion(item, evidencias_por_id) == macroproceso
+            ]
+
+            por_macroproceso.append(
+                {
+                    "macroproceso": macroproceso,
+                    "nombre": nombre,
+                    "total_evidencias": total_evidencias_macro,
+                    "avance_promedio": avance_promedio,
+                    "alertas_activas": sum(
+                        1 for item in alertas_activas if item.get("macroproceso") == macroproceso
+                    ),
+                    "acciones_mejora": len(acciones_macro),
+                    "analisis_ia": sum(1 for item in analisis if item.get("macroproceso") == macroproceso),
+                    "validaciones_ia": sum(
+                        1 for item in validaciones if item.get("macroproceso") == macroproceso
+                    ),
+                }
+            )
+
+        indicadores_clave = [
+            {
+                "indicador": "Cobertura de evidencias con sustento",
+                "valor": f"{cobertura_documental}%",
+                "interpretacion": "Porcentaje de evidencias con archivo de sustento.",
+            },
+            {
+                "indicador": "Cumplimiento promedio",
+                "valor": f"{avance_general}%",
+                "interpretacion": "Promedio general de avance de evidencias.",
+            },
+            {
+                "indicador": "Acciones pendientes",
+                "valor": acciones_pendientes,
+                "interpretacion": "Cantidad de acciones de mejora que requieren seguimiento.",
+            },
+            {
+                "indicador": "Alertas críticas",
+                "valor": alertas_criticas,
+                "interpretacion": "Cantidad de alertas que requieren atención prioritaria.",
+            },
+            {
+                "indicador": "Uso de IA",
+                "valor": len(analisis) + len(validaciones),
+                "interpretacion": "Cantidad de análisis y validaciones generadas con IA.",
+            },
+        ]
+
+        return {
+            "message": "Métricas finales generadas correctamente",
+            "data": {
+                "resumen_general": {
+                    "total_macroprocesos": len(MACROPROCESOS_SEMAFORO),
+                    "total_evidencias": total_evidencias,
+                    "evidencias_con_archivo": evidencias_con_archivo,
+                    "evidencias_sin_archivo": evidencias_sin_archivo,
+                    "total_acciones_mejora": len(acciones),
+                    "acciones_pendientes": acciones_pendientes,
+                    "acciones_en_proceso": acciones_en_proceso,
+                    "acciones_completadas": acciones_completadas,
+                    "total_alertas_activas": len(alertas_activas),
+                    "alertas_criticas": alertas_criticas,
+                    "total_analisis_ia": len(analisis),
+                    "total_validaciones_ia": len(validaciones),
+                    "validaciones_altas": validaciones_altas,
+                    "validaciones_medias": validaciones_medias,
+                    "validaciones_bajas": validaciones_bajas,
+                    "total_brechas": len(brechas),
+                    "brechas_alta_prioridad": brechas_alta_prioridad,
+                    "total_silabos": len(silabos),
+                },
+                "por_macroproceso": por_macroproceso,
+                "indicadores_clave": indicadores_clave,
+            },
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @router.get("/reporte-integral")
 def obtener_reporte_integral_mejora_continua():
     try:

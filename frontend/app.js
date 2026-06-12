@@ -13,6 +13,7 @@ let macroprocesoAccionesActual = null;
 let macroprocesoRegistroAccionActual = null;
 let macroprocesoRegistroEvidenciaActual = null;
 let reporteIntegralActual = null;
+let metricasFinalesActual = null;
 let evidenciasMacroprocesosGlobal = {
   planificacion_estrategica: [],
   gestion_academica: []
@@ -1822,6 +1823,132 @@ function renderReporteRecomendaciones(recomendaciones) {
       ${recomendaciones.map((item) => `<li>${escaparHtml(item)}</li>`).join("")}
     </ul>
   `;
+}
+
+async function verMetricasFinales() {
+  try {
+    mostrarToast("Cargando métricas finales...", "info");
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/metricas-finales`);
+    metricasFinalesActual = result.data || {};
+    abrirModalMetricasFinales(metricasFinalesActual);
+  } catch (error) {
+    console.error("Error al cargar métricas finales:", error);
+    mostrarToast("No se pudieron cargar las métricas finales: " + error.message, "error");
+  }
+}
+
+function abrirModalMetricasFinales(data) {
+  const contenedor = document.getElementById("contenidoMetricasFinales");
+  if (!contenedor) return;
+
+  contenedor.innerHTML = renderMetricasFinales(data || {});
+  mostrarModal("modalMetricasFinales");
+}
+
+function cerrarModalMetricasFinales() {
+  ocultarModal("modalMetricasFinales");
+}
+
+function renderMetricasFinales(data) {
+  const resumen = data.resumen_general || {};
+  const porMacroproceso = data.por_macroproceso || [];
+  const indicadores = data.indicadores_clave || [];
+
+  return `
+    <section class="metric-section">
+      <h3>Resumen general</h3>
+      <div class="metrics-grid">
+        ${renderMetricCard("Macroprocesos", resumen.total_macroprocesos)}
+        ${renderMetricCard("Evidencias", resumen.total_evidencias)}
+        ${renderMetricCard("Con archivo", resumen.evidencias_con_archivo)}
+        ${renderMetricCard("Sin archivo", resumen.evidencias_sin_archivo)}
+        ${renderMetricCard("Acciones", resumen.total_acciones_mejora)}
+        ${renderMetricCard("Pendientes", resumen.acciones_pendientes)}
+        ${renderMetricCard("Alertas activas", resumen.total_alertas_activas)}
+        ${renderMetricCard("Alertas críticas", resumen.alertas_criticas)}
+        ${renderMetricCard("Análisis IA", resumen.total_analisis_ia)}
+        ${renderMetricCard("Validaciones IA", resumen.total_validaciones_ia)}
+        ${renderMetricCard("Brechas", resumen.total_brechas)}
+        ${renderMetricCard("Sílabos", resumen.total_silabos)}
+      </div>
+    </section>
+
+    <section class="metric-section">
+      <h3>Métricas por macroproceso</h3>
+      <div class="metrics-grid">
+        ${porMacroproceso.map(renderMacroprocessMetricCard).join("") || `<p class="text-muted">No hay métricas por macroproceso.</p>`}
+      </div>
+    </section>
+
+    <section class="metric-section">
+      <h3>Indicadores clave</h3>
+      <div class="metrics-grid">
+        ${indicadores.map(renderKeyIndicatorCard).join("") || `<p class="text-muted">No hay indicadores clave registrados.</p>`}
+      </div>
+    </section>
+  `;
+}
+
+function renderMetricCard(label, value) {
+  return `
+    <article class="metric-card">
+      <strong class="metric-value">${escaparHtml(value ?? 0)}</strong>
+      <span class="metric-label">${escaparHtml(label)}</span>
+    </article>
+  `;
+}
+
+function renderMacroprocessMetricCard(item) {
+  return `
+    <article class="macroprocess-metric-card">
+      <h4>${escaparHtml(item.nombre || nombreMacroproceso(item.macroproceso))}</h4>
+      <p><span>Evidencias</span><strong>${escaparHtml(item.total_evidencias ?? 0)}</strong></p>
+      <p><span>Avance promedio</span><strong>${escaparHtml(item.avance_promedio ?? 0)}%</strong></p>
+      <p><span>Alertas activas</span><strong>${escaparHtml(item.alertas_activas ?? 0)}</strong></p>
+      <p><span>Acciones de mejora</span><strong>${escaparHtml(item.acciones_mejora ?? 0)}</strong></p>
+      <p><span>Análisis IA</span><strong>${escaparHtml(item.analisis_ia ?? 0)}</strong></p>
+      <p><span>Validaciones IA</span><strong>${escaparHtml(item.validaciones_ia ?? 0)}</strong></p>
+    </article>
+  `;
+}
+
+function renderKeyIndicatorCard(item) {
+  return `
+    <article class="key-indicator-card">
+      <span class="metric-label">${escaparHtml(item.indicador || "Indicador")}</span>
+      <strong class="metric-value">${escaparHtml(item.valor ?? 0)}</strong>
+      <p>${escaparHtml(item.interpretacion || "-")}</p>
+    </article>
+  `;
+}
+
+function descargarMetricasFinalesCsv() {
+  const indicadores = metricasFinalesActual?.indicadores_clave || [];
+  if (!indicadores.length) {
+    mostrarToast("No hay métricas disponibles para descargar.", "warning");
+    return;
+  }
+
+  const filas = [
+    ["Indicador", "Valor", "Interpretación"],
+    ...indicadores.map((item) => [
+      item.indicador || "",
+      item.valor ?? "",
+      item.interpretacion || ""
+    ])
+  ];
+  const csv = filas
+    .map((fila) => fila.map((valor) => `"${String(valor).replaceAll('"', '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = "metricas_finales_sistema.csv";
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
 }
 
 async function cargarDatos() {

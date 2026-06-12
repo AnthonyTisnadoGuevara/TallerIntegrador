@@ -28,6 +28,7 @@
         <button class="btn btn-warning" type="button" onclick="generarAlertasInteligentes()">Generar alertas inteligentes</button>
         <button class="btn btn-info" type="button" onclick="verAlertasInteligentes()">Ver alertas inteligentes</button>
         <button class="btn btn-primary" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
+        <button class="btn btn-secondary" type="button" onclick="verMetricasFinales()">Ver m&eacute;tricas finales</button>
       </div>
 
       <section class="traffic-light-dashboard">
@@ -583,6 +584,22 @@
         <button type="button" class="btn btn-primary download-json-btn" onclick="descargarReporteIntegralJson()">Descargar como JSON</button>
         <button type="button" class="btn btn-secondary print-report-btn" onclick="imprimirReporteIntegral()">Imprimir / Guardar como PDF</button>
         <button type="button" class="btn btn-secondary" onclick="cerrarModalReporteIntegral()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalMetricasFinales" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalMetricasFinales">
+    <div class="modal-card modal-extra-large metrics-modal">
+      <div class="modal-header">
+        <h2 id="tituloModalMetricasFinales">M&eacute;tricas finales del sistema</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalMetricasFinales()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="contenidoMetricasFinales" class="metrics-content"></div>
+      </div>
+      <div class="modal-footer metrics-actions">
+        <button type="button" class="btn btn-primary" onclick="descargarMetricasFinalesCsv()">Descargar m&eacute;tricas CSV</button>
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalMetricasFinales()">Cerrar</button>
       </div>
     </div>
   </div>
