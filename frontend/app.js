@@ -1,4 +1,7 @@
-const API_URL = "https://tallerintegrador.onrender.com";
+const API_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ? "http://127.0.0.1:8000"
+  : "https://tallerintegrador.onrender.com";
+console.log("[API_URL]", API_URL);
 let silabosGlobal = [];
 let paginaActual = 1;
 const SILABOS_POR_PAGINA = 10;
@@ -6,6 +9,7 @@ let trazabilidadDataGlobal = [];
 let brechasDataGlobal = [];
 let accionesMejoraGlobal = [];
 let alertasInteligentesGlobal = [];
+let macroprocesoAccionesActual = null;
 let evidenciasMacroprocesosGlobal = {
   planificacion_estrategica: [],
   gestion_academica: []
@@ -35,6 +39,23 @@ const MACROPROCESOS_CONFIG = {
     summaryCards: ["total", "pendientes", "en_proceso", "completadas", "observadas", "avance_promedio"]
   }
 };
+
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, options);
+  let data = null;
+
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(data.detail || data.message || `Error HTTP ${response.status}`);
+  }
+
+  return data;
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (typeof protegerPagina === "function") {
@@ -315,7 +336,7 @@ function buscarEvidenciaMacroproceso(id) {
 function abrirModalEvidenciaMacroproceso(id, modo = "detalle") {
   const evidencia = buscarEvidenciaMacroproceso(id);
   if (!evidencia) {
-    mostrarToast("No se encontró la evidencia seleccionada.", "warning");
+    mostrarToast("No se encontr? la evidencia seleccionada.", "warning");
     return;
   }
 
@@ -334,7 +355,7 @@ function abrirModalEvidenciaMacroproceso(id, modo = "detalle") {
       <div><span>Avance</span><strong>${avance}%</strong></div>
     </div>
     <h3>${escaparHtml(evidencia.titulo || "Evidencia")}</h3>
-    <p><strong>Descripción:</strong> ${escaparHtml(evidencia.descripcion || "Sin descripción registrada.")}</p>
+    <p><strong>Descripci?n:</strong> ${escaparHtml(evidencia.descripcion || "Sin descripci?n registrada.")}</p>
     <p><strong>Tipo de evidencia:</strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</p>
     <p><strong>Responsable:</strong> ${escaparHtml(evidencia.responsable || "Sin responsable")}</p>
     <p><strong>Mes programado:</strong> ${escaparHtml(evidencia.mes_programado || "-")}</p>
@@ -499,14 +520,9 @@ async function validarEvidenciaIA(evidenciaId) {
 
   try {
     mostrarToast("Validando evidencia documental con IA...", "info");
-    const response = await fetch(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/validar-ia`, {
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/validar-ia`, {
       method: "POST"
     });
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo validar la evidencia con IA.");
-    }
 
     mostrarToast("Validacion IA generada correctamente.", "success");
     abrirModalValidacionEvidenciaIA(result.data || {});
@@ -518,12 +534,7 @@ async function validarEvidenciaIA(evidenciaId) {
 
 async function verUltimaValidacionEvidenciaIA(evidenciaId) {
   try {
-    const response = await fetch(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/validacion-ia`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo obtener la validacion IA.");
-    }
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/validacion-ia`);
 
     if (!result.data) {
       mostrarToast("Esta evidencia todavia no tiene validaciones IA.", "info");
@@ -604,12 +615,7 @@ function cerrarModalValidacionEvidenciaIA() {
 
 async function cargarAlertasActivasMacroproceso(macroproceso) {
   try {
-    const response = await fetch(`${API_URL}/api/macroprocesos/alertas?macroproceso=${encodeURIComponent(macroproceso)}&estado=activa`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudieron cargar las alertas.");
-    }
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/alertas?macroproceso=${encodeURIComponent(macroproceso)}&estado=activa`);
 
     const otrasAlertas = alertasInteligentesGlobal.filter((item) => item.macroproceso !== macroproceso);
     alertasInteligentesGlobal = otrasAlertas.concat(result.alertas || []);
@@ -626,18 +632,13 @@ async function generarAlertasInteligentes() {
     console.log("[Frontend Alertas] API_URL:", API_URL);
     console.log("[Frontend Alertas] Llamando a:", url);
 
-    const response = await fetch(url, {
+    const data = await fetchJson(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       }
     });
-    const data = await response.json();
     console.log("[Frontend Alertas] Respuesta:", data);
-
-    if (!response.ok) {
-      throw new Error(data.detail || data.message || "No se pudieron generar alertas inteligentes.");
-    }
 
     mostrarNotificacion(
       `Alertas generadas correctamente. Creadas: ${data.alertas_creadas || 0}. Existentes: ${data.alertas_existentes || 0}.`,
@@ -660,13 +661,8 @@ async function cargarAlertasInteligentes() {
     const url = `${API_URL}/api/macroprocesos/alertas?estado=activa`;
     console.log("[Frontend Alertas] Llamando a:", url);
 
-    const response = await fetch(url);
-    const data = await response.json();
+    const data = await fetchJson(url);
     console.log("[Frontend Alertas] Respuesta:", data);
-
-    if (!response.ok) {
-      throw new Error(data.detail || data.message || "No se pudieron cargar las alertas.");
-    }
 
     alertasInteligentesGlobal = data.alertas || [];
     renderAlertasInteligentes(alertasInteligentesGlobal);
@@ -726,16 +722,11 @@ function renderAlertasInteligentes(alertas) {
 
 async function actualizarAlertaInteligente(alertaId, estado) {
   try {
-    const response = await fetch(`${API_URL}/api/macroprocesos/alertas/${alertaId}`, {
+    await fetchJson(`${API_URL}/api/macroprocesos/alertas/${alertaId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ estado })
     });
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo actualizar la alerta.");
-    }
 
     mostrarToast("Alerta actualizada correctamente.", "success");
     await cargarSemaforoCumplimiento();
@@ -760,12 +751,7 @@ async function cargarSemaforoCumplimiento() {
 
   contenedor.innerHTML = `<p class="text-muted">Cargando semaforo de cumplimiento...</p>`;
   try {
-    const response = await fetch(`${API_URL}/api/macroprocesos/semaforo`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo cargar el semaforo.");
-    }
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/semaforo`);
 
     renderSemaforoCumplimiento(result.semaforos || []);
   } catch (error) {
@@ -810,12 +796,7 @@ async function verHistorialAnalisisIA(macroproceso) {
   mostrarModal("modalHistorialIA");
 
   try {
-    const response = await fetch(`${API_URL}/api/macroprocesos/analisis-ia/historial?macroproceso=${encodeURIComponent(macroproceso)}&limit=10`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo cargar el historial IA.");
-    }
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/analisis-ia/historial?macroproceso=${encodeURIComponent(macroproceso)}&limit=10`);
 
     renderHistorialAnalisisIA(result.historial || []);
   } catch (error) {
@@ -856,12 +837,7 @@ function renderHistorialAnalisisIA(historial) {
 
 async function verDetalleAnalisisIA(analisisId) {
   try {
-    const response = await fetch(`${API_URL}/api/macroprocesos/analisis-ia/historial/${analisisId}`);
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.detail || "No se pudo cargar el detalle del análisis IA.");
-    }
+    const data = await fetchJson(`${API_URL}/api/macroprocesos/analisis-ia/historial/${analisisId}`);
 
     renderDetalleAnalisisIA(data);
   } catch (error) {
@@ -908,12 +884,7 @@ async function compararUltimosAnalisisIA() {
   if (!macroprocesoHistorialIAActual) return;
 
   try {
-    const response = await fetch(`${API_URL}/api/macroprocesos/analisis-ia/comparar?macroproceso=${encodeURIComponent(macroprocesoHistorialIAActual)}`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo comparar el historial IA.");
-    }
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/analisis-ia/comparar?macroproceso=${encodeURIComponent(macroprocesoHistorialIAActual)}`);
 
     const comparacion = result.comparacion || {};
     const contenedor = document.getElementById("comparacionHistorialIA");
@@ -923,7 +894,7 @@ async function compararUltimosAnalisisIA() {
       <p><strong>Riesgo anterior:</strong> ${escaparHtml(comparacion.riesgo_anterior || "-")}</p>
       <p><strong>Riesgo actual:</strong> ${escaparHtml(comparacion.riesgo_actual || "-")}</p>
       <p><strong>Cambio:</strong> ${escaparHtml(formatearTexto(comparacion.cambio_riesgo || "sin_datos"))}</p>
-      <p>${escaparHtml(comparacion.resumen || "Sin resumen de comparación.")}</p>
+      <p>${escaparHtml(comparacion.resumen || "Sin resumen de comparaci?n.")}</p>
     `;
   } catch (error) {
     console.error("Error al comparar análisis IA:", error);
@@ -938,14 +909,9 @@ function cerrarModalHistorialIA() {
 
 async function generarAccionDesdeEvidencia(evidenciaId) {
   try {
-    const response = await fetch(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/generar-accion`, {
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/generar-accion`, {
       method: "POST"
     });
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo generar la acción de mejora.");
-    }
 
     mostrarToast(result.message || "Acción de mejora generada correctamente.", "success");
     await cargarDashboardAccionesMejora();
@@ -957,20 +923,15 @@ async function generarAccionDesdeEvidencia(evidenciaId) {
 
 async function generarAccionesDesdeEvidenciasMacroproceso(macroproceso) {
   try {
-    const response = await fetch(`${API_URL}/api/macroprocesos/${macroproceso}/generar-acciones-desde-evidencias`, {
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/${macroproceso}/generar-acciones-desde-evidencias`, {
       method: "POST"
     });
-    const result = await response.json();
 
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudieron generar acciones de mejora.");
-    }
-
-    mostrarToast(
-      `Se crearon ${result.acciones_creadas || 0} acciones de mejora. Ya existían ${result.acciones_existentes || 0} acciones.`,
-      "success"
-    );
+    const creadas = result.acciones_creadas || 0;
+    const existentes = result.acciones_existentes || 0;
+    mostrarToast(`Se crearon ${creadas} acciones de mejora. Ya existían ${existentes}.`, creadas > 0 ? "success" : "info");
     await cargarDashboardAccionesMejora();
+    await verAccionesMacroproceso(macroproceso);
   } catch (error) {
     console.error("Error al generar acciones desde evidencias:", error);
     mostrarToast("No se pudieron generar acciones de mejora desde evidencias.", "error");
@@ -979,22 +940,17 @@ async function generarAccionesDesdeEvidenciasMacroproceso(macroproceso) {
 
 async function analizarPlanificacionIA() {
   try {
-    mostrarToast("Analizando planificación estratégica con IA...", "info");
+    mostrarToast("Analizando planificaci?n estrat?gica con IA...", "info");
 
-    const response = await fetch(`${API_URL}/api/macroprocesos/planificacion/analizar`, {
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/planificacion/analizar`, {
       method: "POST"
     });
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo generar el análisis de planificación.");
-    }
 
     abrirModalPlanificacionIA(result.data || {});
-    mostrarToast("Análisis de planificación generado correctamente.", "success");
+    mostrarToast("Análisis de planificaci?n generado correctamente.", "success");
   } catch (error) {
-    console.error("Error al analizar planificación:", error);
-    mostrarToast("Error al analizar planificación: " + error.message, "error");
+    console.error("Error al analizar planificaci?n:", error);
+    mostrarToast("Error al analizar planificaci?n: " + error.message, "error");
   }
 }
 
@@ -1026,7 +982,7 @@ function renderAccionesPlanificacion(acciones) {
               <span class="evidence-code">${escaparHtml(accion.evidencia_relacionada || "Sin código")}</span>
             </div>
             <h3>${escaparHtml(accion.titulo || "Acción sugerida")}</h3>
-            <p>${escaparHtml(accion.descripcion || "Sin descripción.")}</p>
+            <p>${escaparHtml(accion.descripcion || "Sin descripci?n.")}</p>
             <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Por definir")}</p>
           </article>
         `;
@@ -1098,17 +1054,9 @@ async function analizarGestionAcademicaIA() {
   try {
     mostrarToast("Analizando gestión académica con IA...", "info");
 
-    const response = await fetch(`${API_URL}/api/macroprocesos/gestion-academica/analizar`, {
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/gestion-academica/analizar`, {
       method: "POST"
     });
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.detail
-        || "No se pudo generar el análisis de gestión académica. Revise la conexión con el backend o la configuración del agente."
-      );
-    }
 
     abrirModalGestionAcademicaIA(result.data || {});
     mostrarToast("Análisis de gestión académica generado correctamente.", "success");
@@ -1234,20 +1182,12 @@ async function analizarMejoraContinuaIA() {
   try {
     mostrarToast("Analizando mejora continua con IA...", "info");
 
-    const response = await fetch(`${API_URL}/api/macroprocesos/mejora-continua/analizar`, {
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/mejora-continua/analizar`, {
       method: "POST"
     });
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.detail
-        || "No se pudo generar el análisis integral de mejora continua. Revise la conexión con el backend o la configuración del agente coordinador."
-      );
-    }
 
     abrirModalMejoraContinuaIA(result.data || {});
-    mostrarToast("Diagnóstico integral generado correctamente.", "success");
+    mostrarToast("Diagn?stico integral generado correctamente.", "success");
   } catch (error) {
     console.error("Error al analizar mejora continua:", error);
     mostrarToast(
@@ -1323,8 +1263,8 @@ function renderAccionesPrioritarias(acciones) {
               <span class="evidence-code">${escaparHtml(accion.macroproceso_relacionado || "Mejora continua")}</span>
             </div>
             <h3>${escaparHtml(accion.titulo || "Acción prioritaria")}</h3>
-            <p>${escaparHtml(accion.descripcion || "Sin descripción.")}</p>
-            <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Comité académico")}</p>
+            <p>${escaparHtml(accion.descripcion || "Sin descripci?n.")}</p>
+            <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Comité acad?mico")}</p>
           </article>
         `;
       }).join("")}
@@ -1344,7 +1284,7 @@ function abrirModalMejoraContinuaIA(data) {
   if (!totalDatos) {
     document.getElementById("contenidoMejoraContinuaIA").innerHTML = `
       <div class="analisis-section">
-        <p class="text-muted">No se encontraron datos suficientes para generar el diagnóstico integral.</p>
+        <p class="text-muted">No se encontraron datos suficientes para generar el diagn?stico integral.</p>
       </div>
     `;
     mostrarModal("modalMejoraContinuaIA");
@@ -1403,7 +1343,7 @@ function abrirModalMejoraContinuaIA(data) {
     </div>
 
     <div class="analisis-section">
-      <h3>Recomendaciones para el comité académico</h3>
+      <h3>Recomendaciones para el comité acad?mico</h3>
       ${renderListaPlanificacion(data.recomendaciones_comite, "Sin recomendaciones registradas.")}
     </div>
 
@@ -1791,14 +1731,14 @@ async function verValidacion(id) {
       <p><strong>Código:</strong> ${result.silabo.codigo_asignatura}</p>
       <p><strong>Estado:</strong> ${result.silabo.estado}</p>
       <p><strong>Cumplimiento:</strong> ${result.silabo.porcentaje_cumplimiento}%</p>
-      <h4>Validación de secciones</h4>
+      <h4>Validaci?n de secciones</h4>
       <ul>
     `;
 
     result.validacion.forEach((item) => {
       html += `
         <li>
-          ${item.cumple ? "✅" : "❌"}
+          ${item.cumple ? "?" : "?"}
           <strong>${item.seccion}</strong>: ${item.observacion}
         </li>
       `;
@@ -1807,7 +1747,7 @@ async function verValidacion(id) {
     html += `</ul>`;
     detalle.innerHTML = html;
   } catch (error) {
-    console.error("Error al consultar validación:", error);
+    console.error("Error al consultar validaci?n:", error);
   }
 }
 
@@ -1827,7 +1767,7 @@ async function verHistorial(id) {
     result.historial.forEach((item) => {
       html += `
         <li>
-          <strong>${item.estado_anterior}</strong> → <strong>${item.estado_nuevo}</strong><br>
+          <strong>${item.estado_anterior}</strong> ? <strong>${item.estado_nuevo}</strong><br>
           ${item.observacion}<br>
           <small>${item.created_at}</small>
         </li>
@@ -2434,9 +2374,9 @@ function renderizarResumenTrazabilidad() {
     renderSummaryCard("Coherencia alta", contarPorCampo(data, "nivel_coherencia", "alto")),
     renderSummaryCard("Coherencia media", contarPorCampo(data, "nivel_coherencia", "medio")),
     renderSummaryCard("Coherencia baja", contarPorCampo(data, "nivel_coherencia", "bajo")),
-    renderSummaryCard("Progresión adecuada", contarPorCampo(data, "tipo_relacion", "progresion_adecuada")),
-    renderSummaryCard("Repetición", contarPorCampo(data, "tipo_relacion", "repeticion")),
-    renderSummaryCard("Vacío formativo", contarPorCampo(data, "tipo_relacion", "vacio_formativo")),
+    renderSummaryCard("Progresi?n adecuada", contarPorCampo(data, "tipo_relacion", "progresion_adecuada")),
+    renderSummaryCard("Repetici?n", contarPorCampo(data, "tipo_relacion", "repeticion")),
+    renderSummaryCard("Vac?o formativo", contarPorCampo(data, "tipo_relacion", "vacio_formativo")),
     renderSummaryCard("Continuidad temática", contarPorCampo(data, "tipo_relacion", "continuidad_tematica"))
   ].join("");
 }
@@ -2472,10 +2412,10 @@ function renderizarTrazabilidadFiltrada() {
     return `
       <article class="trace-card trace-${coherencia}">
         <div class="trace-header">
-          <span class="cycle-badge">Ciclo ${escaparHtml(item.ciclo_origen ?? "-")} &rarr; Ciclo ${escaparHtml(item.ciclo_destino ?? "-")}</span>
+          <span class="cycle-badge">Ciclo ${escaparHtml(item.ciclo_origen ?? "-")} ? Ciclo ${escaparHtml(item.ciclo_destino ?? "-")}</span>
           ${renderBadge(item.nivel_coherencia)}
         </div>
-        <h3>${escaparHtml(item.asignatura_origen ?? "-")} &rarr; ${escaparHtml(item.asignatura_destino ?? "-")}</h3>
+        <h3>${escaparHtml(item.asignatura_origen ?? "-")} ? ${escaparHtml(item.asignatura_destino ?? "-")}</h3>
         <p><strong>Tipo:</strong> ${escaparHtml(formatearTexto(item.tipo_relacion))}</p>
         <p><strong>Observación:</strong> ${escaparHtml(item.observacion ?? "-")}</p>
         <p><strong>Sugerencia:</strong> ${escaparHtml(item.sugerencia ?? "-")}</p>
@@ -2558,7 +2498,7 @@ function renderizarBrechasFiltradas() {
         <h3>${escaparHtml(item.asignatura ?? "-")}</h3>
         <p><strong>Tipo de brecha:</strong> ${escaparHtml(formatearTexto(item.tipo_brecha))}</p>
         <p><strong>Problema detectado:</strong> ${escaparHtml(item.descripcion ?? "-")}</p>
-        <p><strong>Recomendación de mejora:</strong> ${escaparHtml(item.recomendacion ?? "-")}</p>
+        <p><strong>Recomendaci?n de mejora:</strong> ${escaparHtml(item.recomendacion ?? "-")}</p>
         <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
         <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.estado))}</p>
       </article>
@@ -2622,6 +2562,7 @@ async function cargarDashboardAccionesMejora() {
 
 async function verAccionesMejora() {
   try {
+    macroprocesoAccionesActual = null;
     const response = await fetch(`${API_URL}/api/acciones-mejora/`);
     const result = await response.json();
 
@@ -2637,7 +2578,29 @@ async function verAccionesMejora() {
   }
 }
 
+async function verAccionesMacroproceso(macroproceso) {
+  try {
+    macroprocesoAccionesActual = macroproceso;
+    const result = await fetchJson(
+      `${API_URL}/api/acciones-mejora/?macroproceso=${encodeURIComponent(macroproceso)}&origen_tipo=macroproceso_evidencia`
+    );
+
+    accionesMejoraGlobal = result.data || [];
+    abrirModalAccionesMejora();
+  } catch (error) {
+    console.error("Error al obtener acciones del macroproceso:", error);
+    mostrarToast("Error al obtener acciones del macroproceso: " + error.message, "error");
+  }
+}
+
 function abrirModalAccionesMejora() {
+  const titulo = document.getElementById("tituloModalAccionesMejora");
+  if (titulo) {
+    titulo.textContent = macroprocesoAccionesActual
+      ? `Acciones de mejora - ${nombreMacroproceso(macroprocesoAccionesActual)}`
+      : "Acciones de mejora continua";
+  }
+
   document.getElementById("buscarAccionesMejora").value = "";
   document.getElementById("filtroEstadoAcciones").value = "todos";
   document.getElementById("filtroPrioridadAcciones").value = "todos";
@@ -2651,7 +2614,18 @@ function abrirModalAccionesMejora() {
 }
 
 function cerrarModalAccionesMejora() {
+  macroprocesoAccionesActual = null;
   ocultarModal("modalAccionesMejora");
+}
+
+function nombreMacroproceso(macroproceso) {
+  const nombres = {
+    planificacion_estrategica: "Planificación Estratégica",
+    gestion_academica: "Gestión Académica",
+    gestion_silabos: "Gestión de Sílabos",
+    mejora_continua: "Mejora continua"
+  };
+  return nombres[macroproceso] || formatearTexto(macroproceso || "-");
 }
 
 function renderizarAccionesMejoraFiltradas() {
@@ -2690,13 +2664,22 @@ function renderizarTarjetasAcciones(data) {
   if (!contenedor) return;
 
   if (data.length === 0) {
-    contenedor.innerHTML = `<p class="text-muted">No hay acciones de mejora registradas.</p>`;
+    contenedor.innerHTML = `<p class="text-muted">${
+      macroprocesoAccionesActual
+        ? "No hay acciones de mejora generadas para este macroproceso."
+        : "No hay acciones de mejora registradas."
+    }</p>`;
     return;
   }
 
   contenedor.innerHTML = data.map((accion) => {
     const prioridad = accion.prioridad || "media";
     const estado = accion.estado || "pendiente";
+    const evidenciaRelacionada = accion.evidencia_relacionada || {};
+    const macroproceso = accion.macroproceso || macroprocesoAccionesActual || "-";
+    const fechaCreacion = accion.created_at
+      ? new Date(accion.created_at).toLocaleString()
+      : "Sin fecha";
 
     return `
       <article class="accion-card accion-prioridad-${escaparAtributo(prioridad)}">
@@ -2708,11 +2691,21 @@ function renderizarTarjetasAcciones(data) {
           </div>
         </div>
         <h3>${escaparHtml(accion.titulo || "Acción de mejora")}</h3>
+        <p><strong>Macroproceso:</strong> ${escaparHtml(nombreMacroproceso(macroproceso))}</p>
+        <p><strong>Origen:</strong> ${escaparHtml(formatearTexto(accion.origen_tipo || "-"))}</p>
+        <p><strong>Evidencia relacionada:</strong> ${escaparHtml(
+          evidenciaRelacionada.codigo
+            ? `${evidenciaRelacionada.codigo} - ${evidenciaRelacionada.titulo || ""}`
+            : accion.origen_id || "-"
+        )}</p>
         <p><strong>Asignatura:</strong> ${escaparHtml(accion.asignatura || "-")}</p>
-        <p><strong>Descripción:</strong> ${escaparHtml(accion.descripcion || "-")}</p>
-        <p><strong>Recomendación:</strong> ${escaparHtml(accion.recomendacion || "-")}</p>
+        <p><strong>Descripci&oacute;n:</strong> ${escaparHtml(accion.descripcion || "-")}</p>
+        <p><strong>Recomendaci&oacute;n:</strong> ${escaparHtml(accion.recomendacion || "-")}</p>
+        <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(prioridad))}</p>
+        <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(estado))}</p>
         <p><strong>Responsable:</strong> ${escaparHtml(accion.responsable || "Sin responsable")}</p>
-        <p><strong>Fecha límite:</strong> ${escaparHtml(accion.fecha_limite || "No definida")}</p>
+        <p><strong>Fecha l&iacute;mite:</strong> ${escaparHtml(accion.fecha_limite || "No definida")}</p>
+        <p><strong>Fecha de creaci&oacute;n:</strong> ${escaparHtml(fechaCreacion)}</p>
         <div class="accion-actions">
           <button class="btn btn-warning" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'en_proceso')">En proceso</button>
           <button class="btn btn-success" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'atendida')">Atendida</button>
@@ -2738,7 +2731,11 @@ async function actualizarEstadoAccion(id, estado) {
     }
 
     mostrarToast("Estado actualizado correctamente.", "success");
-    await verAccionesMejora();
+    if (macroprocesoAccionesActual) {
+      await verAccionesMacroproceso(macroprocesoAccionesActual);
+    } else {
+      await verAccionesMejora();
+    }
     await cargarDashboardAccionesMejora();
   } catch (error) {
     console.error("Error al actualizar acción:", error);
@@ -2761,13 +2758,18 @@ async function eliminarAccionMejora(id) {
     }
 
     mostrarToast("Acción eliminada correctamente.", "success");
-    await verAccionesMejora();
+    if (macroprocesoAccionesActual) {
+      await verAccionesMacroproceso(macroprocesoAccionesActual);
+    } else {
+      await verAccionesMejora();
+    }
     await cargarDashboardAccionesMejora();
   } catch (error) {
     console.error("Error al eliminar acción:", error);
     mostrarToast("Error al eliminar acción: " + error.message, "error");
   }
 }
+
 
 
 

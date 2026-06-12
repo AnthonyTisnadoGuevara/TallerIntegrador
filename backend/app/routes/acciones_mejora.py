@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from app.services.supabase_client import supabase
@@ -84,19 +84,66 @@ def _ahora_iso() -> str:
 
 
 @router.get("/")
-def listar_acciones_mejora():
+def listar_acciones_mejora(
+    macroproceso: Optional[str] = Query(None),
+    origen_tipo: Optional[str] = Query(None),
+    origen_id: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None),
+    prioridad: Optional[str] = Query(None),
+):
     try:
-        response = (
-            supabase.table("acciones_mejora")
-            .select("*")
-            .order("created_at", desc=True)
-            .execute()
-        )
+        query = supabase.table("acciones_mejora").select("*")
+
+        if origen_tipo:
+            query = query.eq("origen_tipo", origen_tipo.strip())
+        if origen_id:
+            query = query.eq("origen_id", origen_id.strip())
+        if estado:
+            query = query.eq("estado", _validar_estado(estado))
+        if prioridad:
+            query = query.eq("prioridad", _validar_prioridad(prioridad))
+
+        response = query.order("created_at", desc=True).execute()
+        acciones = response.data or []
+
+        evidencias_por_id = {}
+        if macroproceso:
+            macroproceso_normalizado = macroproceso.strip().lower()
+            evidencias_response = (
+                supabase.table("macroproceso_evidencias")
+                .select("id,codigo,titulo,macroproceso")
+                .eq("macroproceso", macroproceso_normalizado)
+                .execute()
+            )
+            evidencias_por_id = {
+                item.get("id"): item
+                for item in (evidencias_response.data or [])
+                if item.get("id")
+            }
+            ids_evidencias = set(evidencias_por_id.keys())
+            acciones = [
+                accion
+                for accion in acciones
+                if accion.get("origen_tipo") == "macroproceso_evidencia"
+                and accion.get("origen_id") in ids_evidencias
+            ]
+
+        for accion in acciones:
+            evidencia = evidencias_por_id.get(accion.get("origen_id"))
+            if evidencia:
+                accion["macroproceso"] = evidencia.get("macroproceso")
+                accion["evidencia_relacionada"] = {
+                    "id": evidencia.get("id"),
+                    "codigo": evidencia.get("codigo"),
+                    "titulo": evidencia.get("titulo"),
+                }
 
         return {
             "message": "Acciones de mejora obtenidas correctamente",
-            "data": response.data,
+            "data": acciones,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
