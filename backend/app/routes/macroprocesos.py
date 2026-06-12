@@ -95,6 +95,19 @@ class AlertaUpdate(BaseModel):
     recomendacion: Optional[str] = None
 
 
+class EncuestaAceptacionCreate(BaseModel):
+    nombre_usuario: Optional[str] = None
+    rol_usuario: Optional[str] = None
+    claridad_interfaz: int = Field(..., ge=1, le=5)
+    facilidad_uso: int = Field(..., ge=1, le=5)
+    utilidad_evidencias: int = Field(..., ge=1, le=5)
+    utilidad_ia: int = Field(..., ge=1, le=5)
+    utilidad_alertas: int = Field(..., ge=1, le=5)
+    utilidad_semaforo: int = Field(..., ge=1, le=5)
+    satisfaccion_general: int = Field(..., ge=1, le=5)
+    comentario: Optional[str] = None
+
+
 def _ahora_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -1193,6 +1206,70 @@ def obtener_metricas_finales_sistema():
                 "por_macroproceso": por_macroproceso,
                 "indicadores_clave": indicadores_clave,
             },
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/encuesta-aceptacion")
+def registrar_encuesta_aceptacion(encuesta: EncuestaAceptacionCreate):
+    try:
+        data = encuesta.model_dump()
+        response = supabase.table("encuesta_aceptacion").insert(data).execute()
+
+        return {
+            "message": "Encuesta registrada correctamente",
+            "data": response.data,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/encuesta-aceptacion/resultados")
+def obtener_resultados_encuesta_aceptacion():
+    try:
+        respuestas = _safe_select_table_reporte("encuesta_aceptacion")
+        campos = [
+            "claridad_interfaz",
+            "facilidad_uso",
+            "utilidad_evidencias",
+            "utilidad_ia",
+            "utilidad_alertas",
+            "utilidad_semaforo",
+            "satisfaccion_general",
+        ]
+        total = len(respuestas)
+        promedios = {}
+
+        for campo in campos:
+            promedios[campo] = round(
+                sum(int(item.get(campo) or 0) for item in respuestas) / total,
+                2,
+            ) if total else 0
+
+        promedio_general = round(
+            sum(promedios.values()) / len(campos),
+            2,
+        ) if total else 0
+
+        comentarios = [
+            {
+                "nombre_usuario": item.get("nombre_usuario"),
+                "rol_usuario": item.get("rol_usuario"),
+                "comentario": item.get("comentario"),
+                "created_at": item.get("created_at"),
+            }
+            for item in sorted(respuestas, key=lambda row: row.get("created_at") or "", reverse=True)
+            if item.get("comentario")
+        ]
+
+        return {
+            "total_respuestas": total,
+            "promedios": promedios,
+            "promedio_general": promedio_general,
+            "comentarios": comentarios,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

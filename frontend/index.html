@@ -29,6 +29,7 @@
         <button class="btn btn-info" type="button" onclick="verAlertasInteligentes()">Ver alertas inteligentes</button>
         <button class="btn btn-primary" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
         <button class="btn btn-secondary" type="button" onclick="verMetricasFinales()">Ver m&eacute;tricas finales</button>
+        <button class="btn btn-info" type="button" onclick="abrirModalEncuestaAceptacion()">Encuesta de aceptaci&oacute;n</button>
       </div>
 
       <section class="traffic-light-dashboard">
@@ -600,6 +601,67 @@
       <div class="modal-footer metrics-actions">
         <button type="button" class="btn btn-primary" onclick="descargarMetricasFinalesCsv()">Descargar m&eacute;tricas CSV</button>
         <button type="button" class="btn btn-secondary" onclick="cerrarModalMetricasFinales()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalEncuestaAceptacion" class="modal-overlay hidden survey-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalEncuestaAceptacion">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloModalEncuestaAceptacion">Encuesta de aceptaci&oacute;n del sistema</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalEncuestaAceptacion()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="formEncuestaAceptacion" class="survey-form" onsubmit="enviarEncuestaAceptacion(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="encuestaNombre">Nombre del usuario</label>
+              <input id="encuestaNombre" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="encuestaRol">Rol del usuario</label>
+              <input id="encuestaRol" type="text" class="form-control" placeholder="Estudiante / Usuario evaluador" />
+            </div>
+            <div class="form-group survey-question">
+              <label for="encuestaClaridad">Claridad de la interfaz *</label>
+              <select id="encuestaClaridad" class="form-control survey-score" required></select>
+            </div>
+            <div class="form-group survey-question">
+              <label for="encuestaFacilidad">Facilidad de uso *</label>
+              <select id="encuestaFacilidad" class="form-control survey-score" required></select>
+            </div>
+            <div class="form-group survey-question">
+              <label for="encuestaEvidencias">Utilidad para registrar y consultar evidencias *</label>
+              <select id="encuestaEvidencias" class="form-control survey-score" required></select>
+            </div>
+            <div class="form-group survey-question">
+              <label for="encuestaIa">Utilidad de los agentes IA *</label>
+              <select id="encuestaIa" class="form-control survey-score" required></select>
+            </div>
+            <div class="form-group survey-question">
+              <label for="encuestaAlertas">Utilidad de las alertas inteligentes *</label>
+              <select id="encuestaAlertas" class="form-control survey-score" required></select>
+            </div>
+            <div class="form-group survey-question">
+              <label for="encuestaSemaforo">Utilidad del sem&aacute;foro de cumplimiento *</label>
+              <select id="encuestaSemaforo" class="form-control survey-score" required></select>
+            </div>
+            <div class="form-group survey-question">
+              <label for="encuestaSatisfaccion">Satisfacci&oacute;n general *</label>
+              <select id="encuestaSatisfaccion" class="form-control survey-score" required></select>
+            </div>
+            <div class="form-group form-group-full">
+              <label for="encuestaComentario">Comentario</label>
+              <textarea id="encuestaComentario" class="form-control" rows="4"></textarea>
+            </div>
+          </div>
+        </form>
+        <div id="resultadosEncuestaAceptacion" class="survey-results hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" form="formEncuestaAceptacion" class="btn btn-primary">Enviar encuesta</button>
+        <button type="button" class="btn btn-info" onclick="verResultadosEncuestaAceptacion()">Ver resultados</button>
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalEncuestaAceptacion()">Cancelar</button>
       </div>
     </div>
   </div>

@@ -1951,6 +1951,164 @@ function descargarMetricasFinalesCsv() {
   URL.revokeObjectURL(url);
 }
 
+function abrirModalEncuestaAceptacion() {
+  poblarSelectsEncuestaAceptacion();
+  limpiarFormularioEncuestaAceptacion();
+  document.getElementById("resultadosEncuestaAceptacion")?.classList.add("hidden");
+  mostrarModal("modalEncuestaAceptacion");
+}
+
+function cerrarModalEncuestaAceptacion() {
+  ocultarModal("modalEncuestaAceptacion");
+}
+
+function poblarSelectsEncuestaAceptacion() {
+  const opciones = [
+    ["", "Seleccione una valoración"],
+    ["1", "1 = Muy bajo"],
+    ["2", "2 = Bajo"],
+    ["3", "3 = Regular"],
+    ["4", "4 = Bueno"],
+    ["5", "5 = Muy bueno"]
+  ];
+
+  document.querySelectorAll(".survey-score").forEach((select) => {
+    if (select.options.length > 0) return;
+    opciones.forEach(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      select.appendChild(option);
+    });
+  });
+}
+
+function limpiarFormularioEncuestaAceptacion() {
+  const form = document.getElementById("formEncuestaAceptacion");
+  if (form) form.reset();
+}
+
+function obtenerPuntajeEncuesta(id) {
+  const valor = Number(document.getElementById(id)?.value);
+  return Number.isInteger(valor) && valor >= 1 && valor <= 5 ? valor : null;
+}
+
+async function enviarEncuestaAceptacion(event) {
+  event.preventDefault();
+
+  const payload = {
+    nombre_usuario: document.getElementById("encuestaNombre")?.value.trim() || null,
+    rol_usuario: document.getElementById("encuestaRol")?.value.trim() || null,
+    claridad_interfaz: obtenerPuntajeEncuesta("encuestaClaridad"),
+    facilidad_uso: obtenerPuntajeEncuesta("encuestaFacilidad"),
+    utilidad_evidencias: obtenerPuntajeEncuesta("encuestaEvidencias"),
+    utilidad_ia: obtenerPuntajeEncuesta("encuestaIa"),
+    utilidad_alertas: obtenerPuntajeEncuesta("encuestaAlertas"),
+    utilidad_semaforo: obtenerPuntajeEncuesta("encuestaSemaforo"),
+    satisfaccion_general: obtenerPuntajeEncuesta("encuestaSatisfaccion"),
+    comentario: document.getElementById("encuestaComentario")?.value.trim() || null
+  };
+
+  const puntajes = [
+    payload.claridad_interfaz,
+    payload.facilidad_uso,
+    payload.utilidad_evidencias,
+    payload.utilidad_ia,
+    payload.utilidad_alertas,
+    payload.utilidad_semaforo,
+    payload.satisfaccion_general
+  ];
+
+  if (puntajes.some((valor) => valor === null)) {
+    mostrarToast("Complete todas las valoraciones de la encuesta.", "warning");
+    return;
+  }
+
+  try {
+    await fetchJson(`${API_URL}/api/macroprocesos/encuesta-aceptacion`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    mostrarToast("Encuesta registrada correctamente.", "success");
+    limpiarFormularioEncuestaAceptacion();
+    await verResultadosEncuestaAceptacion();
+  } catch (error) {
+    console.error("Error al registrar encuesta:", error);
+    mostrarToast("No se pudo registrar la encuesta: " + error.message, "error");
+  }
+}
+
+async function verResultadosEncuestaAceptacion() {
+  try {
+    const resultados = await fetchJson(`${API_URL}/api/macroprocesos/encuesta-aceptacion/resultados`);
+    renderResultadosEncuestaAceptacion(resultados);
+  } catch (error) {
+    console.error("Error al cargar resultados de encuesta:", error);
+    mostrarToast("No se pudieron cargar los resultados de encuesta: " + error.message, "error");
+  }
+}
+
+function renderResultadosEncuestaAceptacion(resultados) {
+  const contenedor = document.getElementById("resultadosEncuestaAceptacion");
+  if (!contenedor) return;
+
+  if (!resultados || !resultados.total_respuestas) {
+    contenedor.innerHTML = `<p class="text-muted">No hay respuestas registradas todavía.</p>`;
+    contenedor.classList.remove("hidden");
+    return;
+  }
+
+  const promedios = resultados.promedios || {};
+  const etiquetas = {
+    claridad_interfaz: "Claridad de la interfaz",
+    facilidad_uso: "Facilidad de uso",
+    utilidad_evidencias: "Utilidad de evidencias",
+    utilidad_ia: "Utilidad de agentes IA",
+    utilidad_alertas: "Utilidad de alertas",
+    utilidad_semaforo: "Utilidad del semáforo",
+    satisfaccion_general: "Satisfacción general"
+  };
+
+  contenedor.innerHTML = `
+    <section class="survey-results-summary">
+      <article class="survey-score-card">
+        <span>Total de respuestas</span>
+        <strong>${escaparHtml(resultados.total_respuestas)}</strong>
+      </article>
+      <article class="survey-score-card">
+        <span>Promedio general</span>
+        <strong>${escaparHtml(resultados.promedio_general)}</strong>
+      </article>
+      ${Object.entries(etiquetas).map(([campo, etiqueta]) => `
+        <article class="survey-score-card">
+          <span>${escaparHtml(etiqueta)}</span>
+          <strong>${escaparHtml(promedios[campo] ?? 0)}</strong>
+        </article>
+      `).join("")}
+    </section>
+    <section class="survey-comments">
+      <h3>Comentarios recibidos</h3>
+      ${renderComentariosEncuesta(resultados.comentarios || [])}
+    </section>
+  `;
+  contenedor.classList.remove("hidden");
+}
+
+function renderComentariosEncuesta(comentarios) {
+  if (!Array.isArray(comentarios) || comentarios.length === 0) {
+    return `<p class="text-muted">No hay comentarios registrados.</p>`;
+  }
+
+  return comentarios.map((item) => `
+    <article class="survey-comment-card">
+      <p>${escaparHtml(item.comentario || "-")}</p>
+      <small>${escaparHtml(item.nombre_usuario || "Usuario anónimo")} · ${escaparHtml(item.rol_usuario || "Sin rol")} · ${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</small>
+    </article>
+  `).join("");
+}
+
 async function cargarDatos() {
   await cargarDashboard();
   await cargarSilabos();
