@@ -14,11 +14,18 @@ router = APIRouter(
 
 PRIORIDADES_VALIDAS = {"alta", "media", "baja"}
 ESTADOS_VALIDOS = {"pendiente", "en_proceso", "atendida", "descartada"}
+MACROPROCESOS_VALIDOS = {
+    "planificacion_estrategica",
+    "gestion_academica",
+    "gestion_silabos",
+    "mejora_continua",
+}
 
 
 class AccionMejoraCreate(BaseModel):
     origen_tipo: Optional[str] = "manual"
     origen_id: Optional[str] = None
+    macroproceso: Optional[str] = None
     silabo_id: Optional[str] = None
     ciclo: Optional[int] = None
     asignatura: Optional[str] = None
@@ -29,6 +36,7 @@ class AccionMejoraCreate(BaseModel):
     estado: Optional[str] = "pendiente"
     responsable: Optional[str] = None
     fecha_limite: Optional[str] = None
+    fecha_programada: Optional[str] = None
     evidencia_url: Optional[str] = None
     observacion: Optional[str] = None
 
@@ -76,11 +84,26 @@ def _validar_accion_data(data: dict) -> dict:
         data["prioridad"] = _validar_prioridad(data.get("prioridad"))
     if "estado" in data:
         data["estado"] = _validar_estado(data.get("estado"))
+    if data.get("macroproceso"):
+        macroproceso = data["macroproceso"].lower().strip()
+        if macroproceso not in MACROPROCESOS_VALIDOS:
+            raise HTTPException(status_code=400, detail="Macroproceso no valido.")
+        data["macroproceso"] = macroproceso
     return data
 
 
 def _ahora_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _insertar_accion_mejora(data: dict):
+    try:
+        return supabase.table("acciones_mejora").insert(data).execute()
+    except Exception as e:
+        if "macroproceso" in data and "macroproceso" in str(e).lower():
+            data_sin_macroproceso = {k: v for k, v in data.items() if k != "macroproceso"}
+            return supabase.table("acciones_mejora").insert(data_sin_macroproceso).execute()
+        raise
 
 
 @router.get("/")
@@ -109,6 +132,9 @@ def listar_acciones_mejora(
         evidencias_por_id = {}
         if macroproceso:
             macroproceso_normalizado = macroproceso.strip().lower()
+            if macroproceso_normalizado not in MACROPROCESOS_VALIDOS:
+                raise HTTPException(status_code=400, detail="Macroproceso no valido.")
+
             evidencias_response = (
                 supabase.table("macroproceso_evidencias")
                 .select("id,codigo,titulo,macroproceso")
@@ -124,8 +150,16 @@ def listar_acciones_mejora(
             acciones = [
                 accion
                 for accion in acciones
-                if accion.get("origen_tipo") == "macroproceso_evidencia"
-                and accion.get("origen_id") in ids_evidencias
+                if accion.get("macroproceso") == macroproceso_normalizado
+                or (
+                    accion.get("origen_tipo") == "manual_macroproceso"
+                    and accion.get("origen_id") == macroproceso_normalizado
+                )
+                or (
+                    accion.get("origen_tipo")
+                    in {"macroproceso_evidencia", "manual_macroproceso"}
+                    and accion.get("origen_id") in ids_evidencias
+                )
             ]
 
         for accion in acciones:
@@ -152,9 +186,12 @@ def listar_acciones_mejora(
 def crear_accion_mejora(accion: AccionMejoraCreate):
     try:
         data = accion.model_dump()
+        fecha_programada = data.pop("fecha_programada", None)
+        if fecha_programada and not data.get("fecha_limite"):
+            data["fecha_limite"] = fecha_programada
         data = _validar_accion_data(data)
 
-        response = supabase.table("acciones_mejora").insert(data).execute()
+        response = _insertar_accion_mejora(data)
         return {
             "message": "Acción de mejora creada correctamente",
             "data": response.data,
