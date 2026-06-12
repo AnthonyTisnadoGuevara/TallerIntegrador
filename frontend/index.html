@@ -30,6 +30,7 @@
         <button class="btn btn-primary" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
         <button class="btn btn-secondary" type="button" onclick="verMetricasFinales()">Ver m&eacute;tricas finales</button>
         <button class="btn btn-info" type="button" onclick="abrirModalEncuestaAceptacion()">Encuesta de aceptaci&oacute;n</button>
+        <button class="btn btn-secondary" type="button" onclick="abrirModalAyudaUsuario()">Ayuda / Manual de usuario</button>
       </div>
 
       <section class="traffic-light-dashboard">
@@ -662,6 +663,87 @@
         <button type="submit" form="formEncuestaAceptacion" class="btn btn-primary">Enviar encuesta</button>
         <button type="button" class="btn btn-info" onclick="verResultadosEncuestaAceptacion()">Ver resultados</button>
         <button type="button" class="btn btn-secondary" onclick="cerrarModalEncuestaAceptacion()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalAyudaUsuario" class="modal-overlay hidden help-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalAyudaUsuario">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header no-print">
+        <h2 id="tituloModalAyudaUsuario">Ayuda / Manual de usuario</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalAyudaUsuario()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="contenidoAyudaUsuario" class="help-content help-print-area">
+          <aside class="help-index">
+            <a href="#manual-login">Inicio de sesi&oacute;n</a>
+            <a href="#manual-panel">Panel principal</a>
+            <a href="#manual-planificacion">Planificaci&oacute;n Estrat&eacute;gica</a>
+            <a href="#manual-academica">Gesti&oacute;n Acad&eacute;mica</a>
+            <a href="#manual-silabos">Gesti&oacute;n de S&iacute;labos</a>
+            <a href="#manual-agentes">Agentes IA</a>
+            <a href="#manual-alertas">Alertas inteligentes</a>
+            <a href="#manual-semaforo">Sem&aacute;foro</a>
+            <a href="#manual-acciones">Acciones de mejora</a>
+            <a href="#manual-reporte">Reporte integral</a>
+            <a href="#manual-metricas">M&eacute;tricas finales</a>
+            <a href="#manual-encuesta">Encuesta</a>
+          </aside>
+          <div class="help-sections">
+            <section id="manual-login" class="help-section help-card">
+              <h3>Inicio de sesi&oacute;n</h3>
+              <p class="help-step">Ingrese con un usuario autorizado, valide sus credenciales y acceda al panel principal del sistema.</p>
+            </section>
+            <section id="manual-panel" class="help-section help-card">
+              <h3>Panel principal</h3>
+              <p class="help-step">Visualice los tres macroprocesos, revise el sem&aacute;foro de cumplimiento, genere alertas inteligentes, consulte m&eacute;tricas finales y exporte el reporte integral.</p>
+            </section>
+            <section id="manual-planificacion" class="help-section help-card">
+              <h3>Planificaci&oacute;n Estrat&eacute;gica</h3>
+              <p class="help-step">Revise evidencias de planificaci&oacute;n, registre nuevas evidencias, cambie estado, edite avance, agregue observaciones, suba archivos, valide con IA, genere acciones y consulte historial.</p>
+            </section>
+            <section id="manual-academica" class="help-section help-card">
+              <h3>Gesti&oacute;n Acad&eacute;mica del Programa de Estudio</h3>
+              <p class="help-step">Revise evidencias acad&eacute;micas, registre nuevas evidencias, suba actas, resoluciones o informes, valide evidencias con IA y consulte alertas o evidencias cr&iacute;ticas.</p>
+            </section>
+            <section id="manual-silabos" class="help-section help-card">
+              <h3>Gesti&oacute;n de S&iacute;labos</h3>
+              <p class="help-step">Registre o consulte s&iacute;labos, suba archivos, ejecute an&aacute;lisis IA individual, revise trazabilidad curricular, brechas y acciones de mejora.</p>
+            </section>
+            <section id="manual-agentes" class="help-section help-card">
+              <h3>Agentes IA</h3>
+              <p class="help-step">El sistema usa agentes IA para analizar Planificaci&oacute;n Estrat&eacute;gica, Gesti&oacute;n Acad&eacute;mica, Gesti&oacute;n de S&iacute;labos y un agente coordinador de mejora continua.</p>
+            </section>
+            <section id="manual-alertas" class="help-section help-card">
+              <h3>Alertas inteligentes</h3>
+              <p class="help-step">Las alertas pueden ser bajas, medias, altas o cr&iacute;ticas. Puede generarlas, revisarlas y marcarlas como atendidas o descartadas.</p>
+            </section>
+            <section id="manual-semaforo" class="help-section help-card">
+              <h3>Sem&aacute;foro de cumplimiento</h3>
+              <p class="help-step">Verde indica cumplimiento adecuado, amarillo requiere seguimiento, rojo requiere atenci&oacute;n prioritaria y pendiente de an&aacute;lisis indica que a&uacute;n falta ejecutar IA.</p>
+            </section>
+            <section id="manual-acciones" class="help-section help-card">
+              <h3>Acciones de mejora</h3>
+              <p class="help-step">Consulte acciones generadas autom&aacute;ticamente, registre acciones manuales, relaci&oacute;nelas con evidencias y revise su estado.</p>
+            </section>
+            <section id="manual-reporte" class="help-section help-card">
+              <h3>Reporte integral</h3>
+              <p class="help-step">Exporte el reporte integral, descargue el JSON o use imprimir para guardar una versi&oacute;n PDF.</p>
+            </section>
+            <section id="manual-metricas" class="help-section help-card">
+              <h3>M&eacute;tricas finales</h3>
+              <p class="help-step">Interprete indicadores generales como evidencias con sustento, alertas cr&iacute;ticas, acciones pendientes y uso de IA.</p>
+            </section>
+            <section id="manual-encuesta" class="help-section help-card">
+              <h3>Encuesta de aceptaci&oacute;n</h3>
+              <p class="help-step">Responda la encuesta para valorar claridad, utilidad y satisfacci&oacute;n del sistema. Tambi&eacute;n puede consultar los resultados acumulados.</p>
+            </section>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer no-print">
+        <button type="button" class="btn btn-primary help-print-btn" onclick="imprimirManualUsuario()">Imprimir manual</button>
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalAyudaUsuario()">Cerrar</button>
       </div>
     </div>
   </div>

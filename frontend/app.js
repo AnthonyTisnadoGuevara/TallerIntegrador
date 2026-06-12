@@ -2109,6 +2109,18 @@ function renderComentariosEncuesta(comentarios) {
   `).join("");
 }
 
+function abrirModalAyudaUsuario() {
+  mostrarModal("modalAyudaUsuario");
+}
+
+function cerrarModalAyudaUsuario() {
+  ocultarModal("modalAyudaUsuario");
+}
+
+function imprimirManualUsuario() {
+  window.print();
+}
+
 async function cargarDatos() {
   await cargarDashboard();
   await cargarSilabos();
