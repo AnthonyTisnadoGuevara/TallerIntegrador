@@ -399,7 +399,7 @@ async function guardarNuevaEvidenciaMacroproceso(event) {
   const avance = Number(document.getElementById("nuevaEvidenciaAvance")?.value || 0);
 
   if (!codigo || !titulo) {
-    mostrarToast("Complete el código y título de la evidencia.", "warning");
+    mostrarToast("Complete los campos obligatorios.", "warning");
     return;
   }
 

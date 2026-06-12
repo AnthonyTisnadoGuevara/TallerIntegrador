@@ -95,7 +95,7 @@
             <p>Filtre y actualice el seguimiento de evidencias del macroproceso.</p>
           </div>
           <div class="section-actions">
-            <button class="btn btn-primary" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('planificacion_estrategica')">Registrar nueva evidencia</button>
+            <button class="btn btn-primary register-evidence-btn" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('planificacion_estrategica')">Registrar nueva evidencia</button>
             <button class="btn btn-secondary" type="button" onclick="cargarVistaMacroproceso('planificacion_estrategica')">Actualizar</button>
           </div>
         </div>
@@ -144,7 +144,7 @@
             <p>Revise y actualice las evidencias asociadas a la gesti&oacute;n acad&eacute;mica del programa.</p>
           </div>
           <div class="section-actions">
-            <button class="btn btn-primary" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('gestion_academica')">Registrar nueva evidencia</button>
+            <button class="btn btn-primary register-evidence-btn" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('gestion_academica')">Registrar nueva evidencia</button>
             <button class="btn btn-secondary" type="button" onclick="cargarVistaMacroproceso('gestion_academica')">Actualizar</button>
           </div>
         </div>
@@ -652,7 +652,7 @@
     </div>
   </div>
 
-  <div id="modalRegistroEvidenciaMacroproceso" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalRegistroEvidenciaMacroproceso">
+  <div id="modalRegistroEvidenciaMacroproceso" class="modal-overlay hidden evidence-form-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalRegistroEvidenciaMacroproceso">
     <div class="modal-card modal-large">
       <div class="modal-header">
         <h2 id="tituloModalRegistroEvidenciaMacroproceso">Registrar nueva evidencia</h2>
@@ -660,7 +660,7 @@
       </div>
       <div class="modal-body">
         <form id="formRegistroEvidenciaMacroproceso" class="macro-evidence-form" onsubmit="guardarNuevaEvidenciaMacroproceso(event)">
-          <div class="form-grid">
+          <div class="form-grid evidence-form-grid">
             <div class="form-group">
               <label for="nuevaEvidenciaCodigo">C&oacute;digo de evidencia *</label>
               <input id="nuevaEvidenciaCodigo" type="text" class="form-control" required />
@@ -721,7 +721,7 @@
           </div>
         </form>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer evidence-form-actions">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalRegistroEvidenciaMacroproceso()">Cancelar</button>
         <button type="submit" form="formRegistroEvidenciaMacroproceso" class="btn btn-primary">Guardar evidencia</button>
       </div>

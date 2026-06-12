@@ -1294,7 +1294,9 @@ def crear_evidencia(evidencia: EvidenciaCreate):
                 "Registro inicial de evidencia manual",
             )
         except Exception as historial_error:
-            print("[Historial evidencias] No se pudo registrar historial inicial:", type(historial_error).__name__)
+            print("[Macroprocesos] No se pudo guardar historial inicial:", type(historial_error).__name__)
+
+        print(f"[Macroprocesos] Evidencia registrada correctamente: {codigo}")
 
         return {
             "message": "Evidencia registrada correctamente",

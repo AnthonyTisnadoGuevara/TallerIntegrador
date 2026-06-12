@@ -1372,6 +1372,22 @@ td:last-child {
   grid-column: 1 / -1;
 }
 
+.evidence-form-modal .modal-card {
+  width: min(900px, 100%);
+}
+
+.evidence-form-grid {
+  align-items: start;
+}
+
+.evidence-form-actions {
+  gap: 10px;
+}
+
+.register-evidence-btn {
+  white-space: nowrap;
+}
+
 input, textarea {
   width: 100%;
   padding: 11px;
