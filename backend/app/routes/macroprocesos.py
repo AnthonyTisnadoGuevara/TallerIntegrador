@@ -28,9 +28,9 @@ ORDEN_ALERTA = {"critica": 0, "alta": 1, "media": 2, "baja": 3}
 MACROPROCESOS_ACCIONES_VALIDOS = {"planificacion_estrategica", "gestion_academica"}
 MACROPROCESOS_ANALISIS_VALIDOS = {"planificacion_estrategica", "gestion_academica", "mejora_continua"}
 MACROPROCESOS_SEMAFORO = {
-    "planificacion_estrategica": "Planificacion Estrategica",
-    "gestion_academica": "Gestion Academica",
-    "gestion_silabos": "Gestion de Silabos",
+    "planificacion_estrategica": "Planificación Estratégica",
+    "gestion_academica": "Gestión Académica",
+    "gestion_silabos": "Gestión de Sílabos",
 }
 TIPOS_ANALISIS_VALIDOS = {
     "analisis_planificacion",
@@ -211,6 +211,15 @@ def _safe_select_table(tabla: str, columnas: str = "*") -> list[dict]:
         return response.data or []
     except Exception as e:
         print(f"[Alertas macroprocesos] No se pudo leer {tabla}:", type(e).__name__, str(e))
+        return []
+
+
+def _safe_select_table_reporte(tabla: str, columnas: str = "*") -> list[dict]:
+    try:
+        response = supabase.table(tabla).select(columnas).execute()
+        return response.data or []
+    except Exception as e:
+        print(f"[Reporte Integral] Advertencia: no se pudo consultar tabla {tabla}.", type(e).__name__)
         return []
 
 
@@ -1017,7 +1026,7 @@ def obtener_semaforo_macroprocesos():
 
             if alertas_criticas > 0 or avance_promedio < 40 or riesgo_ia == "alto":
                 color = "rojo"
-                mensaje = "Requiere atencion prioritaria por bajo avance, alertas criticas o riesgo IA alto."
+                mensaje = "Requiere atención prioritaria por bajo avance, alertas críticas o riesgo IA alto."
             elif avance_promedio >= 70 and alertas_criticas == 0 and alertas_altas <= 2:
                 color = "verde"
                 mensaje = "Cumplimiento aceptable, mantener seguimiento y evidencias actualizadas."
@@ -1048,6 +1057,107 @@ def obtener_semaforo_macroprocesos():
             "semaforos": semaforos,
             "resumen": resumen,
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/reporte-integral")
+def obtener_reporte_integral_mejora_continua():
+    try:
+        print("[Reporte Integral] Generando reporte...")
+
+        semaforo_data = obtener_semaforo_macroprocesos()
+        semaforo = semaforo_data.get("semaforos", [])
+
+        evidencias = _safe_select_table_reporte("macroproceso_evidencias")
+        acciones = _safe_select_table_reporte("acciones_mejora")
+        analisis = _safe_select_table_reporte("analisis_ia_macroprocesos")
+        validaciones = _safe_select_table_reporte("validacion_ia_macroproceso_evidencias")
+        brechas = _safe_select_table_reporte("brechas_curriculares")
+
+        alertas_activas = [
+            item
+            for item in _safe_select_table_reporte("alertas_inteligentes_macroprocesos")
+            if item.get("estado") == "activa"
+        ]
+
+        ultimos_analisis_map = _ultimos_analisis_por_macroproceso(analisis)
+        ultimos_analisis = [
+            item
+            for macroproceso, item in ultimos_analisis_map.items()
+            if macroproceso in MACROPROCESOS_ANALISIS_VALIDOS
+        ]
+
+        ultimas_validaciones_map = _ultimas_validaciones_por_evidencia(validaciones)
+        validaciones_documentales = list(ultimas_validaciones_map.values())
+
+        evidencias_criticas = [
+            item
+            for item in evidencias
+            if item.get("estado") in {"pendiente", "observado"}
+            or item.get("prioridad") == "alta"
+            or int(item.get("avance") or 0) < 50
+            or not item.get("archivo_url")
+        ]
+
+        total_alertas_criticas = sum(
+            1 for item in alertas_activas if item.get("nivel_alerta") == "critica"
+        )
+        acciones_pendientes = sum(1 for item in acciones if item.get("estado") == "pendiente")
+        acciones_en_proceso = sum(1 for item in acciones if item.get("estado") == "en_proceso")
+        acciones_completadas = sum(
+            1 for item in acciones if item.get("estado") in {"atendida", "completada"}
+        )
+
+        recomendaciones = []
+        if total_alertas_criticas:
+            recomendaciones.append("Atender de manera prioritaria las alertas críticas activas.")
+        if any(not item.get("archivo_url") for item in evidencias):
+            recomendaciones.append("Completar la carga documental de evidencias pendientes.")
+        if acciones_pendientes:
+            recomendaciones.append("Dar seguimiento a las acciones de mejora pendientes.")
+        if any(item.get("color") == "rojo" for item in semaforo):
+            recomendaciones.append("Priorizar la revisión del macroproceso con semáforo rojo.")
+        if any(item.get("nivel_validez") == "bajo" for item in validaciones_documentales):
+            recomendaciones.append("Revisar la calidad documental de las evidencias con baja validez.")
+        if not recomendaciones:
+            recomendaciones.append("Mantener el seguimiento periódico de evidencias, alertas y acciones de mejora.")
+
+        reporte = {
+            "fecha_generacion": _ahora_iso(),
+            "titulo": "Reporte Integral de Mejora Continua",
+            "resumen": {
+                "total_macroprocesos": len(MACROPROCESOS_SEMAFORO),
+                "total_evidencias": len(evidencias),
+                "total_alertas_activas": len(alertas_activas),
+                "total_alertas_criticas": total_alertas_criticas,
+                "total_acciones_mejora": len(acciones),
+                "acciones_pendientes": acciones_pendientes,
+                "acciones_en_proceso": acciones_en_proceso,
+                "acciones_completadas": acciones_completadas,
+                "total_analisis_ia": len(ultimos_analisis),
+                "total_validaciones_ia": len(validaciones_documentales),
+            },
+            "semaforo": semaforo,
+            "evidencias_criticas": evidencias_criticas,
+            "alertas_activas": sorted(
+                alertas_activas,
+                key=lambda item: (
+                    ORDEN_ALERTA.get(item.get("nivel_alerta"), 99),
+                    item.get("created_at") or "",
+                ),
+            ),
+            "acciones_mejora": acciones,
+            "ultimos_analisis_ia": ultimos_analisis,
+            "validaciones_documentales": validaciones_documentales,
+            "brechas_curriculares": brechas,
+            "recomendaciones_generales": recomendaciones,
+        }
+
+        print("[Reporte Integral] Reporte generado correctamente.")
+        return reporte
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 

@@ -11,6 +11,7 @@ let accionesMejoraGlobal = [];
 let alertasInteligentesGlobal = [];
 let macroprocesoAccionesActual = null;
 let macroprocesoRegistroAccionActual = null;
+let reporteIntegralActual = null;
 let evidenciasMacroprocesosGlobal = {
   planificacion_estrategica: [],
   gestion_academica: []
@@ -356,7 +357,7 @@ function abrirModalEvidenciaMacroproceso(id, modo = "detalle") {
       <div><span>Avance</span><strong>${avance}%</strong></div>
     </div>
     <h3>${escaparHtml(evidencia.titulo || "Evidencia")}</h3>
-    <p><strong>Descripci?n:</strong> ${escaparHtml(evidencia.descripcion || "Sin descripci?n registrada.")}</p>
+    <p><strong>Descripción:</strong> ${escaparHtml(evidencia.descripcion || "Sin descripción registrada.")}</p>
     <p><strong>Tipo de evidencia:</strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</p>
     <p><strong>Responsable:</strong> ${escaparHtml(evidencia.responsable || "Sin responsable")}</p>
     <p><strong>Mes programado:</strong> ${escaparHtml(evidencia.mes_programado || "-")}</p>
@@ -895,7 +896,7 @@ async function compararUltimosAnalisisIA() {
       <p><strong>Riesgo anterior:</strong> ${escaparHtml(comparacion.riesgo_anterior || "-")}</p>
       <p><strong>Riesgo actual:</strong> ${escaparHtml(comparacion.riesgo_actual || "-")}</p>
       <p><strong>Cambio:</strong> ${escaparHtml(formatearTexto(comparacion.cambio_riesgo || "sin_datos"))}</p>
-      <p>${escaparHtml(comparacion.resumen || "Sin resumen de comparaci?n.")}</p>
+      <p>${escaparHtml(comparacion.resumen || "Sin resumen de comparación.")}</p>
     `;
   } catch (error) {
     console.error("Error al comparar análisis IA:", error);
@@ -1090,7 +1091,7 @@ function renderAccionesPlanificacion(acciones) {
               <span class="evidence-code">${escaparHtml(accion.evidencia_relacionada || "Sin código")}</span>
             </div>
             <h3>${escaparHtml(accion.titulo || "Acción sugerida")}</h3>
-            <p>${escaparHtml(accion.descripcion || "Sin descripci?n.")}</p>
+            <p>${escaparHtml(accion.descripcion || "Sin descripción.")}</p>
             <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Por definir")}</p>
           </article>
         `;
@@ -1371,8 +1372,8 @@ function renderAccionesPrioritarias(acciones) {
               <span class="evidence-code">${escaparHtml(accion.macroproceso_relacionado || "Mejora continua")}</span>
             </div>
             <h3>${escaparHtml(accion.titulo || "Acción prioritaria")}</h3>
-            <p>${escaparHtml(accion.descripcion || "Sin descripci?n.")}</p>
-            <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Comité acad?mico")}</p>
+            <p>${escaparHtml(accion.descripcion || "Sin descripción.")}</p>
+            <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Comité académico")}</p>
           </article>
         `;
       }).join("")}
@@ -1451,7 +1452,7 @@ function abrirModalMejoraContinuaIA(data) {
     </div>
 
     <div class="analisis-section">
-      <h3>Recomendaciones para el comité acad?mico</h3>
+      <h3>Recomendaciones para el comité académico</h3>
       ${renderListaPlanificacion(data.recomendaciones_comite, "Sin recomendaciones registradas.")}
     </div>
 
@@ -1471,6 +1472,245 @@ function abrirModalMejoraContinuaIA(data) {
 
 function cerrarModalMejoraContinuaIA() {
   ocultarModal("modalMejoraContinuaIA");
+}
+
+async function exportarReporteIntegral() {
+  try {
+    mostrarToast("Generando reporte integral...", "info");
+    const reporte = await fetchJson(`${API_URL}/api/macroprocesos/reporte-integral`);
+    reporteIntegralActual = reporte;
+    abrirModalReporteIntegral(reporte);
+    mostrarToast("Reporte integral generado correctamente.", "success");
+  } catch (error) {
+    console.error("Error al generar reporte integral:", error);
+    mostrarToast("No se pudo generar el reporte integral: " + error.message, "error");
+  }
+}
+
+function abrirModalReporteIntegral(reporte) {
+  const contenedor = document.getElementById("contenidoReporteIntegral");
+  if (!contenedor) return;
+
+  contenedor.innerHTML = renderReporteIntegral(reporte || {});
+  mostrarModal("modalReporteIntegral");
+}
+
+function cerrarModalReporteIntegral() {
+  ocultarModal("modalReporteIntegral");
+}
+
+function descargarReporteIntegralJson() {
+  if (!reporteIntegralActual) {
+    mostrarToast("No hay reporte disponible para descargar.", "warning");
+    return;
+  }
+
+  const blob = new Blob([JSON.stringify(reporteIntegralActual, null, 2)], {
+    type: "application/json;charset=utf-8"
+  });
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = "reporte_mejora_continua.json";
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
+}
+
+function imprimirReporteIntegral() {
+  window.print();
+}
+
+function renderReporteIntegral(reporte) {
+  const fecha = reporte.fecha_generacion
+    ? new Date(reporte.fecha_generacion).toLocaleString()
+    : "Sin fecha";
+
+  return `
+    <header class="report-header">
+      <h1>${escaparHtml(reporte.titulo || "Reporte Integral de Mejora Continua")}</h1>
+      <p><strong>Fecha de generaci&oacute;n:</strong> ${escaparHtml(fecha)}</p>
+    </header>
+
+    <section class="report-section">
+      <h2>Resumen general</h2>
+      <div class="report-summary-grid">${renderReporteResumen(reporte.resumen || {})}</div>
+    </section>
+
+    <section class="report-section">
+      <h2>Sem&aacute;foro por macroproceso</h2>
+      <div class="report-card-grid">${renderReporteSemaforo(reporte.semaforo || [])}</div>
+    </section>
+
+    <section class="report-section">
+      <h2>Evidencias cr&iacute;ticas</h2>
+      ${renderReporteLista(reporte.evidencias_criticas || [], renderReporteEvidenciaCritica, "No hay evidencias cr&iacute;ticas registradas.")}
+    </section>
+
+    <section class="report-section">
+      <h2>Alertas activas</h2>
+      ${renderReporteLista(reporte.alertas_activas || [], renderReporteAlerta, "No hay alertas activas.")}
+    </section>
+
+    <section class="report-section">
+      <h2>Acciones de mejora</h2>
+      ${renderReporteLista(reporte.acciones_mejora || [], renderReporteAccion, "No hay acciones de mejora registradas.")}
+    </section>
+
+    <section class="report-section">
+      <h2>&Uacute;ltimos an&aacute;lisis IA</h2>
+      ${renderReporteLista(reporte.ultimos_analisis_ia || [], renderReporteAnalisis, "No hay an&aacute;lisis IA registrados.")}
+    </section>
+
+    <section class="report-section">
+      <h2>Validaciones documentales IA</h2>
+      ${renderReporteLista(reporte.validaciones_documentales || [], renderReporteValidacion, "No hay validaciones documentales registradas.")}
+    </section>
+
+    <section class="report-section">
+      <h2>Brechas curriculares</h2>
+      ${renderReporteLista(reporte.brechas_curriculares || [], renderReporteBrecha, "No hay brechas curriculares registradas.")}
+    </section>
+
+    <section class="report-section">
+      <h2>Recomendaciones generales</h2>
+      ${renderReporteRecomendaciones(reporte.recomendaciones_generales || [])}
+    </section>
+  `;
+}
+
+function renderReporteResumen(resumen) {
+  const items = [
+    ["Macroprocesos", resumen.total_macroprocesos],
+    ["Evidencias", resumen.total_evidencias],
+    ["Alertas activas", resumen.total_alertas_activas],
+    ["Alertas cr&iacute;ticas", resumen.total_alertas_criticas],
+    ["Acciones de mejora", resumen.total_acciones_mejora],
+    ["Acciones pendientes", resumen.acciones_pendientes],
+    ["Acciones en proceso", resumen.acciones_en_proceso],
+    ["Acciones completadas", resumen.acciones_completadas],
+    ["An&aacute;lisis IA", resumen.total_analisis_ia],
+    ["Validaciones IA", resumen.total_validaciones_ia]
+  ];
+
+  return items.map(([titulo, valor]) => `
+    <article class="report-card">
+      <span>${titulo}</span>
+      <strong>${escaparHtml(valor ?? 0)}</strong>
+    </article>
+  `).join("");
+}
+
+function renderReporteSemaforo(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return `<p class="text-muted">No hay informaci&oacute;n de sem&aacute;foro registrada.</p>`;
+  }
+
+  return items.map((item) => `
+    <article class="report-card report-status-${escaparAtributo(item.color || "amarillo")}">
+      <h3>${escaparHtml(item.nombre || nombreMacroproceso(item.macroproceso))}</h3>
+      <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.color || "-"))}</p>
+      <p><strong>Avance:</strong> ${escaparHtml(item.avance_promedio ?? 0)}%</p>
+      <p><strong>Alertas cr&iacute;ticas:</strong> ${escaparHtml(item.alertas_criticas ?? 0)}</p>
+      <p><strong>Riesgo IA:</strong> ${escaparHtml(formatearTexto(item.riesgo_ia || "sin_datos"))}</p>
+      <p>${escaparHtml(item.mensaje || "-")}</p>
+    </article>
+  `).join("");
+}
+
+function renderReporteLista(items, renderer, emptyMessage) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return `<p class="text-muted">${emptyMessage}</p>`;
+  }
+
+  return `<div class="report-card-grid">${items.map(renderer).join("")}</div>`;
+}
+
+function renderReporteEvidenciaCritica(item) {
+  return `
+    <article class="report-card">
+      <h3>${escaparHtml(item.codigo || "Evidencia")}: ${escaparHtml(item.titulo || "-")}</h3>
+      <p><strong>Macroproceso:</strong> ${escaparHtml(nombreMacroproceso(item.macroproceso))}</p>
+      <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.estado || "-"))}</p>
+      <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
+      <p><strong>Avance:</strong> ${escaparHtml(item.avance ?? 0)}%</p>
+      <p><strong>Responsable:</strong> ${escaparHtml(item.responsable || "-")}</p>
+    </article>
+  `;
+}
+
+function renderReporteAlerta(item) {
+  return `
+    <article class="report-card">
+      <h3>${escaparHtml(item.titulo || "Alerta inteligente")}</h3>
+      <p><strong>Macroproceso:</strong> ${escaparHtml(nombreMacroproceso(item.macroproceso))}</p>
+      <p><strong>Nivel:</strong> ${escaparHtml(formatearTexto(item.nivel_alerta || "-"))}</p>
+      <p><strong>Descripci&oacute;n:</strong> ${escaparHtml(item.descripcion || "-")}</p>
+      <p><strong>Recomendaci&oacute;n:</strong> ${escaparHtml(item.recomendacion || "-")}</p>
+    </article>
+  `;
+}
+
+function renderReporteAccion(item) {
+  return `
+    <article class="report-card">
+      <h3>${escaparHtml(item.titulo || "Acci\u00f3n de mejora")}</h3>
+      <p><strong>Origen:</strong> ${escaparHtml(formatearTexto(item.origen_tipo || "-"))}</p>
+      <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.estado || "-"))}</p>
+      <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
+      <p><strong>Responsable:</strong> ${escaparHtml(item.responsable || "-")}</p>
+      <p><strong>Descripci&oacute;n:</strong> ${escaparHtml(item.descripcion || "-")}</p>
+    </article>
+  `;
+}
+
+function renderReporteAnalisis(item) {
+  return `
+    <article class="report-card">
+      <h3>${escaparHtml(nombreMacroproceso(item.macroproceso))}</h3>
+      <p><strong>Tipo:</strong> ${escaparHtml(formatearTexto(item.tipo_analisis || "-"))}</p>
+      <p><strong>Riesgo:</strong> ${escaparHtml(formatearTexto(item.nivel_riesgo || "-"))}</p>
+      <p><strong>Modelo:</strong> ${escaparHtml(item.modelo_usado || "-")}</p>
+      <p>${escaparHtml(item.resumen || "Sin resumen registrado.")}</p>
+    </article>
+  `;
+}
+
+function renderReporteValidacion(item) {
+  return `
+    <article class="report-card">
+      <h3>${escaparHtml(item.evidencia_id || "Evidencia")}</h3>
+      <p><strong>Macroproceso:</strong> ${escaparHtml(nombreMacroproceso(item.macroproceso))}</p>
+      <p><strong>Nivel de validez:</strong> ${escaparHtml(formatearTexto(item.nivel_validez || "-"))}</p>
+      <p><strong>Pertinencia:</strong> ${escaparHtml(formatearTexto(item.pertinencia || "-"))}</p>
+      <p>${escaparHtml(item.resumen || "Sin resumen registrado.")}</p>
+    </article>
+  `;
+}
+
+function renderReporteBrecha(item) {
+  return `
+    <article class="report-card">
+      <h3>${escaparHtml(item.asignatura || "Brecha curricular")}</h3>
+      <p><strong>Tipo:</strong> ${escaparHtml(formatearTexto(item.tipo_brecha || "-"))}</p>
+      <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
+      <p><strong>Problema:</strong> ${escaparHtml(item.descripcion || "-")}</p>
+      <p><strong>Recomendaci&oacute;n:</strong> ${escaparHtml(item.recomendacion || "-")}</p>
+    </article>
+  `;
+}
+
+function renderReporteRecomendaciones(recomendaciones) {
+  if (!Array.isArray(recomendaciones) || recomendaciones.length === 0) {
+    return `<p class="text-muted">No hay recomendaciones generales registradas.</p>`;
+  }
+
+  return `
+    <ul class="report-recommendations">
+      ${recomendaciones.map((item) => `<li>${escaparHtml(item)}</li>`).join("")}
+    </ul>
+  `;
 }
 
 async function cargarDatos() {
@@ -1839,7 +2079,7 @@ async function verValidacion(id) {
       <p><strong>Código:</strong> ${result.silabo.codigo_asignatura}</p>
       <p><strong>Estado:</strong> ${result.silabo.estado}</p>
       <p><strong>Cumplimiento:</strong> ${result.silabo.porcentaje_cumplimiento}%</p>
-      <h4>Validaci?n de secciones</h4>
+      <h4>Validación de secciones</h4>
       <ul>
     `;
 
@@ -1855,7 +2095,7 @@ async function verValidacion(id) {
     html += `</ul>`;
     detalle.innerHTML = html;
   } catch (error) {
-    console.error("Error al consultar validaci?n:", error);
+    console.error("Error al consultar validación:", error);
   }
 }
 
@@ -2482,9 +2722,9 @@ function renderizarResumenTrazabilidad() {
     renderSummaryCard("Coherencia alta", contarPorCampo(data, "nivel_coherencia", "alto")),
     renderSummaryCard("Coherencia media", contarPorCampo(data, "nivel_coherencia", "medio")),
     renderSummaryCard("Coherencia baja", contarPorCampo(data, "nivel_coherencia", "bajo")),
-    renderSummaryCard("Progresi?n adecuada", contarPorCampo(data, "tipo_relacion", "progresion_adecuada")),
-    renderSummaryCard("Repetici?n", contarPorCampo(data, "tipo_relacion", "repeticion")),
-    renderSummaryCard("Vac?o formativo", contarPorCampo(data, "tipo_relacion", "vacio_formativo")),
+    renderSummaryCard("Progresión adecuada", contarPorCampo(data, "tipo_relacion", "progresion_adecuada")),
+    renderSummaryCard("Repetición", contarPorCampo(data, "tipo_relacion", "repeticion")),
+    renderSummaryCard("Vacío formativo", contarPorCampo(data, "tipo_relacion", "vacio_formativo")),
     renderSummaryCard("Continuidad temática", contarPorCampo(data, "tipo_relacion", "continuidad_tematica"))
   ].join("");
 }

@@ -27,6 +27,7 @@
         <button class="btn btn-secondary" type="button" onclick="verHistorialAnalisisIA('mejora_continua')">Ver historial integral IA</button>
         <button class="btn btn-warning" type="button" onclick="generarAlertasInteligentes()">Generar alertas inteligentes</button>
         <button class="btn btn-info" type="button" onclick="verAlertasInteligentes()">Ver alertas inteligentes</button>
+        <button class="btn btn-primary" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
       </div>
 
       <section class="traffic-light-dashboard">
@@ -559,6 +560,23 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalMejoraContinuaIA()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalReporteIntegral" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalReporteIntegral">
+    <div class="modal-card modal-extra-large report-modal">
+      <div class="modal-header no-print">
+        <h2 id="tituloModalReporteIntegral">Reporte integral de mejora continua</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalReporteIntegral()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="contenidoReporteIntegral" class="report-content report-print-area"></div>
+      </div>
+      <div class="modal-footer report-actions no-print">
+        <button type="button" class="btn btn-primary download-json-btn" onclick="descargarReporteIntegralJson()">Descargar como JSON</button>
+        <button type="button" class="btn btn-secondary print-report-btn" onclick="imprimirReporteIntegral()">Imprimir / Guardar como PDF</button>
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalReporteIntegral()">Cerrar</button>
       </div>
     </div>
   </div>
