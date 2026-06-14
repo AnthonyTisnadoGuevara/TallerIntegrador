@@ -1637,6 +1637,38 @@ async function exportarReporteIntegralExcel() {
   }
 }
 
+async function exportarReporteSilabosExcel() {
+  try {
+    mostrarToast("Descargando reporte de sílabos...", "info");
+    const response = await fetch(`${API_URL}/api/silabos/reporte/excel`);
+
+    if (!response.ok) {
+      let detalle = "No se pudo exportar el reporte de sílabos.";
+      try {
+        const result = await response.json();
+        detalle = result.detail || result.message || detalle;
+      } catch {
+        // El endpoint de descarga puede devolver contenido binario o HTML de error.
+      }
+      throw new Error(detalle);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = "reporte_gestion_silabos.xlsx";
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    URL.revokeObjectURL(url);
+    mostrarToast("Reporte de sílabos descargado correctamente.", "success");
+  } catch (error) {
+    console.error("Error al exportar reporte de sílabos:", error);
+    mostrarToast(error.message || "No se pudo exportar el reporte de sílabos.", "error");
+  }
+}
+
 function abrirModalReporteIntegral(reporte) {
   const contenedor = document.getElementById("contenidoReporteIntegral");
   if (!contenedor) return;
