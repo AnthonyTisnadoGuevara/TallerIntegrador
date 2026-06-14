@@ -1732,6 +1732,118 @@ textarea {
   width: min(520px, 100%);
 }
 
+.syllabus-history-modal {
+  width: min(760px, 100%);
+}
+
+.modal-subtitle {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.syllabus-history-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.syllabus-history-summary span {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.syllabus-history-summary strong {
+  color: #0f172a;
+}
+
+.syllabus-history-modal .history-timeline {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding-left: 18px;
+}
+
+.syllabus-history-modal .history-timeline::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 5px;
+  width: 2px;
+  background: #dbeafe;
+}
+
+.syllabus-history-modal .history-timeline-item {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.syllabus-history-modal .history-timeline-item::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: -18px;
+  width: 12px;
+  height: 12px;
+  border: 3px solid #bfdbfe;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.history-change-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 13px;
+}
+
+.history-detail,
+.history-date {
+  margin: 0;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.history-date {
+  font-size: 13px;
+}
+
+.empty-history-card {
+  padding: 18px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.empty-history-card h3 {
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.empty-history-card p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
 .modal-large {
   width: min(900px, 100%);
 }
@@ -1900,6 +2012,41 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 
+.metrics-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.metrics-tab {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.metrics-tab:hover {
+  background: #f1f5f9;
+}
+
+.metrics-tab.active {
+  border-color: #bfdbfe;
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.metrics-panel {
+  display: grid;
+  gap: 14px;
+}
+
 .macroprocess-metrics-grid {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
@@ -1919,6 +2066,7 @@ textarea {
   border-top: 4px solid #2563eb;
   background: #ffffff;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  min-height: 145px;
 }
 
 .metric-card-enhanced.metric-success {
@@ -2166,7 +2314,7 @@ textarea {
 }
 
 .interpretation-card {
-  padding: 18px;
+  padding: 14px 16px;
   border: 1px solid #bfdbfe;
   border-left: 5px solid #2563eb;
   border-radius: 8px;
@@ -2180,7 +2328,7 @@ textarea {
 
 .interpretation-card ul {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
   padding-left: 18px;
   color: #334155;

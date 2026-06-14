@@ -1926,17 +1926,15 @@ function renderModuloMetricas(data) {
 
   const resumenContainer = document.getElementById("metricasResumenGeneral");
   if (resumenContainer) {
+    const cumplimientoPromedio = obtenerValorIndicador(indicadores, "Cumplimiento promedio")
+      || calcularPromedioAvanceMacroprocesos(porMacroproceso);
     resumenContainer.innerHTML = [
       renderMetricCard("Macroprocesos monitoreados", resumen.total_macroprocesos, "Procesos activos dentro del sistema.", "total"),
       renderMetricCard("Evidencias registradas", resumen.total_evidencias, "Registros asociados al plan de mejora.", "total"),
-      renderMetricCard("Evidencias con sustento", resumen.evidencias_con_archivo, "Documentos cargados como respaldo.", "success"),
-      renderMetricCard("Evidencias sin sustento", resumen.evidencias_sin_archivo, "Requieren carga documental.", "danger"),
-      renderMetricCard("Acciones de mejora", resumen.total_acciones_mejora, "Acciones registradas o generadas.", "warning"),
-      renderMetricCard("Alertas activas", resumen.total_alertas_activas, "Alertas pendientes de atención.", "warning"),
+      renderMetricCard("Cumplimiento promedio", cumplimientoPromedio, "Avance consolidado del sistema.", getRiskColor(Number(String(cumplimientoPromedio).replace("%", "")))),
+      renderMetricCard("Acciones pendientes", resumen.acciones_pendientes, "Acciones que requieren seguimiento.", "warning"),
       renderMetricCard("Alertas críticas", resumen.alertas_criticas, "Requieren atención prioritaria.", "danger"),
-      renderMetricCard("Análisis IA", resumen.total_analisis_ia, "Ejecuciones de agentes IA.", "ia"),
-      renderMetricCard("Validaciones IA", resumen.total_validaciones_ia, "Revisiones documentales asistidas.", "ia"),
-      renderMetricCard("Sílabos registrados", resumen.total_silabos, "Sílabos monitoreados.", "total")
+      renderMetricCard("Uso de IA", Number(resumen.total_analisis_ia || 0) + Number(resumen.total_validaciones_ia || 0), "Análisis y validaciones ejecutadas.", "ia")
     ].join("");
   }
 
@@ -1983,6 +1981,27 @@ function renderModuloMetricas(data) {
       `).join("")
       : `<tr><td colspan="3">No hay indicadores clave registrados.</td></tr>`;
   }
+}
+
+function cambiarPestanaMetricas(nombre) {
+  document.querySelectorAll(".metrics-tab").forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.metricsTab === nombre);
+  });
+  document.querySelectorAll("[data-metrics-panel]").forEach((panel) => {
+    panel.classList.toggle("hidden", panel.dataset.metricsPanel !== nombre);
+  });
+}
+
+function obtenerValorIndicador(indicadores, nombre) {
+  const buscado = normalizarValor(nombre);
+  const item = indicadores.find((indicador) => normalizarValor(indicador.indicador || "") === buscado);
+  return item?.valor || "";
+}
+
+function calcularPromedioAvanceMacroprocesos(items) {
+  if (!Array.isArray(items) || items.length === 0) return "0%";
+  const promedio = Math.round(items.reduce((sum, item) => sum + Number(item.avance_promedio || 0), 0) / items.length);
+  return `${promedio}%`;
 }
 
 function getIndicatorStatusClass(item) {
@@ -2853,42 +2872,66 @@ async function verHistorial(id) {
       throw new Error(result.detail || "No se pudo obtener el historial del sílabo.");
     }
 
-    const detalle = document.getElementById("detalleSilabo");
-    if (!detalle) {
-      mostrarToast("No se encontró el panel de detalle del sílabo.", "warning");
-      return;
-    }
-
     const historial = Array.isArray(result.historial) ? result.historial : [];
-    if (historial.length === 0) {
-      detalle.innerHTML = `<p class="text-muted">No hay historial registrado para este sílabo.</p>`;
-      mostrarToast("No hay historial registrado para este sílabo.", "info");
-      return;
-    }
-
-    let html = `
-      <h3>Historial: ${result.silabo.asignatura}</h3>
-      <p><strong>Estado actual:</strong> ${result.silabo.estado_actual}</p>
-      <ul>
-    `;
-
-    historial.forEach((item) => {
-      html += `
-        <li>
-          <strong>${item.estado_anterior}</strong> → <strong>${item.estado_nuevo}</strong><br>
-          ${item.observacion}<br>
-          <small>${item.created_at}</small>
-        </li>
-      `;
-    });
-
-    html += `</ul>`;
-    detalle.innerHTML = html;
-    mostrarToast("Historial cargado correctamente.", "success");
+    abrirModalHistorialSilabo(result.silabo || {}, historial);
   } catch (error) {
     console.error("Error al consultar historial:", error);
     mostrarToast("Error al consultar historial: " + error.message, "error");
   }
+}
+
+function abrirModalHistorialSilabo(silabo, historial) {
+  const subtitulo = document.getElementById("subtituloModalHistorialSilabo");
+  const contenido = document.getElementById("contenidoHistorialSilabo");
+  if (!contenido) return;
+
+  if (subtitulo) {
+    subtitulo.textContent = silabo.asignatura || "Sílabo";
+  }
+
+  const estadoActual = silabo.estado_actual || silabo.estado || "Sin estado";
+  const registros = Array.isArray(historial) ? historial : [];
+
+  if (registros.length === 0) {
+    contenido.innerHTML = `
+      <section class="syllabus-history-summary">
+        <span>Estado actual</span>
+        <strong>${escaparHtml(formatearTexto(estadoActual))}</strong>
+      </section>
+      <article class="empty-history-card">
+        <h3>No hay historial registrado para este sílabo.</h3>
+        <p>El historial se generará cuando se cambie el estado, se actualice el archivo, se edite el cumplimiento o se ejecute un análisis IA.</p>
+      </article>
+    `;
+    mostrarModal("modalHistorialSilabo");
+    return;
+  }
+
+  const ordenado = [...registros].sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+  contenido.innerHTML = `
+    <section class="syllabus-history-summary">
+      <span>Estado actual</span>
+      <strong>${escaparHtml(formatearTexto(estadoActual))}</strong>
+    </section>
+    <div class="history-timeline">
+      ${ordenado.map((item) => `
+        <article class="history-timeline-item">
+          <div class="history-change-badge">
+            <strong>${escaparHtml(formatearTexto(item.estado_anterior || "sin estado"))}</strong>
+            <span>→</span>
+            <strong>${escaparHtml(formatearTexto(item.estado_nuevo || "sin estado"))}</strong>
+          </div>
+          <p class="history-detail"><strong>Detalle:</strong> ${escaparHtml(item.observacion || "Sin detalle registrado.")}</p>
+          <p class="history-date"><strong>Fecha:</strong> ${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</p>
+        </article>
+      `).join("")}
+    </div>
+  `;
+  mostrarModal("modalHistorialSilabo");
+}
+
+function cerrarModalHistorialSilabo() {
+  ocultarModal("modalHistorialSilabo");
 }
 
 async function validarDocumento(id) {

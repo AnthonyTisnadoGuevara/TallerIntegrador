@@ -372,43 +372,58 @@
 
       <section id="interpretacionMetricas" class="interpretation-card"></section>
 
-      <section class="metric-section metrics-dashboard">
-        <h3>Dashboard visual</h3>
-        <div id="metricasDashboardVisual" class="charts-grid"></div>
-      </section>
+      <div class="metrics-tabs" role="tablist" aria-label="Secciones de m&eacute;tricas">
+        <button class="metrics-tab active" type="button" data-metrics-tab="resumen" onclick="cambiarPestanaMetricas('resumen')">Resumen</button>
+        <button class="metrics-tab" type="button" data-metrics-tab="macroprocesos" onclick="cambiarPestanaMetricas('macroprocesos')">Macroprocesos</button>
+        <button class="metrics-tab" type="button" data-metrics-tab="ia" onclick="cambiarPestanaMetricas('ia')">IA</button>
+        <button class="metrics-tab" type="button" data-metrics-tab="indicadores" onclick="cambiarPestanaMetricas('indicadores')">Indicadores clave</button>
+      </div>
 
-      <section class="metric-section">
-        <h3>M&eacute;tricas por macroproceso</h3>
-        <div id="metricasPorMacroproceso" class="macroprocess-metrics-grid"></div>
-      </section>
+      <div class="metrics-panel" data-metrics-panel="resumen">
+        <section class="metric-section metrics-dashboard">
+          <h3>Dashboard visual</h3>
+          <div id="metricasDashboardVisual" class="charts-grid"></div>
+        </section>
+      </div>
 
-      <section class="metric-section ia-metrics-section">
-        <div>
-          <h3>M&eacute;tricas de IA</h3>
-          <p>Seguimiento del uso de agentes, an&aacute;lisis e historial IA dentro del sistema.</p>
-        </div>
-        <div id="metricasIA" class="metrics-summary-grid"></div>
-      </section>
+      <div class="metrics-panel hidden" data-metrics-panel="macroprocesos">
+        <section class="metric-section">
+          <h3>M&eacute;tricas por macroproceso</h3>
+          <div id="metricasPorMacroproceso" class="macroprocess-metrics-grid"></div>
+        </section>
+      </div>
 
-      <section class="metric-section">
-        <h3>Indicadores clave</h3>
-        <div class="basic-table-card">
-          <table class="indicators-table">
-            <thead>
-              <tr>
-                <th>Indicador</th>
-                <th>Valor</th>
-                <th>Interpretaci&oacute;n</th>
-              </tr>
-            </thead>
-            <tbody id="tablaIndicadoresMetricas">
-              <tr>
-                <td colspan="3">Cargando indicadores...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <div class="metrics-panel hidden" data-metrics-panel="ia">
+        <section class="metric-section ia-metrics-section">
+          <div>
+            <h3>M&eacute;tricas de IA</h3>
+            <p>Estas m&eacute;tricas muestran el uso de los agentes IA dentro del sistema.</p>
+          </div>
+          <div id="metricasIA" class="metrics-summary-grid ia-metrics-grid"></div>
+        </section>
+      </div>
+
+      <div class="metrics-panel hidden" data-metrics-panel="indicadores">
+        <section class="metric-section">
+          <h3>Indicadores clave</h3>
+          <div class="basic-table-card">
+            <table class="indicators-table">
+              <thead>
+                <tr>
+                  <th>Indicador</th>
+                  <th>Valor</th>
+                  <th>Interpretaci&oacute;n</th>
+                </tr>
+              </thead>
+              <tbody id="tablaIndicadoresMetricas">
+                <tr>
+                  <td colspan="3">Cargando indicadores...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </section>
 
   </main>
@@ -486,6 +501,22 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarSilabo()">Cancelar</button>
         <button type="button" class="btn btn-primary" onclick="guardarEdicionSilabo()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalHistorialSilabo" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalHistorialSilabo">
+    <div class="modal-card syllabus-history-modal">
+      <div class="modal-header">
+        <div>
+          <h2 id="tituloModalHistorialSilabo">Historial del sílabo</h2>
+          <p id="subtituloModalHistorialSilabo" class="modal-subtitle">Asignatura</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalHistorialSilabo()">&times;</button>
+      </div>
+      <div class="modal-body" id="contenidoHistorialSilabo"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialSilabo()">Cerrar</button>
       </div>
     </div>
   </div>
