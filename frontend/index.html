@@ -23,14 +23,27 @@
       <div class="macro-hero">
         <h2>Panel de Macroprocesos</h2>
         <p>Seleccione el macroproceso que desea gestionar dentro del sistema de monitoreo del plan de mejora continua.</p>
-        <button class="btn btn-success" type="button" onclick="analizarMejoraContinuaIA()">Analizar mejora continua con IA</button>
-        <button class="btn btn-secondary" type="button" onclick="verHistorialAnalisisIA('mejora_continua')">Ver historial integral IA</button>
-        <button class="btn btn-warning" type="button" onclick="generarAlertasInteligentes()">Generar alertas inteligentes</button>
-        <button class="btn btn-info" type="button" onclick="verAlertasInteligentes()">Ver alertas inteligentes</button>
-        <button class="btn btn-primary" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
-        <button class="btn btn-secondary" type="button" onclick="verMetricasFinales()">Ver m&eacute;tricas finales</button>
-        <button class="btn btn-info" type="button" onclick="abrirModalEncuestaAceptacion()">Encuesta de aceptaci&oacute;n</button>
-        <button class="btn btn-secondary" type="button" onclick="abrirModalAyudaUsuario()">Ayuda / Manual de usuario</button>
+        <div class="panel-actions-group">
+          <div class="primary-action-row">
+            <button class="btn btn-success" type="button" onclick="analizarMejoraContinuaIA()">Analizar mejora continua con IA</button>
+            <button class="btn btn-secondary" type="button" onclick="verMetricasFinales()">Ver m&eacute;tricas finales</button>
+            <button class="btn btn-primary export-excel-btn" type="button" onclick="exportarReporteIntegralExcel()">Exportar Excel</button>
+          </div>
+          <div class="acciones-dropdown more-options-menu">
+            <button class="btn btn-secondary btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('macroprocesos-opciones')">M&aacute;s opciones &#9662;</button>
+            <div id="menu-acciones-macroprocesos-opciones" class="acciones-menu actions-dropdown-menu hidden">
+              <div class="menu-section">
+                <span class="menu-label">M&aacute;s opciones</span>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialAnalisisIA('mejora_continua')">Ver historial integral IA</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="generarAlertasInteligentes()">Generar alertas inteligentes</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="verAlertasInteligentes()">Ver alertas inteligentes</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEncuestaAceptacion()">Encuesta de aceptaci&oacute;n</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalAyudaUsuario()">Ayuda / Manual de usuario</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <section class="traffic-light-dashboard">
@@ -79,13 +92,25 @@
           <h2>Planificaci&oacute;n Estrat&eacute;gica</h2>
           <p>Seguimiento del Plan General de Desarrollo 2025-2028.</p>
         </div>
-        <div class="section-actions">
-          <button class="btn btn-success" type="button" onclick="analizarPlanificacionIA()">Analizar planificaci&oacute;n con IA</button>
-          <button class="btn btn-info" type="button" onclick="verHistorialAnalisisIA('planificacion_estrategica')">Ver historial IA</button>
-          <button class="btn btn-warning" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('planificacion_estrategica')">Generar acciones desde planificaci&oacute;n</button>
-          <button class="btn btn-primary" type="button" onclick="abrirModalRegistroAccionMacroproceso('planificacion_estrategica')">Registrar nueva acci&oacute;n</button>
-          <button class="btn btn-info" type="button" onclick="verAccionesMacroproceso('planificacion_estrategica')">Ver acciones de planificaci&oacute;n</button>
-          <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+        <div class="section-actions panel-actions-group">
+          <div class="primary-action-row">
+            <button class="btn btn-success" type="button" onclick="analizarPlanificacionIA()">Analizar con IA</button>
+            <button class="btn btn-primary" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('planificacion_estrategica')">Registrar nueva evidencia</button>
+            <button class="btn btn-info" type="button" onclick="verAccionesMacroproceso('planificacion_estrategica')">Ver acciones</button>
+            <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+          </div>
+          <div class="acciones-dropdown more-options-menu">
+            <button class="btn btn-secondary btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('planificacion-opciones')">M&aacute;s opciones &#9662;</button>
+            <div id="menu-acciones-planificacion-opciones" class="acciones-menu actions-dropdown-menu hidden">
+              <div class="menu-section">
+                <span class="menu-label">M&aacute;s opciones</span>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialAnalisisIA('planificacion_estrategica')">Ver historial IA</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('planificacion_estrategica')">Generar acciones desde evidencias</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalRegistroAccionMacroproceso('planificacion_estrategica')">Registrar nueva acci&oacute;n</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -98,7 +123,6 @@
             <p>Filtre y actualice el seguimiento de evidencias del macroproceso.</p>
           </div>
           <div class="section-actions">
-            <button class="btn btn-primary register-evidence-btn" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('planificacion_estrategica')">Registrar nueva evidencia</button>
             <button class="btn btn-secondary" type="button" onclick="cargarVistaMacroproceso('planificacion_estrategica')">Actualizar</button>
           </div>
         </div>
@@ -128,13 +152,25 @@
           <h2>Gesti&oacute;n Acad&eacute;mica del Programa de Estudio</h2>
           <p>Seguimiento de actualizaci&oacute;n curricular, actas, acuerdos y evidencias acad&eacute;micas.</p>
         </div>
-        <div class="section-actions">
-          <button class="btn btn-success" type="button" onclick="analizarGestionAcademicaIA()">Analizar gesti&oacute;n acad&eacute;mica con IA</button>
-          <button class="btn btn-info" type="button" onclick="verHistorialAnalisisIA('gestion_academica')">Ver historial IA</button>
-          <button class="btn btn-warning" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('gestion_academica')">Generar acciones desde gesti&oacute;n acad&eacute;mica</button>
-          <button class="btn btn-primary" type="button" onclick="abrirModalRegistroAccionMacroproceso('gestion_academica')">Registrar nueva acci&oacute;n</button>
-          <button class="btn btn-info" type="button" onclick="verAccionesMacroproceso('gestion_academica')">Ver acciones de gesti&oacute;n acad&eacute;mica</button>
-          <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+        <div class="section-actions panel-actions-group">
+          <div class="primary-action-row">
+            <button class="btn btn-success" type="button" onclick="analizarGestionAcademicaIA()">Analizar con IA</button>
+            <button class="btn btn-primary" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('gestion_academica')">Registrar nueva evidencia</button>
+            <button class="btn btn-info" type="button" onclick="verAccionesMacroproceso('gestion_academica')">Ver acciones</button>
+            <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+          </div>
+          <div class="acciones-dropdown more-options-menu">
+            <button class="btn btn-secondary btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('gestion-academica-opciones')">M&aacute;s opciones &#9662;</button>
+            <div id="menu-acciones-gestion-academica-opciones" class="acciones-menu actions-dropdown-menu hidden">
+              <div class="menu-section">
+                <span class="menu-label">M&aacute;s opciones</span>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialAnalisisIA('gestion_academica')">Ver historial IA</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('gestion_academica')">Generar acciones desde evidencias</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalRegistroAccionMacroproceso('gestion_academica')">Registrar nueva acci&oacute;n</button>
+                <button class="menu-item actions-dropdown-item" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -147,7 +183,6 @@
             <p>Revise y actualice las evidencias asociadas a la gesti&oacute;n acad&eacute;mica del programa.</p>
           </div>
           <div class="section-actions">
-            <button class="btn btn-primary register-evidence-btn" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('gestion_academica')">Registrar nueva evidencia</button>
             <button class="btn btn-secondary" type="button" onclick="cargarVistaMacroproceso('gestion_academica')">Actualizar</button>
           </div>
         </div>
