@@ -1,9 +1,13 @@
 from datetime import datetime, timezone
+from io import BytesIO
 import os
 import uuid
 from typing import Optional
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from pydantic import BaseModel, Field
 
 from app.agents.gestion_academica_graph import ejecutar_grafo_gestion_academica
@@ -235,6 +239,203 @@ def _safe_select_table_reporte(tabla: str, columnas: str = "*") -> list[dict]:
     except Exception as e:
         print(f"[Reporte Integral] Advertencia: no se pudo consultar tabla {tabla}.", type(e).__name__)
         return []
+
+
+def _valor_excel(valor):
+    if isinstance(valor, (dict, list)):
+        return str(valor)
+    if valor is None:
+        return ""
+    return valor
+
+
+def _agregar_hoja_excel(workbook, titulo: str, encabezados: list[str], filas: list[list]):
+    hoja = workbook.create_sheet(title=titulo[:31])
+    hoja.append(encabezados)
+
+    header_fill = PatternFill("solid", fgColor="DCEBFF")
+    header_font = Font(bold=True, color="0F172A")
+    border = Border(
+        left=Side(style="thin", color="CBD5E1"),
+        right=Side(style="thin", color="CBD5E1"),
+        top=Side(style="thin", color="CBD5E1"),
+        bottom=Side(style="thin", color="CBD5E1"),
+    )
+
+    for cell in hoja[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.border = border
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    for fila in filas:
+        hoja.append([_valor_excel(valor) for valor in fila])
+
+    for row in hoja.iter_rows(min_row=2):
+        for cell in row:
+            cell.border = border
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+
+    for column_cells in hoja.columns:
+        max_length = max(
+            len(str(cell.value)) if cell.value is not None else 0
+            for cell in column_cells
+        )
+        hoja.column_dimensions[column_cells[0].column_letter].width = min(max(max_length + 2, 14), 55)
+
+    hoja.freeze_panes = "A2"
+    return hoja
+
+
+def _crear_excel_reporte_integral(reporte: dict, metricas: dict) -> BytesIO:
+    workbook = Workbook()
+    workbook.remove(workbook.active)
+
+    resumen = reporte.get("resumen", {})
+    _agregar_hoja_excel(
+        workbook,
+        "Resumen General",
+        ["Indicador", "Valor"],
+        [
+            ["Título", reporte.get("titulo")],
+            ["Fecha de generación", reporte.get("fecha_generacion")],
+            ["Total macroprocesos", resumen.get("total_macroprocesos")],
+            ["Total evidencias", resumen.get("total_evidencias")],
+            ["Alertas activas", resumen.get("total_alertas_activas")],
+            ["Alertas críticas", resumen.get("total_alertas_criticas")],
+            ["Acciones de mejora", resumen.get("total_acciones_mejora")],
+            ["Acciones pendientes", resumen.get("acciones_pendientes")],
+            ["Acciones en proceso", resumen.get("acciones_en_proceso")],
+            ["Acciones completadas", resumen.get("acciones_completadas")],
+            ["Análisis IA", resumen.get("total_analisis_ia")],
+            ["Validaciones documentales IA", resumen.get("total_validaciones_ia")],
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Semáforo",
+        ["Macroproceso", "Color", "Avance", "Alertas activas", "Nivel de riesgo", "Estado"],
+        [
+            [
+                item.get("macroproceso"),
+                item.get("color"),
+                item.get("avance_promedio"),
+                item.get("alertas_activas"),
+                item.get("nivel_riesgo"),
+                item.get("estado"),
+            ]
+            for item in reporte.get("semaforo", [])
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Evidencias",
+        ["Macroproceso", "Código", "Título", "Responsable", "Estado", "Prioridad", "Avance", "Archivo", "Observación"],
+        [
+            [
+                item.get("macroproceso"),
+                item.get("codigo"),
+                item.get("titulo"),
+                item.get("responsable"),
+                item.get("estado"),
+                item.get("prioridad"),
+                item.get("avance"),
+                item.get("archivo_url"),
+                item.get("observacion"),
+            ]
+            for item in reporte.get("evidencias", reporte.get("evidencias_criticas", []))
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Alertas Activas",
+        ["Macroproceso", "Código", "Título", "Nivel", "Estado", "Descripción", "Recomendación"],
+        [
+            [
+                item.get("macroproceso"),
+                item.get("codigo"),
+                item.get("titulo"),
+                item.get("nivel_alerta"),
+                item.get("estado"),
+                item.get("descripcion"),
+                item.get("recomendacion"),
+            ]
+            for item in reporte.get("alertas_activas", [])
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Acciones de Mejora",
+        ["Macroproceso", "Título", "Prioridad", "Estado", "Responsable", "Origen", "Descripción", "Recomendación"],
+        [
+            [
+                item.get("macroproceso"),
+                item.get("titulo"),
+                item.get("prioridad"),
+                item.get("estado"),
+                item.get("responsable"),
+                item.get("origen_tipo"),
+                item.get("descripcion"),
+                item.get("recomendacion"),
+            ]
+            for item in reporte.get("acciones_mejora", [])
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Análisis IA",
+        ["Macroproceso", "Tipo", "Nivel de riesgo", "Resumen", "Modelo", "Fecha"],
+        [
+            [
+                item.get("macroproceso"),
+                item.get("tipo_analisis"),
+                item.get("nivel_riesgo"),
+                item.get("resumen"),
+                item.get("modelo_usado"),
+                item.get("created_at"),
+            ]
+            for item in reporte.get("ultimos_analisis_ia", [])
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Validaciones Documentales",
+        ["Macroproceso", "Evidencia ID", "Nivel", "Pertinencia", "Resumen", "Acción sugerida", "Modelo", "Fecha"],
+        [
+            [
+                item.get("macroproceso"),
+                item.get("evidencia_id"),
+                item.get("nivel_validez"),
+                item.get("pertinencia"),
+                item.get("resumen"),
+                item.get("accion_sugerida"),
+                item.get("modelo_usado"),
+                item.get("created_at"),
+            ]
+            for item in reporte.get("validaciones_documentales", [])
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Métricas Finales",
+        ["Indicador", "Valor", "Interpretación"],
+        [
+            [item.get("indicador"), item.get("valor"), item.get("interpretacion")]
+            for item in metricas.get("indicadores_clave", [])
+        ],
+    )
+
+    archivo = BytesIO()
+    workbook.save(archivo)
+    archivo.seek(0)
+    return archivo
 
 
 def _macroproceso_accion(accion: dict, evidencias_por_id: dict) -> str:
@@ -1353,6 +1554,7 @@ def obtener_reporte_integral_mejora_continua():
                 "total_validaciones_ia": len(validaciones_documentales),
             },
             "semaforo": semaforo,
+            "evidencias": evidencias,
             "evidencias_criticas": evidencias_criticas,
             "alertas_activas": sorted(
                 alertas_activas,
@@ -1370,6 +1572,28 @@ def obtener_reporte_integral_mejora_continua():
 
         print("[Reporte Integral] Reporte generado correctamente.")
         return reporte
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/reporte-integral/excel")
+def exportar_reporte_integral_excel():
+    try:
+        print("[Reporte Integral Excel] Generando archivo Excel...")
+        reporte = obtener_reporte_integral_mejora_continua()
+        metricas = obtener_metricas_finales_sistema()
+        archivo = _crear_excel_reporte_integral(reporte, metricas)
+
+        headers = {
+            "Content-Disposition": 'attachment; filename="reporte_integral_mejora_continua.xlsx"'
+        }
+        return StreamingResponse(
+            archivo,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers,
+        )
     except HTTPException:
         raise
     except Exception as e:

@@ -290,18 +290,24 @@ function renderEvidenceCard(evidencia, columnas) {
         </div>
       </div>
 
-      <div class="evidence-actions evidence-actions-primary">
+      <div class="evidence-actions evidence-actions-primary primary-action-row">
         <button class="btn btn-info" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'detalle')">Ver detalle</button>
         <button class="btn btn-warning" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
-        ${validarButton}
-      </div>
-      <div class="evidence-actions evidence-actions-secondary">
-        <button class="btn btn-secondary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar avance</button>
-        <button class="btn btn-secondary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observaci&oacute;n</button>
         <button class="btn btn-success evidence-upload-btn" type="button" onclick="subirArchivoEvidenciaMacroproceso('${id}')">Subir evidencia</button>
-        <button class="btn btn-secondary" type="button" onclick="verUltimaValidacionEvidenciaIA('${id}')">Ver &uacute;ltima validaci&oacute;n IA</button>
-        <button class="btn btn-secondary" type="button" onclick="verHistorialEvidenciaMacroproceso('${id}')">Ver historial</button>
-        <button class="btn btn-secondary" type="button" onclick="generarAccionDesdeEvidencia('${id}')">Generar acci&oacute;n</button>
+        <div class="acciones-dropdown">
+          <button class="btn btn-secondary btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('evidencia-${id}')">M&aacute;s acciones &#9662;</button>
+          <div id="menu-acciones-evidencia-${id}" class="acciones-menu actions-dropdown-menu hidden">
+            <div class="menu-section">
+              <span class="menu-label">M&aacute;s acciones</span>
+              ${validarButton.replace("btn btn-primary", "menu-item actions-dropdown-item").replace("btn btn-secondary", "menu-item actions-dropdown-item")}
+              <button class="menu-item actions-dropdown-item" type="button" onclick="verUltimaValidacionEvidenciaIA('${id}')">Ver &uacute;ltima validaci&oacute;n IA</button>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar avance</button>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observaci&oacute;n</button>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialEvidenciaMacroproceso('${id}')">Ver historial</button>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="generarAccionDesdeEvidencia('${id}')">Generar acci&oacute;n</button>
+            </div>
+          </div>
+        </div>
       </div>
     </article>
   `;
@@ -1599,6 +1605,38 @@ async function exportarReporteIntegral() {
   }
 }
 
+async function exportarReporteIntegralExcel() {
+  try {
+    mostrarToast("Descargando reporte Excel...", "info");
+    const response = await fetch(`${API_URL}/api/macroprocesos/reporte-integral/excel`);
+
+    if (!response.ok) {
+      let detalle = "No se pudo exportar el reporte Excel.";
+      try {
+        const result = await response.json();
+        detalle = result.detail || result.message || detalle;
+      } catch {
+        // El endpoint de descarga puede devolver contenido binario o HTML de error.
+      }
+      throw new Error(detalle);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = "reporte_integral_mejora_continua.xlsx";
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    URL.revokeObjectURL(url);
+    mostrarToast("Reporte Excel descargado correctamente.", "success");
+  } catch (error) {
+    console.error("Error al exportar Excel:", error);
+    mostrarToast(error.message || "No se pudo exportar el reporte Excel.", "error");
+  }
+}
+
 function abrirModalReporteIntegral(reporte) {
   const contenedor = document.getElementById("contenidoReporteIntegral");
   if (!contenedor) return;
@@ -2480,7 +2518,22 @@ async function verValidacion(id) {
     const response = await fetch(`${API_URL}/api/silabos/${id}/validacion`);
     const result = await response.json();
 
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo obtener la validación del sílabo.");
+    }
+
     const detalle = document.getElementById("detalleSilabo");
+    if (!detalle) {
+      mostrarToast("No se encontró el panel de detalle del sílabo.", "warning");
+      return;
+    }
+
+    const validaciones = Array.isArray(result.validacion) ? result.validacion : [];
+    if (validaciones.length === 0) {
+      detalle.innerHTML = `<p class="text-muted">No hay validaciones registradas para este sílabo.</p>`;
+      mostrarToast("No hay validaciones registradas para este sílabo.", "info");
+      return;
+    }
 
     let html = `
       <h3>${result.silabo.asignatura}</h3>
@@ -2491,10 +2544,10 @@ async function verValidacion(id) {
       <ul>
     `;
 
-    result.validacion.forEach((item) => {
+    validaciones.forEach((item) => {
       html += `
         <li>
-          ${item.cumple ? "?" : "?"}
+          ${item.cumple ? "Cumple" : "No cumple"}
           <strong>${item.seccion}</strong>: ${item.observacion}
         </li>
       `;
@@ -2502,8 +2555,10 @@ async function verValidacion(id) {
 
     html += `</ul>`;
     detalle.innerHTML = html;
+    mostrarToast("Validación cargada correctamente.", "success");
   } catch (error) {
     console.error("Error al consultar validación:", error);
+    mostrarToast("Error al consultar validación: " + error.message, "error");
   }
 }
 
@@ -2512,7 +2567,22 @@ async function verHistorial(id) {
     const response = await fetch(`${API_URL}/api/silabos/${id}/historial`);
     const result = await response.json();
 
+    if (!response.ok) {
+      throw new Error(result.detail || "No se pudo obtener el historial del sílabo.");
+    }
+
     const detalle = document.getElementById("detalleSilabo");
+    if (!detalle) {
+      mostrarToast("No se encontró el panel de detalle del sílabo.", "warning");
+      return;
+    }
+
+    const historial = Array.isArray(result.historial) ? result.historial : [];
+    if (historial.length === 0) {
+      detalle.innerHTML = `<p class="text-muted">No hay historial registrado para este sílabo.</p>`;
+      mostrarToast("No hay historial registrado para este sílabo.", "info");
+      return;
+    }
 
     let html = `
       <h3>Historial: ${result.silabo.asignatura}</h3>
@@ -2520,10 +2590,10 @@ async function verHistorial(id) {
       <ul>
     `;
 
-    result.historial.forEach((item) => {
+    historial.forEach((item) => {
       html += `
         <li>
-          <strong>${item.estado_anterior}</strong> ? <strong>${item.estado_nuevo}</strong><br>
+          <strong>${item.estado_anterior}</strong> → <strong>${item.estado_nuevo}</strong><br>
           ${item.observacion}<br>
           <small>${item.created_at}</small>
         </li>
@@ -2532,8 +2602,10 @@ async function verHistorial(id) {
 
     html += `</ul>`;
     detalle.innerHTML = html;
+    mostrarToast("Historial cargado correctamente.", "success");
   } catch (error) {
     console.error("Error al consultar historial:", error);
+    mostrarToast("Error al consultar historial: " + error.message, "error");
   }
 }
 

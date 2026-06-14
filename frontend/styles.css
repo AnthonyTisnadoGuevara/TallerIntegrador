@@ -1455,6 +1455,28 @@ textarea {
   flex-wrap: nowrap;
 }
 
+.compact-actions,
+.primary-action-row,
+.secondary-action-row,
+.panel-actions-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.panel-actions-group {
+  justify-content: flex-start;
+}
+
+.primary-action-row {
+  align-items: center;
+}
+
+.secondary-action-row {
+  padding-top: 8px;
+}
+
 .acciones-dropdown {
   position: relative;
   display: inline-block;
@@ -1471,6 +1493,26 @@ textarea {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 16px 35px rgba(15, 23, 42, 0.18);
+}
+
+.actions-dropdown-menu {
+  width: 250px;
+}
+
+.actions-dropdown-item {
+  display: block;
+}
+
+.more-options-menu {
+  flex: 0 0 auto;
+}
+
+.export-excel-btn {
+  background: #15803d;
+}
+
+.export-excel-btn:hover {
+  background: #166534;
 }
 
 .acciones-menu.open-up {
@@ -2567,6 +2609,22 @@ textarea.form-control {
   .acciones-compactas {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .panel-actions-group,
+  .primary-action-row,
+  .secondary-action-row {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .panel-actions-group .btn,
+  .primary-action-row .btn,
+  .secondary-action-row .btn,
+  .more-options-menu,
+  .more-options-menu .btn {
+    width: 100%;
   }
 
   .acciones-menu {
