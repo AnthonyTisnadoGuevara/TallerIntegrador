@@ -1,5 +1,9 @@
 from datetime import datetime, timezone
+from io import BytesIO
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from pydantic import BaseModel, Field
 from typing import Optional
 from app.services.supabase_client import supabase
@@ -78,6 +82,267 @@ def normalizar_porcentaje_por_estado(silabo: dict) -> dict:
     return silabo
 
 
+def _safe_select_table_reporte_silabos(tabla: str, columnas: str = "*") -> list[dict]:
+    try:
+        response = supabase.table(tabla).select(columnas).execute()
+        return response.data or []
+    except Exception as e:
+        print(f"[Reporte Sílabos] Advertencia: no se pudo consultar tabla {tabla}.", type(e).__name__)
+        return []
+
+
+def _valor_excel(valor):
+    if isinstance(valor, (dict, list)):
+        return str(valor)
+    if valor is None:
+        return ""
+    return valor
+
+
+def _agregar_hoja_excel(workbook, titulo: str, encabezados: list[str], filas: list[list]):
+    hoja = workbook.create_sheet(title=titulo[:31])
+    hoja.append(encabezados)
+
+    header_fill = PatternFill("solid", fgColor="DCEBFF")
+    header_font = Font(bold=True, color="0F172A")
+    border = Border(
+        left=Side(style="thin", color="CBD5E1"),
+        right=Side(style="thin", color="CBD5E1"),
+        top=Side(style="thin", color="CBD5E1"),
+        bottom=Side(style="thin", color="CBD5E1"),
+    )
+
+    for cell in hoja[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.border = border
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    if filas:
+        for fila in filas:
+            hoja.append([_valor_excel(valor) for valor in fila])
+    else:
+        hoja.append(["Sin datos disponibles"] + [""] * (len(encabezados) - 1))
+
+    for row in hoja.iter_rows(min_row=2):
+        for cell in row:
+            cell.border = border
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+
+    for column_cells in hoja.columns:
+        max_length = max(
+            len(str(cell.value)) if cell.value is not None else 0
+            for cell in column_cells
+        )
+        hoja.column_dimensions[column_cells[0].column_letter].width = min(max(max_length + 2, 14), 55)
+
+    hoja.freeze_panes = "A2"
+    return hoja
+
+
+def _acciones_silabos(acciones: list[dict]) -> list[dict]:
+    return [
+        accion
+        for accion in acciones
+        if accion.get("macroproceso") == "gestion_silabos"
+        or accion.get("origen_tipo") == "brecha_curricular"
+        or accion.get("silabo_id")
+        or accion.get("ciclo")
+    ]
+
+
+def _resumen_reporte_silabos(
+    silabos: list[dict],
+    analisis: list[dict],
+    brechas: list[dict],
+    acciones: list[dict],
+) -> dict:
+    total = len(silabos)
+    completos = sum(1 for item in silabos if item.get("estado") == "completo")
+    observados = sum(1 for item in silabos if item.get("estado") == "observado")
+    pendientes = sum(1 for item in silabos if item.get("estado") == "pendiente")
+    incompletos = sum(1 for item in silabos if item.get("estado") == "incompleto")
+    cumplimiento = round((completos / total) * 100) if total else 0
+
+    return {
+        "fecha_generacion": datetime.now(timezone.utc).isoformat(),
+        "total_silabos": total,
+        "silabos_completos": completos,
+        "silabos_incompletos": incompletos,
+        "silabos_observados": observados,
+        "silabos_pendientes": pendientes,
+        "cumplimiento_promedio": cumplimiento,
+        "total_analisis_ia": len(analisis),
+        "total_brechas_curriculares": len(brechas),
+        "total_acciones_mejora": len(acciones),
+    }
+
+
+def _crear_excel_reporte_silabos(
+    resumen: dict,
+    silabos: list[dict],
+    analisis: list[dict],
+    trazabilidad: list[dict],
+    brechas: list[dict],
+    acciones: list[dict],
+) -> BytesIO:
+    workbook = Workbook()
+    workbook.remove(workbook.active)
+
+    _agregar_hoja_excel(
+        workbook,
+        "Resumen",
+        ["Indicador", "Valor"],
+        [
+            ["Fecha de generación", resumen.get("fecha_generacion")],
+            ["Total de sílabos", resumen.get("total_silabos")],
+            ["Sílabos completos", resumen.get("silabos_completos")],
+            ["Sílabos incompletos", resumen.get("silabos_incompletos")],
+            ["Sílabos observados", resumen.get("silabos_observados")],
+            ["Sílabos pendientes", resumen.get("silabos_pendientes")],
+            ["Cumplimiento promedio", f"{resumen.get('cumplimiento_promedio', 0)}%"],
+            ["Total de análisis IA", resumen.get("total_analisis_ia")],
+            ["Total de brechas curriculares", resumen.get("total_brechas_curriculares")],
+            ["Total de acciones de mejora", resumen.get("total_acciones_mejora")],
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Sílabos",
+        [
+            "ID",
+            "Semestre académico",
+            "Facultad",
+            "Programa de estudios",
+            "Asignatura",
+            "Código",
+            "Ciclo",
+            "Modalidad",
+            "Créditos",
+            "Horas semestrales",
+            "Horas semanales",
+            "Docente",
+            "Correo",
+            "Estado",
+            "Porcentaje de cumplimiento",
+            "Observación",
+            "Archivo URL",
+            "Fecha de registro",
+            "Fecha de actualización",
+        ],
+        [
+            [
+                item.get("id"),
+                item.get("semestre_academico"),
+                item.get("facultad"),
+                item.get("programa_estudios"),
+                item.get("asignatura"),
+                item.get("codigo_asignatura"),
+                item.get("ciclo"),
+                item.get("modalidad"),
+                item.get("creditos"),
+                item.get("total_horas_semestrales"),
+                item.get("total_horas_semanales"),
+                item.get("docente_responsable"),
+                item.get("correo_docente"),
+                item.get("estado"),
+                item.get("porcentaje_cumplimiento"),
+                item.get("observacion_general"),
+                item.get("archivo_url"),
+                item.get("created_at"),
+                item.get("updated_at"),
+            ]
+            for item in silabos
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Análisis IA",
+        ["ID", "Sílabo ID", "Asignatura", "Modelo usado", "Nivel de cumplimiento", "Resumen", "Recomendaciones", "Fecha de análisis"],
+        [
+            [
+                item.get("id"),
+                item.get("silabo_id"),
+                item.get("asignatura"),
+                item.get("modelo_usado"),
+                item.get("nivel_cumplimiento") or item.get("nivel_riesgo"),
+                item.get("resumen"),
+                item.get("recomendaciones") or item.get("sugerencias"),
+                item.get("created_at"),
+            ]
+            for item in analisis
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Trazabilidad Curricular",
+        ["ID", "Curso origen", "Curso destino", "Ciclo origen", "Ciclo destino", "Tipo de relación", "Nivel de coherencia", "Observación", "Recomendación", "Fecha"],
+        [
+            [
+                item.get("id"),
+                item.get("asignatura_origen") or item.get("curso_origen"),
+                item.get("asignatura_destino") or item.get("curso_destino"),
+                item.get("ciclo_origen"),
+                item.get("ciclo_destino"),
+                item.get("tipo_relacion"),
+                item.get("nivel_coherencia"),
+                item.get("observacion"),
+                item.get("sugerencia") or item.get("recomendacion"),
+                item.get("created_at"),
+            ]
+            for item in trazabilidad
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Brechas Curriculares",
+        ["ID", "Tipo de brecha", "Descripción", "Prioridad", "Curso relacionado", "Ciclo", "Recomendación", "Estado", "Fecha"],
+        [
+            [
+                item.get("id"),
+                item.get("tipo_brecha"),
+                item.get("descripcion"),
+                item.get("prioridad"),
+                item.get("asignatura") or item.get("curso_relacionado"),
+                item.get("ciclo"),
+                item.get("recomendacion"),
+                item.get("estado"),
+                item.get("created_at"),
+            ]
+            for item in brechas
+        ],
+    )
+
+    _agregar_hoja_excel(
+        workbook,
+        "Acciones de Mejora",
+        ["ID", "Título", "Descripción", "Prioridad", "Estado", "Responsable", "Origen", "Fecha programada", "Fecha de creación"],
+        [
+            [
+                item.get("id"),
+                item.get("titulo"),
+                item.get("descripcion"),
+                item.get("prioridad"),
+                item.get("estado"),
+                item.get("responsable"),
+                item.get("origen_tipo"),
+                item.get("fecha_limite") or item.get("fecha_programada"),
+                item.get("created_at"),
+            ]
+            for item in acciones
+        ],
+    )
+
+    archivo = BytesIO()
+    workbook.save(archivo)
+    archivo.seek(0)
+    return archivo
+
+
 @router.get("/")
 def listar_silabos():
     try:
@@ -139,6 +404,41 @@ async def extraer_datos_archivo_silabo(archivo: UploadFile = File(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reporte/excel")
+def exportar_reporte_silabos_excel():
+    try:
+        print("[Reporte Sílabos] Generando reporte Excel...")
+
+        silabos = [
+            normalizar_porcentaje_por_estado(item)
+            for item in _safe_select_table_reporte_silabos("silabos")
+        ]
+        analisis = _safe_select_table_reporte_silabos("analisis_silabo")
+        trazabilidad = _safe_select_table_reporte_silabos("trazabilidad_curricular")
+        brechas = _safe_select_table_reporte_silabos("brechas_curriculares")
+        acciones = _acciones_silabos(_safe_select_table_reporte_silabos("acciones_mejora"))
+        resumen = _resumen_reporte_silabos(silabos, analisis, brechas, acciones)
+        archivo = _crear_excel_reporte_silabos(
+            resumen,
+            silabos,
+            analisis,
+            trazabilidad,
+            brechas,
+            acciones,
+        )
+
+        print("[Reporte Sílabos] Reporte generado correctamente.")
+        return StreamingResponse(
+            archivo,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": 'attachment; filename="reporte_gestion_silabos.xlsx"'
+            },
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/{silabo_id}")

@@ -1515,6 +1515,18 @@ textarea {
   background: #166534;
 }
 
+.export-syllabus-report-btn {
+  background: #2563eb;
+}
+
+.export-syllabus-report-btn:hover {
+  background: #1d4ed8;
+}
+
+.syllabus-report-actions {
+  justify-content: flex-end;
+}
+
 .acciones-menu.open-up {
   top: auto;
   bottom: calc(100% + 8px);
