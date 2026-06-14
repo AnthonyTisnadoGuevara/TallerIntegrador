@@ -276,7 +276,7 @@ function renderEvidenceCard(evidencia, columnas) {
           <small>${archivoUrl ? escaparHtml(nombreArchivo) : "Suba un PDF o DOCX para validar la evidencia con IA."}</small>
         </div>
         ${archivoUrl
-          ? `<button class="btn btn-info evidence-file-badge" type="button" onclick="verArchivoEvidencia('${escaparAtributo(archivoUrl)}')">Ver evidencia</button>`
+          ? `<button class="btn btn-secondary evidence-file-badge" type="button" onclick="verArchivoEvidencia('${escaparAtributo(archivoUrl)}')">Ver evidencia</button>`
           : `<span class="no-file-warning">Pendiente de carga</span>`}
       </div>
 
@@ -291,11 +291,11 @@ function renderEvidenceCard(evidencia, columnas) {
       </div>
 
       <div class="evidence-actions evidence-actions-primary primary-action-row">
-        <button class="btn btn-info" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'detalle')">Ver detalle</button>
-        <button class="btn btn-warning" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
+        <button class="btn btn-primary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'detalle')">Ver detalle</button>
+        <button class="btn btn-secondary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
         <button class="btn btn-success evidence-upload-btn" type="button" onclick="subirArchivoEvidenciaMacroproceso('${id}')">Subir evidencia</button>
         <div class="acciones-dropdown">
-          <button class="btn btn-secondary btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('evidencia-${id}')">M&aacute;s acciones &#9662;</button>
+          <button class="btn btn-menu btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('evidencia-${id}')">M&aacute;s acciones &#9662;</button>
           <div id="menu-acciones-evidencia-${id}" class="acciones-menu actions-dropdown-menu hidden">
             <div class="menu-section">
               <span class="menu-label">M&aacute;s acciones</span>
@@ -948,7 +948,7 @@ function renderHistorialAnalisisIA(historial) {
         <p><strong>Modelo:</strong> ${escaparHtml(item.modelo_usado || "-")}</p>
         <p>${escaparHtml(item.resumen || "Sin resumen registrado.")}</p>
         <div class="evidence-actions">
-          <button class="btn btn-info" type="button" onclick="verDetalleAnalisisIA('${escaparAtributo(item.id)}')">Ver detalle</button>
+          <button class="btn btn-primary" type="button" onclick="verDetalleAnalisisIA('${escaparAtributo(item.id)}')">Ver detalle</button>
         </div>
       </article>
     `;
@@ -2566,7 +2566,7 @@ function renderizarTablaSilabos() {
           ${botonArchivo}
           <button class="btn btn-success" onclick="analizarSilaboIA('${silabo.id}')">Analizar IA</button>
           <div class="acciones-dropdown">
-            <button class="btn btn-secondary btn-actions" onclick="event.stopPropagation(); toggleMenuAcciones('${silabo.id}')">Acciones &#9662;</button>
+            <button class="btn btn-menu btn-actions" onclick="event.stopPropagation(); toggleMenuAcciones('${silabo.id}')">Acciones &#9662;</button>
             <div id="menu-acciones-${silabo.id}" class="acciones-menu hidden">
               <div class="menu-section">
                 <span class="menu-label">Consulta</span>
@@ -3865,7 +3865,7 @@ function renderizarTarjetasAcciones(data) {
         <p><strong>Observaci&oacute;n:</strong> ${escaparHtml(accion.observacion || "-")}</p>
         <p><strong>Fecha de creaci&oacute;n:</strong> ${escaparHtml(fechaCreacion)}</p>
         <div class="accion-actions">
-          <button class="btn btn-warning" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'en_proceso')">En proceso</button>
+          <button class="btn btn-secondary" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'en_proceso')">En proceso</button>
           <button class="btn btn-success" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'atendida')">Atendida</button>
           <button class="btn btn-secondary" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'descartada')">Descartar</button>
           <button class="btn btn-danger" onclick="eliminarAccionMejora('${escaparAtributo(accion.id)}')">Eliminar</button>
