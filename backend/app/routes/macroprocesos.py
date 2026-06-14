@@ -1283,6 +1283,7 @@ def obtener_metricas_finales_sistema():
         acciones = _safe_select_table_reporte("acciones_mejora")
         alertas = _safe_select_table_reporte("alertas_inteligentes_macroprocesos")
         analisis = _safe_select_table_reporte("analisis_ia_macroprocesos")
+        analisis_silabos = _safe_select_table_reporte("analisis_silabo")
         validaciones = _safe_select_table_reporte("validacion_ia_macroproceso_evidencias")
         _safe_select_table_reporte("historial_macroproceso_evidencias")
         brechas = _safe_select_table_reporte("brechas_curriculares")
@@ -1294,6 +1295,8 @@ def obtener_metricas_finales_sistema():
             if item.get("id")
         }
         alertas_activas = [item for item in alertas if item.get("estado") == "activa"]
+        alertas_atendidas = [item for item in alertas if item.get("estado") == "atendida"]
+        alertas_descartadas = [item for item in alertas if item.get("estado") == "descartada"]
 
         total_evidencias = len(evidencias)
         evidencias_con_archivo = sum(1 for item in evidencias if item.get("archivo_url"))
@@ -1304,10 +1307,19 @@ def obtener_metricas_finales_sistema():
             1 for item in acciones if item.get("estado") in {"atendida", "completada", "completado"}
         )
         alertas_criticas = sum(1 for item in alertas_activas if item.get("nivel_alerta") == "critica")
+        alertas_altas = sum(1 for item in alertas_activas if item.get("nivel_alerta") == "alta")
+        alertas_medias = sum(1 for item in alertas_activas if item.get("nivel_alerta") == "media")
+        alertas_bajas = sum(1 for item in alertas_activas if item.get("nivel_alerta") == "baja")
         validaciones_altas = sum(1 for item in validaciones if item.get("nivel_validez") == "alto")
         validaciones_medias = sum(1 for item in validaciones if item.get("nivel_validez") == "medio")
         validaciones_bajas = sum(1 for item in validaciones if item.get("nivel_validez") == "bajo")
         brechas_alta_prioridad = sum(1 for item in brechas if item.get("prioridad") == "alta")
+        analisis_planificacion = sum(1 for item in analisis if item.get("tipo_analisis") == "analisis_planificacion")
+        analisis_gestion_academica = sum(1 for item in analisis if item.get("tipo_analisis") == "analisis_gestion_academica")
+        analisis_integral = sum(1 for item in analisis if item.get("tipo_analisis") == "analisis_integral_mejora_continua")
+        acciones_automaticas = sum(1 for item in acciones if item.get("origen_tipo"))
+        acciones_manuales = max(len(acciones) - acciones_automaticas, 0)
+        total_analisis_ia = len(analisis) + len(analisis_silabos)
 
         avance_general = round(
             sum(int(item.get("avance") or 0) for item in evidencias) / total_evidencias
@@ -1321,6 +1333,8 @@ def obtener_metricas_finales_sistema():
                 silabos_completos = sum(1 for item in silabos if item.get("estado") == "completo")
                 avance_promedio = round((silabos_completos / total_silabos) * 100) if total_silabos else 0
                 total_evidencias_macro = total_silabos
+                evidencias_con_archivo_macro = sum(1 for item in silabos if item.get("archivo_url"))
+                evidencias_sin_archivo_macro = total_silabos - evidencias_con_archivo_macro
             else:
                 evidencias_macro = [
                     item for item in evidencias if item.get("macroproceso") == macroproceso
@@ -1329,11 +1343,16 @@ def obtener_metricas_finales_sistema():
                 avance_promedio = round(
                     sum(int(item.get("avance") or 0) for item in evidencias_macro) / total_evidencias_macro
                 ) if total_evidencias_macro else 0
+                evidencias_con_archivo_macro = sum(1 for item in evidencias_macro if item.get("archivo_url"))
+                evidencias_sin_archivo_macro = total_evidencias_macro - evidencias_con_archivo_macro
 
             acciones_macro = [
                 item
                 for item in acciones
                 if _macroproceso_accion(item, evidencias_por_id) == macroproceso
+            ]
+            alertas_macro = [
+                item for item in alertas_activas if item.get("macroproceso") == macroproceso
             ]
 
             por_macroproceso.append(
@@ -1342,11 +1361,15 @@ def obtener_metricas_finales_sistema():
                     "nombre": nombre,
                     "total_evidencias": total_evidencias_macro,
                     "avance_promedio": avance_promedio,
-                    "alertas_activas": sum(
-                        1 for item in alertas_activas if item.get("macroproceso") == macroproceso
-                    ),
+                    "evidencias_con_archivo": evidencias_con_archivo_macro,
+                    "evidencias_sin_archivo": evidencias_sin_archivo_macro,
+                    "alertas_activas": len(alertas_macro),
+                    "alertas_criticas": sum(1 for item in alertas_macro if item.get("nivel_alerta") == "critica"),
                     "acciones_mejora": len(acciones_macro),
-                    "analisis_ia": sum(1 for item in analisis if item.get("macroproceso") == macroproceso),
+                    "acciones_pendientes": sum(1 for item in acciones_macro if item.get("estado") == "pendiente"),
+                    "analisis_ia": len(analisis_silabos)
+                    if macroproceso == "gestion_silabos"
+                    else sum(1 for item in analisis if item.get("macroproceso") == macroproceso),
                     "validaciones_ia": sum(
                         1 for item in validaciones if item.get("macroproceso") == macroproceso
                     ),
@@ -1376,10 +1399,39 @@ def obtener_metricas_finales_sistema():
             },
             {
                 "indicador": "Uso de IA",
-                "valor": len(analisis) + len(validaciones),
+                "valor": total_analisis_ia + len(validaciones),
                 "interpretacion": "Cantidad de análisis y validaciones generadas con IA.",
             },
         ]
+        metricas_ia = {
+            "analisis_ia_ejecutados": total_analisis_ia,
+            "validaciones_documentales_ia": len(validaciones),
+            "analisis_planificacion": analisis_planificacion,
+            "analisis_gestion_academica": analisis_gestion_academica,
+            "analisis_integral_mejora_continua": analisis_integral,
+            "analisis_silabos": len(analisis_silabos),
+            "validaciones_altas": validaciones_altas,
+            "validaciones_medias": validaciones_medias,
+            "validaciones_bajas": validaciones_bajas,
+            "historial_ia_registrado": len(analisis),
+        }
+        metricas_acciones = {
+            "total_acciones": len(acciones),
+            "pendientes": acciones_pendientes,
+            "en_proceso": acciones_en_proceso,
+            "completadas": acciones_completadas,
+            "acciones_automaticas": acciones_automaticas,
+            "acciones_manuales": acciones_manuales,
+        }
+        metricas_alertas = {
+            "total_activas": len(alertas_activas),
+            "criticas": alertas_criticas,
+            "altas": alertas_altas,
+            "medias": alertas_medias,
+            "bajas": alertas_bajas,
+            "atendidas": len(alertas_atendidas),
+            "descartadas": len(alertas_descartadas),
+        }
 
         return {
             "message": "Métricas finales generadas correctamente",
@@ -1395,7 +1447,7 @@ def obtener_metricas_finales_sistema():
                     "acciones_completadas": acciones_completadas,
                     "total_alertas_activas": len(alertas_activas),
                     "alertas_criticas": alertas_criticas,
-                    "total_analisis_ia": len(analisis),
+                    "total_analisis_ia": total_analisis_ia,
                     "total_validaciones_ia": len(validaciones),
                     "validaciones_altas": validaciones_altas,
                     "validaciones_medias": validaciones_medias,
@@ -1405,6 +1457,9 @@ def obtener_metricas_finales_sistema():
                     "total_silabos": len(silabos),
                 },
                 "por_macroproceso": por_macroproceso,
+                "metricas_ia": metricas_ia,
+                "metricas_acciones": metricas_acciones,
+                "metricas_alertas": metricas_alertas,
                 "indicadores_clave": indicadores_clave,
             },
         }

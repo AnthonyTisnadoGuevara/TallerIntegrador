@@ -1896,14 +1896,82 @@ function renderReporteRecomendaciones(recomendaciones) {
 }
 
 async function verMetricasFinales() {
+  await mostrarModuloMetricas();
+}
+
+async function mostrarModuloMetricas() {
   try {
-    mostrarToast("Cargando métricas finales...", "info");
+    mostrarToast("Cargando métricas e indicadores...", "info");
+    document.getElementById("macroprocesosView")?.classList.add("hidden");
+    document.querySelectorAll(".macro-module").forEach((seccion) => {
+      seccion.classList.add("hidden");
+    });
+    document.getElementById("moduloMetricasIndicadores")?.classList.remove("hidden");
+
     const result = await fetchJson(`${API_URL}/api/macroprocesos/metricas-finales`);
     metricasFinalesActual = result.data || {};
-    abrirModalMetricasFinales(metricasFinalesActual);
+    renderModuloMetricas(metricasFinalesActual);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (error) {
-    console.error("Error al cargar métricas finales:", error);
-    mostrarToast("No se pudieron cargar las métricas finales: " + error.message, "error");
+    console.error("Error al cargar métricas e indicadores:", error);
+    mostrarToast("No se pudieron cargar las métricas e indicadores: " + error.message, "error");
+  }
+}
+
+function renderModuloMetricas(data) {
+  const resumen = data.resumen_general || {};
+  const porMacroproceso = data.por_macroproceso || [];
+  const metricasIa = data.metricas_ia || {};
+  const indicadores = data.indicadores_clave || [];
+
+  const resumenContainer = document.getElementById("metricasResumenGeneral");
+  if (resumenContainer) {
+    resumenContainer.innerHTML = [
+      renderMetricCard("Macroprocesos monitoreados", resumen.total_macroprocesos),
+      renderMetricCard("Evidencias registradas", resumen.total_evidencias),
+      renderMetricCard("Evidencias con sustento", resumen.evidencias_con_archivo),
+      renderMetricCard("Evidencias sin sustento", resumen.evidencias_sin_archivo),
+      renderMetricCard("Acciones de mejora", resumen.total_acciones_mejora),
+      renderMetricCard("Alertas activas", resumen.total_alertas_activas),
+      renderMetricCard("Alertas críticas", resumen.alertas_criticas),
+      renderMetricCard("Análisis IA", resumen.total_analisis_ia),
+      renderMetricCard("Validaciones IA", resumen.total_validaciones_ia),
+      renderMetricCard("Sílabos registrados", resumen.total_silabos)
+    ].join("");
+  }
+
+  const macroContainer = document.getElementById("metricasPorMacroproceso");
+  if (macroContainer) {
+    macroContainer.innerHTML = porMacroproceso.length
+      ? porMacroproceso.map(renderMacroprocessMetricCard).join("")
+      : `<p class="text-muted">No hay métricas por macroproceso.</p>`;
+  }
+
+  const iaContainer = document.getElementById("metricasIA");
+  if (iaContainer) {
+    iaContainer.innerHTML = [
+      renderMetricCard("Análisis IA ejecutados", metricasIa.analisis_ia_ejecutados),
+      renderMetricCard("Validaciones documentales", metricasIa.validaciones_documentales_ia),
+      renderMetricCard("Agente de planificación", metricasIa.analisis_planificacion),
+      renderMetricCard("Agente de gestión académica", metricasIa.analisis_gestion_academica),
+      renderMetricCard("Agente coordinador", metricasIa.analisis_integral_mejora_continua),
+      renderMetricCard("Análisis de sílabos", metricasIa.analisis_silabos),
+      renderMetricCard("Validaciones altas", metricasIa.validaciones_altas),
+      renderMetricCard("Historial IA registrado", metricasIa.historial_ia_registrado)
+    ].join("");
+  }
+
+  const tablaIndicadores = document.getElementById("tablaIndicadoresMetricas");
+  if (tablaIndicadores) {
+    tablaIndicadores.innerHTML = indicadores.length
+      ? indicadores.map((item) => `
+        <tr>
+          <td>${escaparHtml(item.indicador || "Indicador")}</td>
+          <td><strong>${escaparHtml(item.valor ?? 0)}</strong></td>
+          <td>${escaparHtml(item.interpretacion || "-")}</td>
+        </tr>
+      `).join("")
+      : `<tr><td colspan="3">No hay indicadores clave registrados.</td></tr>`;
   }
 }
 
@@ -1975,7 +2043,8 @@ function renderMacroprocessMetricCard(item) {
       <p><span>Evidencias</span><strong>${escaparHtml(item.total_evidencias ?? 0)}</strong></p>
       <p><span>Avance promedio</span><strong>${escaparHtml(item.avance_promedio ?? 0)}%</strong></p>
       <p><span>Alertas activas</span><strong>${escaparHtml(item.alertas_activas ?? 0)}</strong></p>
-      <p><span>Acciones de mejora</span><strong>${escaparHtml(item.acciones_mejora ?? 0)}</strong></p>
+      <p><span>Alertas críticas</span><strong>${escaparHtml(item.alertas_criticas ?? 0)}</strong></p>
+      <p><span>Acciones pendientes</span><strong>${escaparHtml(item.acciones_pendientes ?? 0)}</strong></p>
       <p><span>Análisis IA</span><strong>${escaparHtml(item.analisis_ia ?? 0)}</strong></p>
       <p><span>Validaciones IA</span><strong>${escaparHtml(item.validaciones_ia ?? 0)}</strong></p>
     </article>
