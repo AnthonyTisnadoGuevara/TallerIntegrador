@@ -1927,17 +1927,27 @@ function renderModuloMetricas(data) {
   const resumenContainer = document.getElementById("metricasResumenGeneral");
   if (resumenContainer) {
     resumenContainer.innerHTML = [
-      renderMetricCard("Macroprocesos monitoreados", resumen.total_macroprocesos),
-      renderMetricCard("Evidencias registradas", resumen.total_evidencias),
-      renderMetricCard("Evidencias con sustento", resumen.evidencias_con_archivo),
-      renderMetricCard("Evidencias sin sustento", resumen.evidencias_sin_archivo),
-      renderMetricCard("Acciones de mejora", resumen.total_acciones_mejora),
-      renderMetricCard("Alertas activas", resumen.total_alertas_activas),
-      renderMetricCard("Alertas críticas", resumen.alertas_criticas),
-      renderMetricCard("Análisis IA", resumen.total_analisis_ia),
-      renderMetricCard("Validaciones IA", resumen.total_validaciones_ia),
-      renderMetricCard("Sílabos registrados", resumen.total_silabos)
+      renderMetricCard("Macroprocesos monitoreados", resumen.total_macroprocesos, "Procesos activos dentro del sistema.", "total"),
+      renderMetricCard("Evidencias registradas", resumen.total_evidencias, "Registros asociados al plan de mejora.", "total"),
+      renderMetricCard("Evidencias con sustento", resumen.evidencias_con_archivo, "Documentos cargados como respaldo.", "success"),
+      renderMetricCard("Evidencias sin sustento", resumen.evidencias_sin_archivo, "Requieren carga documental.", "danger"),
+      renderMetricCard("Acciones de mejora", resumen.total_acciones_mejora, "Acciones registradas o generadas.", "warning"),
+      renderMetricCard("Alertas activas", resumen.total_alertas_activas, "Alertas pendientes de atención.", "warning"),
+      renderMetricCard("Alertas críticas", resumen.alertas_criticas, "Requieren atención prioritaria.", "danger"),
+      renderMetricCard("Análisis IA", resumen.total_analisis_ia, "Ejecuciones de agentes IA.", "ia"),
+      renderMetricCard("Validaciones IA", resumen.total_validaciones_ia, "Revisiones documentales asistidas.", "ia"),
+      renderMetricCard("Sílabos registrados", resumen.total_silabos, "Sílabos monitoreados.", "total")
     ].join("");
+  }
+
+  const interpretacion = document.getElementById("interpretacionMetricas");
+  if (interpretacion) {
+    interpretacion.innerHTML = renderInterpretacionGeneral(data);
+  }
+
+  const dashboard = document.getElementById("metricasDashboardVisual");
+  if (dashboard) {
+    dashboard.innerHTML = renderDashboardVisualMetricas(data);
   }
 
   const macroContainer = document.getElementById("metricasPorMacroproceso");
@@ -1950,14 +1960,14 @@ function renderModuloMetricas(data) {
   const iaContainer = document.getElementById("metricasIA");
   if (iaContainer) {
     iaContainer.innerHTML = [
-      renderMetricCard("Análisis IA ejecutados", metricasIa.analisis_ia_ejecutados),
-      renderMetricCard("Validaciones documentales", metricasIa.validaciones_documentales_ia),
-      renderMetricCard("Agente de planificación", metricasIa.analisis_planificacion),
-      renderMetricCard("Agente de gestión académica", metricasIa.analisis_gestion_academica),
-      renderMetricCard("Agente coordinador", metricasIa.analisis_integral_mejora_continua),
-      renderMetricCard("Análisis de sílabos", metricasIa.analisis_silabos),
-      renderMetricCard("Validaciones altas", metricasIa.validaciones_altas),
-      renderMetricCard("Historial IA registrado", metricasIa.historial_ia_registrado)
+      renderMetricCard("Análisis IA ejecutados", metricasIa.analisis_ia_ejecutados, "Uso acumulado de agentes IA.", "ia"),
+      renderMetricCard("Validaciones documentales", metricasIa.validaciones_documentales_ia, "Evidencias revisadas con IA.", "ia"),
+      renderMetricCard("Agente de planificación", metricasIa.analisis_planificacion, "Análisis del macroproceso estratégico.", "ia"),
+      renderMetricCard("Agente de gestión académica", metricasIa.analisis_gestion_academica, "Análisis del macroproceso académico.", "ia"),
+      renderMetricCard("Agente coordinador", metricasIa.analisis_integral_mejora_continua, "Análisis integral de mejora continua.", "ia"),
+      renderMetricCard("Análisis de sílabos", metricasIa.analisis_silabos, "Análisis individuales registrados.", "ia"),
+      renderMetricCard("Validaciones altas", metricasIa.validaciones_altas, "Documentos con buena validez.", "success"),
+      renderMetricCard("Historial IA registrado", metricasIa.historial_ia_registrado, "Trazabilidad de análisis IA.", "total")
     ].join("");
   }
 
@@ -1965,7 +1975,7 @@ function renderModuloMetricas(data) {
   if (tablaIndicadores) {
     tablaIndicadores.innerHTML = indicadores.length
       ? indicadores.map((item) => `
-        <tr>
+        <tr class="${escaparAtributo(getIndicatorStatusClass(item))}">
           <td>${escaparHtml(item.indicador || "Indicador")}</td>
           <td><strong>${escaparHtml(item.valor ?? 0)}</strong></td>
           <td>${escaparHtml(item.interpretacion || "-")}</td>
@@ -1973,6 +1983,21 @@ function renderModuloMetricas(data) {
       `).join("")
       : `<tr><td colspan="3">No hay indicadores clave registrados.</td></tr>`;
   }
+}
+
+function getIndicatorStatusClass(item) {
+  const nombre = normalizarValor(item.indicador || "");
+  const valor = String(item.valor ?? "0");
+  const numero = Number(valor.replace("%", ""));
+  if (nombre.includes("alertas") && numero > 0) return "indicator-status-high";
+  if (nombre.includes("acciones") && numero > 0) return "indicator-status-medium";
+  if (nombre.includes("cobertura") || nombre.includes("cumplimiento")) {
+    if (numero < 40) return "indicator-status-high";
+    if (numero < 70) return "indicator-status-medium";
+    return "indicator-status-low";
+  }
+  if (nombre.includes("uso de ia") && numero > 0) return "indicator-status-low";
+  return "";
 }
 
 function abrirModalMetricasFinales(data) {
@@ -2027,27 +2052,183 @@ function renderMetricasFinales(data) {
   `;
 }
 
-function renderMetricCard(label, value) {
+function renderMetricCard(label, value, description = "", variant = "total") {
   return `
-    <article class="metric-card">
-      <strong class="metric-value">${escaparHtml(value ?? 0)}</strong>
+    <article class="metric-card metric-card-enhanced metric-${escaparAtributo(variant)}">
+      <span class="metric-icon" aria-hidden="true">${escaparHtml(getMetricIcon(variant))}</span>
+      <strong class="metric-value metric-number">${escaparHtml(value ?? 0)}</strong>
       <span class="metric-label">${escaparHtml(label)}</span>
+      ${description ? `<p class="metric-description">${escaparHtml(description)}</p>` : ""}
     </article>
   `;
 }
 
 function renderMacroprocessMetricCard(item) {
+  const avance = Number(item.avance_promedio || 0);
+  const riesgo = getRiskLabel(item);
   return `
-    <article class="macroprocess-metric-card">
-      <h4>${escaparHtml(item.nombre || nombreMacroproceso(item.macroproceso))}</h4>
+    <article class="macroprocess-metric-card macroprocess-card-enhanced risk-${escaparAtributo(riesgo.key)}">
+      <div class="macroprocess-metric-heading">
+        <h4>${escaparHtml(item.nombre || nombreMacroproceso(item.macroproceso))}</h4>
+        <span class="risk-badge risk-${escaparAtributo(riesgo.key)}">${escaparHtml(riesgo.label)}</span>
+      </div>
+      <div class="macroprocess-progress">
+        <strong>${escaparHtml(avance)}%</strong>
+        ${renderProgressBar(avance)}
+      </div>
       <p><span>Evidencias</span><strong>${escaparHtml(item.total_evidencias ?? 0)}</strong></p>
-      <p><span>Avance promedio</span><strong>${escaparHtml(item.avance_promedio ?? 0)}%</strong></p>
       <p><span>Alertas activas</span><strong>${escaparHtml(item.alertas_activas ?? 0)}</strong></p>
       <p><span>Alertas críticas</span><strong>${escaparHtml(item.alertas_criticas ?? 0)}</strong></p>
       <p><span>Acciones pendientes</span><strong>${escaparHtml(item.acciones_pendientes ?? 0)}</strong></p>
       <p><span>Análisis IA</span><strong>${escaparHtml(item.analisis_ia ?? 0)}</strong></p>
       <p><span>Validaciones IA</span><strong>${escaparHtml(item.validaciones_ia ?? 0)}</strong></p>
     </article>
+  `;
+}
+
+function getMetricIcon(variant) {
+  const icons = {
+    success: "✓",
+    danger: "!",
+    warning: "•",
+    ia: "IA",
+    total: "#"
+  };
+  return icons[variant] || "#";
+}
+
+function getRiskColor(value) {
+  const numero = Number(value || 0);
+  if (numero < 40) return "danger";
+  if (numero < 70) return "warning";
+  return "success";
+}
+
+function getRiskLabel(item) {
+  const avance = Number(item.avance_promedio || 0);
+  const alertasCriticas = Number(item.alertas_criticas || 0);
+  if (avance < 40 || alertasCriticas > 0) {
+    return { key: "high", label: "Riesgo alto" };
+  }
+  if (avance < 70) {
+    return { key: "medium", label: "En seguimiento" };
+  }
+  return { key: "low", label: "Avance adecuado" };
+}
+
+function renderProgressBar(value) {
+  const porcentaje = Math.min(100, Math.max(0, Number(value || 0)));
+  return `
+    <div class="bar-track">
+      <span class="bar-fill bar-${getRiskColor(porcentaje)}" style="width: ${porcentaje}%"></span>
+    </div>
+  `;
+}
+
+function renderBarChart(data, options = {}) {
+  const max = Math.max(...data.map((item) => Number(item.value || 0)), 1);
+  return `
+    <div class="simple-bar-chart">
+      ${data.map((item) => {
+        const value = Number(item.value || 0);
+        const width = options.percent ? Math.min(100, value) : Math.round((value / max) * 100);
+        return `
+          <div class="bar-row">
+            <span class="bar-label">${escaparHtml(item.label)}</span>
+            <div class="bar-track">
+              <span class="bar-fill bar-${escaparAtributo(item.color || getRiskColor(value))}" style="width: ${width}%"></span>
+            </div>
+            <strong class="bar-value">${escaparHtml(options.percent ? `${value}%` : value)}</strong>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderDashboardVisualMetricas(data) {
+  const resumen = data.resumen_general || {};
+  const porMacroproceso = data.por_macroproceso || [];
+  const metricasIa = data.metricas_ia || {};
+  const totalEvidencias = Number(resumen.total_evidencias || 0);
+
+  const avance = porMacroproceso.map((item) => ({
+    label: item.nombre || nombreMacroproceso(item.macroproceso),
+    value: Number(item.avance_promedio || 0),
+    color: getRiskColor(item.avance_promedio)
+  }));
+  const alertas = porMacroproceso.map((item) => ({
+    label: item.nombre || nombreMacroproceso(item.macroproceso),
+    value: Number(item.alertas_activas || 0),
+    color: Number(item.alertas_criticas || 0) > 0 ? "danger" : "warning"
+  }));
+  const acciones = porMacroproceso.map((item) => ({
+    label: item.nombre || nombreMacroproceso(item.macroproceso),
+    value: Number(item.acciones_pendientes || 0),
+    color: Number(item.acciones_pendientes || 0) > 0 ? "warning" : "success"
+  }));
+  const evidencias = [
+    { label: "Con sustento", value: Number(resumen.evidencias_con_archivo || 0), color: "success" },
+    { label: "Sin sustento", value: Number(resumen.evidencias_sin_archivo || 0), color: "danger" }
+  ];
+  const usoIa = [
+    { label: "Análisis IA", value: Number(metricasIa.analisis_ia_ejecutados || 0), color: "ia" },
+    { label: "Validaciones IA", value: Number(metricasIa.validaciones_documentales_ia || 0), color: "success" },
+    { label: "Planificación", value: Number(metricasIa.analisis_planificacion || 0), color: "ia" },
+    { label: "Gestión académica", value: Number(metricasIa.analisis_gestion_academica || 0), color: "ia" },
+    { label: "Coordinador", value: Number(metricasIa.analisis_integral_mejora_continua || 0), color: "ia" },
+    { label: "Sílabos", value: Number(metricasIa.analisis_silabos || 0), color: "ia" }
+  ];
+
+  return `
+    ${renderChartCard("Avance por macroproceso", "Comparación del porcentaje promedio de avance.", renderBarChart(avance, { percent: true }), "Rojo < 40%, amarillo 40-69%, verde >= 70%.")}
+    ${renderChartCard("Alertas por macroproceso", "Cantidad de alertas activas por macroproceso.", renderBarChart(alertas), "Las barras rojas indican presencia de alertas críticas.")}
+    ${renderChartCard("Acciones pendientes por macroproceso", "Acciones de mejora que requieren seguimiento.", renderBarChart(acciones), "Cero acciones pendientes se muestra como avance favorable.")}
+    ${renderChartCard("Evidencias con/sin sustento", "Distribución documental de las evidencias registradas.", renderBarChart(evidencias), `${totalEvidencias} evidencias registradas en total.`)}
+    ${renderChartCard("Uso de IA", "Actividad de agentes y validaciones IA dentro del sistema.", renderBarChart(usoIa), "Incluye agentes por macroproceso, coordinador y análisis de sílabos.")}
+  `;
+}
+
+function renderChartCard(title, description, chartHtml, legend) {
+  return `
+    <article class="chart-card">
+      <h4>${escaparHtml(title)}</h4>
+      <p>${escaparHtml(description)}</p>
+      ${chartHtml}
+      <small class="chart-legend">${escaparHtml(legend)}</small>
+    </article>
+  `;
+}
+
+function renderInterpretacionGeneral(data) {
+  const resumen = data.resumen_general || {};
+  const mensajes = [];
+  const total = Number(resumen.total_evidencias || 0);
+  const cobertura = total ? Math.round((Number(resumen.evidencias_con_archivo || 0) / total) * 100) : 0;
+
+  if (cobertura === 0) {
+    mensajes.push("La cobertura documental es baja. Se recomienda subir archivos de sustento para las evidencias registradas.");
+  } else if (cobertura < 70) {
+    mensajes.push("La cobertura documental requiere seguimiento para fortalecer el sustento de las evidencias.");
+  } else {
+    mensajes.push("La cobertura documental muestra un avance favorable en las evidencias registradas.");
+  }
+
+  if (Number(resumen.alertas_criticas || 0) > 0) {
+    mensajes.push("Existen alertas críticas que requieren atención prioritaria.");
+  }
+  if (Number(resumen.acciones_pendientes || 0) > 0) {
+    mensajes.push("Se recomienda priorizar el cierre de acciones de mejora pendientes.");
+  }
+  if (Number(resumen.total_analisis_ia || 0) > 0) {
+    mensajes.push("El sistema ya cuenta con uso activo de agentes IA para apoyar la toma de decisiones.");
+  }
+
+  return `
+    <h3>Interpretación general</h3>
+    <ul>
+      ${mensajes.map((mensaje) => `<li>${escaparHtml(mensaje)}</li>`).join("")}
+    </ul>
   `;
 }
 

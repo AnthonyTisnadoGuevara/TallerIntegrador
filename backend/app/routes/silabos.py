@@ -16,6 +16,7 @@ from app.utils.document_reader import (
     extraer_texto_pdf,
     validar_secciones_silabo,
 )
+from app.utils.excel_reports import crear_reporte_silabos_excel
 from app.utils.silabo_extractor import extraer_datos_silabo_desde_texto
 
 router = APIRouter(prefix="/api/silabos", tags=["Sílabos"])
@@ -186,6 +187,15 @@ def _crear_excel_reporte_silabos(
     brechas: list[dict],
     acciones: list[dict],
 ) -> BytesIO:
+    return crear_reporte_silabos_excel(
+        resumen,
+        silabos,
+        analisis,
+        trazabilidad,
+        brechas,
+        acciones,
+    )
+
     workbook = Workbook()
     workbook.remove(workbook.active)
 

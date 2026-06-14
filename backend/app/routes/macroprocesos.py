@@ -15,6 +15,7 @@ from app.agents.mejora_continua_coordinator import ejecutar_grafo_coordinador_me
 from app.agents.planificacion_graph import ejecutar_grafo_planificacion
 from app.agents.validacion_evidencia_graph import ejecutar_grafo_validacion_evidencia
 from app.services.supabase_client import supabase
+from app.utils.excel_reports import crear_reporte_integral_excel
 
 
 router = APIRouter(
@@ -288,6 +289,8 @@ def _agregar_hoja_excel(workbook, titulo: str, encabezados: list[str], filas: li
 
 
 def _crear_excel_reporte_integral(reporte: dict, metricas: dict) -> BytesIO:
+    return crear_reporte_integral_excel(reporte, metricas)
+
     workbook = Workbook()
     workbook.remove(workbook.active)
 
