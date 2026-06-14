@@ -499,6 +499,11 @@ body {
   gap: 10px;
 }
 
+.evidence-section-actions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
 .panel {
   background: white;
   border-radius: 12px;
