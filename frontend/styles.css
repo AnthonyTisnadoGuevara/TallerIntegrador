@@ -1844,6 +1844,33 @@ textarea {
   gap: 18px;
 }
 
+.metrics-page {
+  display: grid;
+  gap: 18px;
+}
+
+.metrics-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.metrics-header h2 {
+  margin: 0 0 6px;
+  color: #0f172a;
+}
+
+.metrics-header p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
 .metric-section {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -1862,6 +1889,20 @@ textarea {
   gap: 12px;
 }
 
+.metrics-summary-grid,
+.macroprocess-metrics-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.metrics-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.macroprocess-metrics-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
 .metric-card,
 .macroprocess-metric-card,
 .key-indicator-card {
@@ -1876,6 +1917,12 @@ textarea {
   color: #0f172a;
   font-size: 1.8rem;
   line-height: 1.1;
+}
+
+.metric-description {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .metric-label {
@@ -1907,7 +1954,37 @@ textarea {
 }
 
 .metrics-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
+}
+
+.ia-metrics-section {
+  background: #f8fafc;
+}
+
+.ia-metrics-section > div:first-child p {
+  margin: 0 0 14px;
+  color: #64748b;
+}
+
+.indicators-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.indicators-table th {
+  background: #f1f5f9;
+  color: #0f172a;
+  text-align: left;
+}
+
+.indicators-table th,
+.indicators-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
 }
 
 .survey-modal .modal-card {
@@ -2601,6 +2678,10 @@ textarea.form-control {
 
   .module-header {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .metrics-header {
     flex-direction: column;
   }
 }

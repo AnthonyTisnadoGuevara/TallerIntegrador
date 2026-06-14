@@ -26,7 +26,7 @@
         <div class="panel-actions-group">
           <div class="primary-action-row">
             <button class="btn btn-success" type="button" onclick="analizarMejoraContinuaIA()">Analizar mejora continua con IA</button>
-            <button class="btn btn-secondary" type="button" onclick="verMetricasFinales()">Ver m&eacute;tricas finales</button>
+            <button class="btn btn-secondary" type="button" onclick="mostrarModuloMetricas()">Ver m&eacute;tricas finales</button>
             <button class="btn btn-primary export-excel-btn" type="button" onclick="exportarReporteIntegralExcel()">Exportar Excel</button>
           </div>
           <div class="acciones-dropdown more-options-menu">
@@ -348,6 +348,60 @@
         Selecciona un sílabo para ver su validación o historial.
       </div>
     </section>
+    </section>
+
+    <section id="moduloMetricasIndicadores" class="macro-module metrics-page hidden">
+      <div class="metrics-header">
+        <div>
+          <h2>M&eacute;tricas e Indicadores</h2>
+          <p>Vista general del avance, evidencias, acciones, alertas y uso de IA del sistema.</p>
+        </div>
+        <div class="metrics-actions">
+          <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
+          <button class="btn btn-primary" type="button" onclick="descargarMetricasFinalesCsv()">Exportar m&eacute;tricas CSV</button>
+          <button class="btn btn-success" type="button" onclick="exportarReporteIntegralExcel()">Exportar m&eacute;tricas en Excel</button>
+        </div>
+      </div>
+
+      <section class="metric-section">
+        <h3>Resumen general</h3>
+        <div id="metricasResumenGeneral" class="metrics-summary-grid">
+          <p class="text-muted">Cargando m&eacute;tricas...</p>
+        </div>
+      </section>
+
+      <section class="metric-section">
+        <h3>M&eacute;tricas por macroproceso</h3>
+        <div id="metricasPorMacroproceso" class="macroprocess-metrics-grid"></div>
+      </section>
+
+      <section class="metric-section ia-metrics-section">
+        <div>
+          <h3>M&eacute;tricas de IA</h3>
+          <p>Seguimiento del uso de agentes, an&aacute;lisis e historial IA dentro del sistema.</p>
+        </div>
+        <div id="metricasIA" class="metrics-summary-grid"></div>
+      </section>
+
+      <section class="metric-section">
+        <h3>Indicadores clave</h3>
+        <div class="basic-table-card">
+          <table class="indicators-table">
+            <thead>
+              <tr>
+                <th>Indicador</th>
+                <th>Valor</th>
+                <th>Interpretaci&oacute;n</th>
+              </tr>
+            </thead>
+            <tbody id="tablaIndicadoresMetricas">
+              <tr>
+                <td colspan="3">Cargando indicadores...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
 
   </main>
