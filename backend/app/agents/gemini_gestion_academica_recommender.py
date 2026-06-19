@@ -6,6 +6,8 @@ try:
 except ImportError:  # pragma: no cover - fallback when dependency is not installed
     genai = None
 
+from app.services.vector_context_service import search_vector_context_for_prompt
+
 
 MODELO_REGLAS_GESTION_ACADEMICA = "langgraph_reglas_gestion_academica_v1"
 MODELO_GEMINI_GESTION_ACADEMICA = "langgraph_gemini_gestion_academica_v1"
@@ -140,6 +142,15 @@ def _crear_prompt(
     observaciones_academicas: list,
     resumen_base: dict,
 ) -> str:
+    consulta_contexto = " ".join(
+        [
+            "gestion academica actualizacion curricular perfil de egreso competencias resultados estudiante",
+            str(resumen_base.get("resumen") or ""),
+            " ".join(str(item.get("titulo", "")) for item in evidencias[:15]),
+            " ".join(str(item) for item in observaciones_academicas[:10]),
+        ]
+    ).strip()
+    contexto_vectorial = search_vector_context_for_prompt(consulta_contexto, match_count=5)
     contexto = {
         "indicadores": indicadores,
         "riesgos_detectados": riesgos_detectados,
@@ -147,6 +158,7 @@ def _crear_prompt(
         "observaciones_academicas": observaciones_academicas,
         "resumen_base": resumen_base,
         "evidencias": [_evidencia_para_prompt(item) for item in evidencias[:30]],
+        "contexto_documental_vectorial": contexto_vectorial,
     }
 
     return (
@@ -165,6 +177,8 @@ def _crear_prompt(
         "- Usa prioridad alta, media o baja en acciones_sugeridas.\n"
         "- Relaciona evidencias criticas con codigos GA si existen.\n"
         "- Las acciones deben ser concretas, verificables y asignables.\n\n"
+        "Si existe contexto documental recuperado desde la base vectorial, usalo como "
+        "sustento institucional para mejorar el diagnostico y las recomendaciones.\n\n"
         "Estructura obligatoria:\n"
         "{\n"
         f'  "modelo_usado": "{MODELO_GEMINI_GESTION_ACADEMICA}",\n'

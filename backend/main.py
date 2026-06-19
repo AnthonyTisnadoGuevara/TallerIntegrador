@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import agentes
 from app.routes import acciones_mejora
+from app.routes import contexto_vectorial
 from app.routes import macroprocesos
 from app.routes import silabos, dashboard
 
@@ -30,6 +31,7 @@ app.include_router(dashboard.router)
 app.include_router(agentes.router)
 app.include_router(acciones_mejora.router)
 app.include_router(macroprocesos.router)
+app.include_router(contexto_vectorial.router)
 
 @app.get("/")
 def home():

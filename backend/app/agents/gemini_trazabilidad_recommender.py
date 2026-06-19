@@ -6,6 +6,8 @@ try:
 except ImportError:  # pragma: no cover - fallback when dependency is not installed yet
     genai = None
 
+from app.services.vector_context_service import search_vector_context_for_prompt
+
 
 MODELO_REGLAS_TRAZABILIDAD = "langgraph_reglas_trazabilidad_v1"
 MODELO_GEMINI_TRAZABILIDAD = "langgraph_gemini_trazabilidad_v1"
@@ -66,12 +68,22 @@ def _brecha_para_prompt(brecha: dict) -> dict:
 
 
 def _crear_prompt(relaciones: list, brechas: list, resumen_contexto: dict | None) -> str:
+    consulta_contexto = " ".join(
+        [
+            "trazabilidad curricular progresion curricular brechas formativas",
+            " ".join(str(item.get("asignatura_origen", "")) for item in relaciones[:15]),
+            " ".join(str(item.get("asignatura_destino", "")) for item in relaciones[:15]),
+            " ".join(str(item.get("tipo_brecha", "")) for item in brechas[:15]),
+        ]
+    ).strip()
+    contexto_vectorial = search_vector_context_for_prompt(consulta_contexto, match_count=5)
     contexto = {
         "resumen_contexto": resumen_contexto or {},
         "total_relaciones": len(relaciones),
         "total_brechas": len(brechas),
         "relaciones_muestra": [_relacion_para_prompt(item) for item in relaciones[:40]],
         "brechas_muestra": [_brecha_para_prompt(item) for item in brechas[:40]],
+        "contexto_documental_vectorial": contexto_vectorial,
     }
 
     return (
@@ -92,6 +104,8 @@ def _crear_prompt(relaciones: list, brechas: list, resumen_contexto: dict | None
         "- Relaciona las recomendaciones con progresion curricular, prerrequisitos, "
         "resultados de aprendizaje, perfil de egreso, evaluacion y mejora continua.\n"
         "- Prioriza brechas criticas con prioridad alta, media o baja.\n\n"
+        "Si existe contexto documental recuperado desde la base vectorial, usalo como "
+        "sustento institucional para mejorar observaciones y recomendaciones sin inventar IDs.\n\n"
         "Estructura obligatoria:\n"
         "{\n"
         '  "conclusion_general": "texto breve de la trazabilidad curricular",\n'

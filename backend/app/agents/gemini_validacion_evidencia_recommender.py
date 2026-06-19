@@ -6,6 +6,8 @@ try:
 except ImportError:  # pragma: no cover
     genai = None
 
+from app.services.vector_context_service import search_vector_context_for_prompt
+
 
 MODELO_REGLAS_VALIDACION = "langgraph_reglas_validacion_evidencia_v1"
 MODELO_GEMINI_VALIDACION = "langgraph_gemini_validacion_evidencia_v1"
@@ -53,6 +55,16 @@ def _fallback_reglas(resultado_base: dict) -> dict:
 
 
 def _crear_prompt(evidencia: dict, texto: str, resultado_base: dict) -> str:
+    consulta_contexto = " ".join(
+        [
+            str(evidencia.get("macroproceso") or ""),
+            str(evidencia.get("codigo") or ""),
+            str(evidencia.get("titulo") or ""),
+            str(evidencia.get("descripcion") or ""),
+            str(resultado_base.get("resumen") or ""),
+        ]
+    ).strip()
+    contexto_vectorial = search_vector_context_for_prompt(consulta_contexto, match_count=5)
     contexto = {
         "evidencia": {
             "macroproceso": evidencia.get("macroproceso"),
@@ -65,6 +77,7 @@ def _crear_prompt(evidencia: dict, texto: str, resultado_base: dict) -> str:
         },
         "resultado_base": resultado_base,
         "texto_documento": texto[:12000],
+        "contexto_documental_vectorial": contexto_vectorial,
     }
     return (
         "Eres un auditor academico de evidencias documentales para mejora continua. "
@@ -73,6 +86,8 @@ def _crear_prompt(evidencia: dict, texto: str, resultado_base: dict) -> str:
         "Criterios: titulo o identificacion del documento, relacion con la evidencia, "
         "fecha, responsable, actividades o acuerdos, indicadores o metas, sustento "
         "documental suficiente y consistencia con el macroproceso.\n\n"
+        "Si existe contexto documental recuperado desde la base vectorial, usalo como "
+        "sustento institucional adicional para validar pertinencia y suficiencia documental.\n\n"
         "Estructura obligatoria:\n"
         "{\n"
         f'  "modelo_usado": "{MODELO_GEMINI_VALIDACION}",\n'

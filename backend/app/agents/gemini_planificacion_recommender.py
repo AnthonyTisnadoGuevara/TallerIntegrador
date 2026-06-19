@@ -6,6 +6,8 @@ try:
 except ImportError:  # pragma: no cover - fallback when dependency is not installed
     genai = None
 
+from app.services.vector_context_service import search_vector_context_for_prompt
+
 
 MODELO_REGLAS_PLANIFICACION = "langgraph_reglas_planificacion_v1"
 MODELO_GEMINI_PLANIFICACION = "langgraph_gemini_planificacion_v1"
@@ -131,11 +133,20 @@ def _crear_prompt(
     riesgos_detectados: list,
     resumen_base: dict,
 ) -> str:
+    consulta_contexto = " ".join(
+        [
+            "planificacion estrategica mejora continua indicadores metas evidencias",
+            str(resumen_base.get("resumen") or ""),
+            " ".join(str(item.get("titulo", "")) for item in evidencias[:15]),
+        ]
+    ).strip()
+    contexto_vectorial = search_vector_context_for_prompt(consulta_contexto, match_count=5)
     contexto = {
         "dashboard": dashboard,
         "resumen_base": resumen_base,
         "riesgos_detectados": riesgos_detectados,
         "evidencias": [_evidencia_para_prompt(item) for item in evidencias[:30]],
+        "contexto_documental_vectorial": contexto_vectorial,
     }
 
     return (
@@ -152,6 +163,8 @@ def _crear_prompt(
         "- Si hay evidencias de prioridad alta pendientes, tratarlas como riesgo relevante.\n"
         "- Si faltan archivo_url, advertir falta de sustento documental.\n"
         "- Las recomendaciones deben ser concretas y verificables.\n\n"
+        "Si existe contexto documental recuperado desde la base vectorial, usalo como "
+        "sustento institucional para mejorar el diagnostico y las acciones sugeridas.\n\n"
         "Estructura obligatoria:\n"
         "{\n"
         f'  "modelo_usado": "{MODELO_GEMINI_PLANIFICACION}",\n'

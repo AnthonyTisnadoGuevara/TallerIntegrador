@@ -6,6 +6,8 @@ try:
 except ImportError:  # pragma: no cover - fallback when dependency is not installed
     genai = None
 
+from app.services.vector_context_service import search_vector_context_for_prompt
+
 
 MODELO_REGLAS_COORDINADOR = "langgraph_reglas_coordinador_mejora_continua_v1"
 MODELO_GEMINI_COORDINADOR = "langgraph_gemini_coordinador_mejora_continua_v1"
@@ -158,6 +160,14 @@ def _crear_prompt(
     riesgos_detectados: dict,
     acciones_prioritarias_base: list,
 ) -> str:
+    consulta_contexto = " ".join(
+        [
+            "mejora continua planificacion gestion academica gestion de silabos brechas acciones",
+            str(riesgos_detectados.get("resumen_general") or ""),
+            " ".join(str(item) for item in hallazgos_integrados[:20]),
+        ]
+    ).strip()
+    contexto_vectorial = search_vector_context_for_prompt(consulta_contexto, match_count=5)
     contexto = {
         "datos_planificacion": datos_planificacion,
         "datos_gestion_academica": datos_gestion_academica,
@@ -166,6 +176,7 @@ def _crear_prompt(
         "hallazgos_integrados": hallazgos_integrados,
         "riesgos_detectados": riesgos_detectados,
         "acciones_prioritarias_base": acciones_prioritarias_base,
+        "contexto_documental_vectorial": contexto_vectorial,
     }
 
     return (
@@ -180,6 +191,8 @@ def _crear_prompt(
         "- Usa nivel_riesgo_general y nivel_riesgo con valores bajo, medio o alto.\n"
         "- Usa prioridad alta, media o baja en acciones_prioritarias.\n"
         "- Las recomendaciones deben ser concretas, verificables y orientadas a cierre del ciclo de mejora.\n\n"
+        "Si existe contexto documental recuperado desde la base vectorial, usalo como "
+        "sustento institucional para priorizar acciones y decisiones del comite.\n\n"
         "Estructura obligatoria:\n"
         "{\n"
         f'  "modelo_usado": "{MODELO_GEMINI_COORDINADOR}",\n'
