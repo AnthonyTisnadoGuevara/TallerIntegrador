@@ -32,12 +32,12 @@ def get_embedding_model():
 @lru_cache(maxsize=1)
 def get_vector_supabase_client() -> Client:
     supabase_url = os.getenv("SUPABASE_URL", "").strip()
-    service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    service_role_key = os.getenv("SUPABASE_KEY", "").strip()
 
     if not supabase_url:
         raise RuntimeError("Falta configurar SUPABASE_URL.")
     if not service_role_key:
-        raise RuntimeError("Falta configurar SUPABASE_SERVICE_ROLE_KEY para contexto vectorial.")
+        raise RuntimeError("Falta configurar SUPABASE_KEY para contexto vectorial.")
 
     return create_client(supabase_url, service_role_key)
 
