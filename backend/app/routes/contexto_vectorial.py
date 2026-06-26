@@ -5,12 +5,21 @@ from pydantic import BaseModel, Field
 
 from app.services.vector_context_service import (
     get_vector_supabase_client,
+    is_vector_context_enabled,
     process_document_to_vector_db,
     search_vector_context,
 )
 
 
 router = APIRouter(prefix="/api/contexto-vectorial", tags=["Contexto Vectorial"])
+
+
+def _validar_contexto_vectorial_activo():
+    if not is_vector_context_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail="El contexto vectorial está desactivado en este entorno.",
+        )
 
 
 class VectorSearchRequest(BaseModel):
@@ -23,6 +32,8 @@ async def cargar_documento_contexto(
     archivo: UploadFile = File(...),
     origen: Optional[str] = None,
 ):
+    _validar_contexto_vectorial_activo()
+
     nombre = (archivo.filename or "").lower()
     content_type = (archivo.content_type or "").lower()
     es_pdf = nombre.endswith(".pdf") or content_type == "application/pdf"
@@ -67,6 +78,8 @@ async def cargar_documento_contexto(
 
 @router.post("/buscar")
 def buscar_contexto_vectorial(payload: VectorSearchRequest):
+    _validar_contexto_vectorial_activo()
+
     try:
         data = search_vector_context(payload.query, match_count=payload.match_count)
         return {
@@ -85,6 +98,8 @@ def buscar_contexto_vectorial(payload: VectorSearchRequest):
 
 @router.get("/documentos")
 def listar_documentos_contexto():
+    _validar_contexto_vectorial_activo()
+
     try:
         supabase = get_vector_supabase_client()
         response = (
@@ -103,6 +118,8 @@ def listar_documentos_contexto():
 
 @router.get("/documentos/{documento_id}/chunks")
 def listar_chunks_documento(documento_id: str):
+    _validar_contexto_vectorial_activo()
+
     try:
         supabase = get_vector_supabase_client()
         response = (
@@ -123,6 +140,8 @@ def listar_chunks_documento(documento_id: str):
 
 @router.delete("/documentos/{documento_id}")
 def eliminar_documento_contexto(documento_id: str):
+    _validar_contexto_vectorial_activo()
+
     try:
         supabase = get_vector_supabase_client()
         supabase.table("chunks_contexto").delete().eq("documento_id", documento_id).execute()

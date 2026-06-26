@@ -15,20 +15,23 @@ try:
 except ImportError:  # pragma: no cover - dependency may not be installed yet
     fitz = None
 
-try:
-    from sentence_transformers import SentenceTransformer
-except ImportError:  # pragma: no cover - dependency may not be installed yet
-    SentenceTransformer = None
-
-
 BATCH_SIZE = 50
 DEFAULT_MODEL_NAME = "BAAI/bge-m3"
 
 
+def is_vector_context_enabled() -> bool:
+    return os.getenv("VECTOR_CONTEXT_ENABLED", "false").strip().lower() == "true"
+
+
 @lru_cache(maxsize=1)
 def get_embedding_model():
-    if SentenceTransformer is None:
-        raise RuntimeError("sentence-transformers no está instalado.")
+    if not is_vector_context_enabled():
+        raise RuntimeError("Contexto vectorial desactivado")
+
+    try:
+        from sentence_transformers import SentenceTransformer
+    except ImportError as error:  # pragma: no cover - dependency may not be installed yet
+        raise RuntimeError("sentence-transformers no está instalado.") from error
 
     model_name = os.getenv("EMBEDDING_MODEL_NAME", DEFAULT_MODEL_NAME).strip() or DEFAULT_MODEL_NAME
     return SentenceTransformer(model_name)
@@ -36,6 +39,9 @@ def get_embedding_model():
 
 @lru_cache(maxsize=1)
 def get_vector_supabase_client() -> Client:
+    if not is_vector_context_enabled():
+        raise RuntimeError("Contexto vectorial desactivado")
+
     supabase_url = os.getenv("SUPABASE_URL", "").strip()
     service_role_key = os.getenv("SUPABASE_KEY", "").strip()
 
@@ -223,6 +229,9 @@ def process_document_to_vector_db(
     origen: str | None = None,
     content_type: str | None = None,
 ) -> dict:
+    if not is_vector_context_enabled():
+        raise RuntimeError("El contexto vectorial está desactivado.")
+
     texto = extract_text_from_file(file_bytes, filename, content_type)
     chunks = chunk_text(texto, size=2000, overlap=200)
     if not chunks:
@@ -258,6 +267,9 @@ def process_pdf_to_vector_db(file_bytes: bytes, filename: str, origen: str | Non
 
 
 def search_vector_context(query: str, match_count: int = 5) -> list[dict]:
+    if not is_vector_context_enabled():
+        return []
+
     if not query or not query.strip():
         raise ValueError("La consulta de búsqueda no puede estar vacía.")
 
@@ -300,3 +312,5 @@ def search_vector_context_for_prompt(query: str, match_count: int = 5) -> str:
     except Exception as error:
         print("[Contexto Vectorial] No se pudo recuperar contexto:", type(error).__name__, str(error))
         return ""
+
+
