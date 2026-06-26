@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 import os
 import uuid
@@ -65,6 +65,8 @@ TIPOS_CONTENIDO_EVIDENCIA = {
     "image/jpeg",
 }
 BUCKET_EVIDENCIAS = os.getenv("SUPABASE_STORAGE_BUCKET", "evidencias").strip() or "evidencias"
+NIVELES_AVANCE_SEMANAL = {"Sin avance", "Bajo", "Medio", "Alto", "Completado"}
+TIPOS_APOYO_SEMANAL = {"Directivo", "Académico", "Documental", "Tecnológico", "Otro"}
 
 
 class EvidenciaCreate(BaseModel):
@@ -101,6 +103,40 @@ class EvidenciaUpdate(BaseModel):
     observacion: Optional[str] = None
     archivo_url: Optional[str] = None
     origen_documento: Optional[str] = None
+
+
+class SeguimientoSemanalCreate(BaseModel):
+    macroproceso: Optional[str] = None
+    codigo_evidencia: Optional[str] = None
+    semana_inicio: str
+    semana_fin: str
+    responsable: Optional[str] = None
+    accion_realizada: bool = False
+    nivel_avance: str = "Sin avance"
+    porcentaje_avance: int = Field(0, ge=0, le=100)
+    descripcion_accion: Optional[str] = None
+    resultado_observado: Optional[str] = None
+    dificultad_encontrada: Optional[str] = None
+    compromiso_siguiente_semana: Optional[str] = None
+    requiere_apoyo: bool = False
+    tipo_apoyo_requerido: Optional[str] = None
+    observacion: Optional[str] = None
+
+
+class SeguimientoSemanalUpdate(BaseModel):
+    semana_inicio: Optional[str] = None
+    semana_fin: Optional[str] = None
+    responsable: Optional[str] = None
+    accion_realizada: Optional[bool] = None
+    nivel_avance: Optional[str] = None
+    porcentaje_avance: Optional[int] = Field(None, ge=0, le=100)
+    descripcion_accion: Optional[str] = None
+    resultado_observado: Optional[str] = None
+    dificultad_encontrada: Optional[str] = None
+    compromiso_siguiente_semana: Optional[str] = None
+    requiere_apoyo: Optional[bool] = None
+    tipo_apoyo_requerido: Optional[str] = None
+    observacion: Optional[str] = None
 
 
 class AlertaUpdate(BaseModel):
@@ -185,6 +221,55 @@ def _normalizar_payload(data: dict) -> dict:
     if "macroproceso" in data and data.get("macroproceso"):
         data["macroproceso"] = data["macroproceso"].strip().lower()
     return data
+
+
+def _parsear_fecha_iso(valor: str, campo: str) -> date:
+    try:
+        return date.fromisoformat(valor)
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=f"{campo} debe tener formato YYYY-MM-DD.") from error
+
+
+def _validar_payload_seguimiento(data: dict) -> None:
+    inicio = _parsear_fecha_iso(data["semana_inicio"], "semana_inicio")
+    fin = _parsear_fecha_iso(data["semana_fin"], "semana_fin")
+    if inicio > fin:
+        raise HTTPException(status_code=400, detail="semana_inicio no debe ser mayor que semana_fin.")
+
+    if data.get("nivel_avance") not in NIVELES_AVANCE_SEMANAL:
+        raise HTTPException(
+            status_code=400,
+            detail="nivel_avance debe ser: Sin avance, Bajo, Medio, Alto o Completado.",
+        )
+
+    if data.get("requiere_apoyo") and not data.get("tipo_apoyo_requerido"):
+        raise HTTPException(status_code=400, detail="tipo_apoyo_requerido es obligatorio si requiere_apoyo es true.")
+
+    if data.get("tipo_apoyo_requerido") and data.get("tipo_apoyo_requerido") not in TIPOS_APOYO_SEMANAL:
+        raise HTTPException(
+            status_code=400,
+            detail="tipo_apoyo_requerido debe ser: Directivo, Académico, Documental, Tecnológico u Otro.",
+        )
+
+    if data.get("accion_realizada") is False and not (
+        data.get("compromiso_siguiente_semana") or data.get("dificultad_encontrada")
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Si no se realizó acción, registre una dificultad o compromiso para la siguiente semana.",
+        )
+
+
+def _obtener_seguimiento_o_404(seguimiento_id: str) -> dict:
+    response = (
+        supabase.table("seguimiento_semanal_evidencias")
+        .select("*")
+        .eq("id", seguimiento_id)
+        .execute()
+    )
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Seguimiento semanal no encontrado.")
+    return response.data[0]
 
 
 def _ordenar_evidencias(evidencias: list[dict]) -> list[dict]:
@@ -1299,6 +1384,7 @@ def obtener_metricas_finales_sistema():
         _safe_select_table_reporte("historial_macroproceso_evidencias")
         brechas = _safe_select_table_reporte("brechas_curriculares")
         silabos = _safe_select_table_reporte("silabos")
+        seguimientos = _safe_select_table_reporte("seguimiento_semanal_evidencias")
 
         evidencias_por_id = {
             item.get("id"): item
@@ -1331,6 +1417,29 @@ def obtener_metricas_finales_sistema():
         acciones_automaticas = sum(1 for item in acciones if item.get("origen_tipo"))
         acciones_manuales = max(len(acciones) - acciones_automaticas, 0)
         total_analisis_ia = len(analisis) + len(analisis_silabos)
+        fecha_limite_seguimiento = date.today() - timedelta(days=10)
+        ultimos_seguimientos_por_evidencia = {}
+        for item in sorted(seguimientos, key=lambda seg: seg.get("semana_inicio") or "", reverse=True):
+            evidencia_id = item.get("evidencia_id")
+            if evidencia_id and evidencia_id not in ultimos_seguimientos_por_evidencia:
+                ultimos_seguimientos_por_evidencia[evidencia_id] = item
+        evidencias_con_seguimiento = len(ultimos_seguimientos_por_evidencia)
+        evidencias_sin_seguimiento = max(total_evidencias - evidencias_con_seguimiento, 0)
+        seguimientos_requieren_apoyo = sum(1 for item in seguimientos if item.get("requiere_apoyo"))
+        promedio_avance_semanal = round(
+            sum(int(item.get("porcentaje_avance") or 0) for item in seguimientos) / len(seguimientos)
+        ) if seguimientos else 0
+        seguimientos_recientes = 0
+        evidencias_estancadas = 0
+        for item in ultimos_seguimientos_por_evidencia.values():
+            try:
+                fecha_inicio = date.fromisoformat(str(item.get("semana_inicio")))
+                if fecha_inicio >= fecha_limite_seguimiento:
+                    seguimientos_recientes += 1
+            except ValueError:
+                pass
+            if item.get("nivel_avance") == "Sin avance" or int(item.get("porcentaje_avance") or 0) == 0:
+                evidencias_estancadas += 1
 
         avance_general = round(
             sum(int(item.get("avance") or 0) for item in evidencias) / total_evidencias
@@ -1414,6 +1523,13 @@ def obtener_metricas_finales_sistema():
                 "interpretacion": "Cantidad de análisis y validaciones generadas con IA.",
             },
         ]
+        indicadores_clave.append(
+            {
+                "indicador": "Seguimientos semanales",
+                "valor": len(seguimientos),
+                "interpretacion": "Registros semanales de avance asociados a evidencias.",
+            }
+        )
         metricas_ia = {
             "analisis_ia_ejecutados": total_analisis_ia,
             "validaciones_documentales_ia": len(validaciones),
@@ -1443,6 +1559,15 @@ def obtener_metricas_finales_sistema():
             "atendidas": len(alertas_atendidas),
             "descartadas": len(alertas_descartadas),
         }
+        metricas_seguimiento = {
+            "total_seguimientos": len(seguimientos),
+            "evidencias_con_seguimiento": evidencias_con_seguimiento,
+            "evidencias_sin_seguimiento": evidencias_sin_seguimiento,
+            "seguimientos_recientes": seguimientos_recientes,
+            "requieren_apoyo": seguimientos_requieren_apoyo,
+            "promedio_avance_semanal": promedio_avance_semanal,
+            "evidencias_estancadas": evidencias_estancadas,
+        }
 
         return {
             "message": "Métricas finales generadas correctamente",
@@ -1466,11 +1591,14 @@ def obtener_metricas_finales_sistema():
                     "total_brechas": len(brechas),
                     "brechas_alta_prioridad": brechas_alta_prioridad,
                     "total_silabos": len(silabos),
+                    "total_seguimientos_semanales": len(seguimientos),
+                    "seguimientos_requieren_apoyo": seguimientos_requieren_apoyo,
                 },
                 "por_macroproceso": por_macroproceso,
                 "metricas_ia": metricas_ia,
                 "metricas_acciones": metricas_acciones,
                 "metricas_alertas": metricas_alertas,
+                "metricas_seguimiento": metricas_seguimiento,
                 "indicadores_clave": indicadores_clave,
             },
         }
@@ -1555,6 +1683,7 @@ def obtener_reporte_integral_mejora_continua():
         analisis = _safe_select_table_reporte("analisis_ia_macroprocesos")
         validaciones = _safe_select_table_reporte("validacion_ia_macroproceso_evidencias")
         brechas = _safe_select_table_reporte("brechas_curriculares")
+        seguimientos = _safe_select_table_reporte("seguimiento_semanal_evidencias")
 
         alertas_activas = [
             item
@@ -1618,6 +1747,7 @@ def obtener_reporte_integral_mejora_continua():
                 "acciones_completadas": acciones_completadas,
                 "total_analisis_ia": len(ultimos_analisis),
                 "total_validaciones_ia": len(validaciones_documentales),
+                "total_seguimientos_semanales": len(seguimientos),
             },
             "semaforo": semaforo,
             "evidencias": evidencias,
@@ -1633,6 +1763,7 @@ def obtener_reporte_integral_mejora_continua():
             "ultimos_analisis_ia": ultimos_analisis,
             "validaciones_documentales": validaciones_documentales,
             "brechas_curriculares": brechas,
+            "seguimientos_semanales": seguimientos,
             "recomendaciones_generales": recomendaciones,
         }
 
@@ -1679,6 +1810,225 @@ def obtener_evidencia(evidencia_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/evidencias/{evidencia_id}/seguimiento-semanal")
+def crear_seguimiento_semanal(evidencia_id: str, seguimiento: SeguimientoSemanalCreate):
+    try:
+        evidencia = _obtener_evidencia_o_404(evidencia_id)
+        data = seguimiento.model_dump()
+        data["evidencia_id"] = evidencia_id
+        data["macroproceso"] = evidencia.get("macroproceso")
+        data["codigo_evidencia"] = evidencia.get("codigo")
+        data["updated_at"] = _ahora_iso()
+        _validar_payload_seguimiento(data)
+
+        existente = (
+            supabase.table("seguimiento_semanal_evidencias")
+            .select("id")
+            .eq("evidencia_id", evidencia_id)
+            .eq("semana_inicio", data["semana_inicio"])
+            .execute()
+        )
+        if existente.data:
+            raise HTTPException(
+                status_code=400,
+                detail="Ya existe un seguimiento semanal para esta evidencia en la semana indicada.",
+            )
+
+        response = supabase.table("seguimiento_semanal_evidencias").insert(data).execute()
+        seguimiento_creado = response.data[0] if response.data else data
+
+        supabase.table("macroproceso_evidencias").update({"updated_at": _ahora_iso()}).eq("id", evidencia_id).execute()
+        try:
+            _registrar_historial_evidencia(
+                evidencia,
+                "seguimiento_semanal",
+                None,
+                data.get("nivel_avance"),
+                observacion=f"Seguimiento semanal registrado: {data.get('porcentaje_avance', 0)}% de avance.",
+            )
+        except Exception as historial_error:
+            print("[Macroprocesos] No se pudo registrar historial de seguimiento:", type(historial_error).__name__, str(historial_error))
+
+        return {
+            "message": "Seguimiento semanal registrado correctamente",
+            "data": seguimiento_creado,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/evidencias/{evidencia_id}/seguimiento-semanal")
+def listar_seguimiento_semanal(evidencia_id: str):
+    try:
+        _obtener_evidencia_o_404(evidencia_id)
+        response = (
+            supabase.table("seguimiento_semanal_evidencias")
+            .select("*")
+            .eq("evidencia_id", evidencia_id)
+            .order("semana_inicio", desc=True)
+            .execute()
+        )
+        return {
+            "message": "Seguimientos semanales obtenidos correctamente",
+            "data": response.data or [],
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/evidencias/{evidencia_id}/seguimiento-semanal/ultimo")
+def obtener_ultimo_seguimiento_semanal(evidencia_id: str):
+    try:
+        _obtener_evidencia_o_404(evidencia_id)
+        response = (
+            supabase.table("seguimiento_semanal_evidencias")
+            .select("*")
+            .eq("evidencia_id", evidencia_id)
+            .order("semana_inicio", desc=True)
+            .limit(1)
+            .execute()
+        )
+        ultimo = response.data[0] if response.data else None
+        return {
+            "message": "Último seguimiento semanal obtenido correctamente",
+            "data": ultimo,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.put("/evidencias/seguimiento-semanal/{seguimiento_id}")
+def actualizar_seguimiento_semanal(seguimiento_id: str, seguimiento: SeguimientoSemanalUpdate):
+    try:
+        seguimiento_actual = _obtener_seguimiento_o_404(seguimiento_id)
+        data = seguimiento.model_dump(exclude_unset=True)
+        if not data:
+            raise HTTPException(status_code=400, detail="No hay datos para actualizar.")
+
+        payload_validacion = {**seguimiento_actual, **data}
+        _validar_payload_seguimiento(payload_validacion)
+        data["updated_at"] = _ahora_iso()
+
+        if "semana_inicio" in data:
+            duplicado = (
+                supabase.table("seguimiento_semanal_evidencias")
+                .select("id")
+                .eq("evidencia_id", seguimiento_actual.get("evidencia_id"))
+                .eq("semana_inicio", data["semana_inicio"])
+                .neq("id", seguimiento_id)
+                .execute()
+            )
+            if duplicado.data:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Ya existe otro seguimiento semanal para esta evidencia en la semana indicada.",
+                )
+
+        response = (
+            supabase.table("seguimiento_semanal_evidencias")
+            .update(data)
+            .eq("id", seguimiento_id)
+            .execute()
+        )
+        return {
+            "message": "Seguimiento semanal actualizado correctamente",
+            "data": response.data[0] if response.data else {**seguimiento_actual, **data},
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.delete("/evidencias/seguimiento-semanal/{seguimiento_id}")
+def eliminar_seguimiento_semanal(seguimiento_id: str):
+    try:
+        _obtener_seguimiento_o_404(seguimiento_id)
+        supabase.table("seguimiento_semanal_evidencias").delete().eq("id", seguimiento_id).execute()
+        return {
+            "message": "Seguimiento semanal eliminado correctamente",
+            "data": {"id": seguimiento_id},
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/evidencias/seguimiento-semanal/{seguimiento_id}/archivo")
+async def subir_archivo_seguimiento_semanal(seguimiento_id: str, archivo: UploadFile = File(...)):
+    try:
+        seguimiento = _obtener_seguimiento_o_404(seguimiento_id)
+        evidencia = _obtener_evidencia_o_404(seguimiento.get("evidencia_id"))
+        nombre_original = archivo.filename or ""
+        extension = os.path.splitext(nombre_original)[1].lower()
+        content_type = (archivo.content_type or "").lower()
+
+        extension_valida = extension in EXTENSIONES_EVIDENCIA
+        content_type_valido = content_type in TIPOS_CONTENIDO_EVIDENCIA
+        if not extension_valida and not (not extension and content_type_valido):
+            raise HTTPException(
+                status_code=400,
+                detail="Formato no permitido. Solo se aceptan archivos PDF, DOC, DOCX, XLSX, PNG, JPG o JPEG.",
+            )
+
+        contenido = await archivo.read()
+        if not contenido:
+            raise HTTPException(status_code=400, detail="El archivo está vacío.")
+
+        nombre_seguro = os.path.basename(nombre_original).replace(" ", "_") or f"seguimiento{extension}"
+        codigo = (evidencia.get("codigo") or seguimiento.get("evidencia_id") or seguimiento_id).replace("/", "-").replace("\\", "-")
+        ruta_storage = (
+            f"macroprocesos/{evidencia.get('macroproceso')}/{codigo}/seguimientos/"
+            f"{uuid.uuid4()}_{nombre_seguro}"
+        )
+
+        try:
+            supabase.storage.from_(BUCKET_EVIDENCIAS).upload(
+                path=ruta_storage,
+                file=contenido,
+                file_options={
+                    "content-type": archivo.content_type or "application/octet-stream",
+                    "upsert": "true",
+                },
+            )
+        except Exception as storage_error:
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "No se pudo subir el archivo de seguimiento. "
+                    f"Verifique que el bucket '{BUCKET_EVIDENCIAS}' exista y tenga permisos de Storage."
+                ),
+            ) from storage_error
+
+        archivo_url = supabase.storage.from_(BUCKET_EVIDENCIAS).get_public_url(ruta_storage)
+        response = (
+            supabase.table("seguimiento_semanal_evidencias")
+            .update({
+                "archivo_sustento_url": archivo_url,
+                "updated_at": _ahora_iso(),
+            })
+            .eq("id", seguimiento_id)
+            .execute()
+        )
+
+        return {
+            "message": "Archivo de seguimiento subido correctamente",
+            "data": response.data[0] if response.data else {**seguimiento, "archivo_sustento_url": archivo_url},
+            "archivo_url": archivo_url,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="No se pudo subir el archivo de seguimiento.") from e
 
 
 @router.post("/evidencias/{evidencia_id}/validar-ia")
