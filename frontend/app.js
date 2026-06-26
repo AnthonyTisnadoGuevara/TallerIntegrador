@@ -246,12 +246,23 @@ function renderEvidenceCard(evidencia, columnas) {
   const nombreArchivo = archivoUrl ? obtenerNombreArchivoEvidencia(archivoUrl) : "";
   const alerta = obtenerAlertaActivaEvidencia(evidencia.id);
   const seguimiento = seguimientosSemanalesGlobal[evidencia.id] || null;
-  const detalleSecundario = columnas.includes("tipo_evidencia")
-    ? `<p><span>Tipo de evidencia</span><strong>${escaparHtml(evidencia.tipo_evidencia || "-")}</strong></p>`
-    : `<p><span>Mes programado</span><strong>${escaparHtml(evidencia.mes_programado || "-")}</strong></p>`;
   const validarButton = archivoUrl
     ? `<button class="btn btn-primary" type="button" onclick="validarEvidenciaIA('${id}')">Validar evidencia con IA</button>`
     : `<button class="btn btn-secondary" type="button" onclick="mostrarToast('Primero suba un archivo de sustento para validar esta evidencia.', 'warning')">Validar evidencia con IA</button>`;
+  const sustentoCompacto = archivoUrl
+    ? `
+      <div class="evidence-compact-line evidence-file-line">
+        <span>Sustento</span>
+        <strong>Archivo registrado</strong>
+        <button class="btn btn-secondary btn-small compact-file-button" type="button" title="${escaparAtributo(nombreArchivo)}" onclick="verArchivoEvidencia('${escaparAtributo(archivoUrl)}')">Ver archivo</button>
+      </div>
+    `
+    : `
+      <div class="evidence-compact-line evidence-file-line no-file-line">
+        <span>Sustento</span>
+        <strong>Sin archivo</strong>
+      </div>
+    `;
 
   return `
     <article class="evidence-card evidence-card-modern priority-${escaparAtributo(evidencia.prioridad || "media")}">
@@ -269,22 +280,11 @@ function renderEvidenceCard(evidencia, columnas) {
       <div class="evidence-card-body">
         ${alerta ? renderBadgeAlertaEvidencia(alerta) : ""}
         <p><span>Responsable</span><strong>${escaparHtml(evidencia.responsable || "Sin responsable")}</strong></p>
-        ${detalleSecundario}
-        <p><span>Origen</span><strong>${escaparHtml(evidencia.origen_documento || "-")}</strong></p>
       </div>
 
       ${renderResumenSeguimientoSemanal(evidencia, seguimiento)}
 
-      <div class="evidence-file-panel ${archivoUrl ? "has-file" : "no-file"}">
-        <div>
-          <span class="section-label">Sustento documental</span>
-          <strong>${archivoUrl ? "Archivo registrado" : "Sin archivo de sustento"}</strong>
-          <small>${archivoUrl ? escaparHtml(nombreArchivo) : "Suba un PDF o DOCX para validar la evidencia con IA."}</small>
-        </div>
-        ${archivoUrl
-          ? `<button class="btn btn-secondary evidence-file-badge" type="button" onclick="verArchivoEvidencia('${escaparAtributo(archivoUrl)}')">Ver evidencia</button>`
-          : `<span class="no-file-warning">Pendiente de carga</span>`}
-      </div>
+      ${sustentoCompacto}
 
       <div class="progress-block evidence-progress">
         <div class="progress-meta">
@@ -298,20 +298,20 @@ function renderEvidenceCard(evidencia, columnas) {
 
       <div class="evidence-actions evidence-actions-primary primary-action-row">
         <button class="btn btn-primary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'detalle')">Ver detalle</button>
-        <button class="btn btn-secondary" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
         <button class="btn btn-success evidence-upload-btn" type="button" onclick="subirArchivoEvidenciaMacroproceso('${id}')">Subir evidencia</button>
         <div class="acciones-dropdown">
           <button class="btn btn-menu btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('evidencia-${id}')">M&aacute;s acciones &#9662;</button>
           <div id="menu-acciones-evidencia-${id}" class="acciones-menu actions-dropdown-menu hidden">
             <div class="menu-section">
               <span class="menu-label">M&aacute;s acciones</span>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
               ${validarButton.replace("btn btn-primary", "menu-item actions-dropdown-item").replace("btn btn-secondary", "menu-item actions-dropdown-item")}
               <button class="menu-item actions-dropdown-item" type="button" onclick="verUltimaValidacionEvidenciaIA('${id}')">Ver &uacute;ltima validaci&oacute;n IA</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar avance</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observaci&oacute;n</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialEvidenciaMacroproceso('${id}')">Ver historial</button>
-              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalSeguimientoSemanal('${id}')">Seguimiento semanal</button>
-              <button class="menu-item actions-dropdown-item" type="button" onclick="verSeguimientosSemanales('${id}')">Ver seguimientos</button>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalSeguimientoSemanal('${id}')">Registrar seguimiento semanal</button>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="verSeguimientosSemanales('${id}')">Ver historial de seguimientos</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="generarAccionDesdeEvidencia('${id}')">Generar acci&oacute;n</button>
             </div>
           </div>
@@ -338,18 +338,13 @@ async function cargarUltimosSeguimientosMacroproceso(macroproceso) {
 }
 
 function renderResumenSeguimientoSemanal(evidencia, seguimiento) {
-  const evidenciaId = escaparAtributo(evidencia.id);
   if (!seguimiento) {
     return `
       <div class="weekly-summary no-tracking">
-        <div>
-          <span class="section-label">Seguimiento semanal</span>
-          <strong>Sin seguimiento registrado</strong>
-          <small>Registre el avance semanal para mantener trazabilidad de la evidencia.</small>
-        </div>
+        <span>Seguimiento</span>
+        <strong>Sin seguimiento reciente</strong>
         <div class="weekly-badges">
           <span class="weekly-badge warning">Sin seguimiento reciente</span>
-          <button class="btn btn-secondary btn-small" type="button" onclick="abrirModalSeguimientoSemanal('${evidenciaId}')">Registrar</button>
         </div>
       </div>
     `;
@@ -373,11 +368,8 @@ function renderResumenSeguimientoSemanal(evidencia, seguimiento) {
 
   return `
     <div class="weekly-summary">
-      <div>
-        <span class="section-label">Seguimiento semanal</span>
-        <strong>${escaparHtml(nivel)} · ${porcentaje}%</strong>
-        <small>&Uacute;ltimo registro: ${escaparHtml(fecha)}</small>
-      </div>
+      <span>Seguimiento</span>
+      <strong>&Uacute;ltimo registro ${escaparHtml(fecha)} - Avance ${escaparHtml(nivel)} ${porcentaje}%</strong>
       <div class="weekly-badges">
         ${badges.join("") || `<span class="weekly-badge ok">Seguimiento actualizado</span>`}
       </div>
