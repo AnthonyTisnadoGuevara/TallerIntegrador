@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.services.vector_context_service import (
     get_vector_supabase_client,
-    process_pdf_to_vector_db,
+    process_document_to_vector_db,
     search_vector_context,
 )
 
@@ -23,12 +23,25 @@ async def cargar_documento_contexto(
     archivo: UploadFile = File(...),
     origen: Optional[str] = None,
 ):
-    if not archivo.filename or not archivo.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Solo se aceptan archivos PDF.")
+    nombre = (archivo.filename or "").lower()
+    content_type = (archivo.content_type or "").lower()
+    es_pdf = nombre.endswith(".pdf") or content_type == "application/pdf"
+    es_docx = (
+        nombre.endswith(".docx")
+        or content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+    if not archivo.filename or not (es_pdf or es_docx):
+        raise HTTPException(status_code=400, detail="Solo se aceptan archivos PDF o DOCX.")
 
     try:
         contenido = await archivo.read()
-        resultado = process_pdf_to_vector_db(contenido, archivo.filename, origen=origen)
+        resultado = process_document_to_vector_db(
+            contenido,
+            archivo.filename,
+            origen=origen,
+            content_type=archivo.content_type,
+        )
         documento = resultado["documento"]
         duplicado = resultado.get("duplicado", False)
 

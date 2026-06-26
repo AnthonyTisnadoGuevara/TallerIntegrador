@@ -6,6 +6,11 @@ from io import BytesIO
 from supabase import Client, create_client
 
 try:
+    from docx import Document
+except ImportError:  # pragma: no cover - dependency may not be installed yet
+    Document = None
+
+try:
     import fitz  # PyMuPDF
 except ImportError:  # pragma: no cover - dependency may not be installed yet
     fitz = None
@@ -59,6 +64,57 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
         raise ValueError("El PDF no contiene texto extraíble.")
 
     return texto
+
+
+def extract_text_from_docx(file_bytes: bytes) -> str:
+    if Document is None:
+        raise RuntimeError("python-docx no está instalado.")
+    if not file_bytes:
+        raise ValueError("El archivo DOCX está vacío.")
+
+    try:
+        document = Document(BytesIO(file_bytes))
+    except Exception as error:
+        raise ValueError(f"Error al extraer texto del DOCX: {error}") from error
+
+    textos = []
+    for paragraph in document.paragraphs:
+        texto = paragraph.text.strip()
+        if texto:
+            textos.append(texto)
+
+    for table in document.tables:
+        for row in table.rows:
+            celdas = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+            if celdas:
+                textos.append(" | ".join(celdas))
+
+    texto_final = "\n".join(textos).strip()
+    if not texto_final:
+        raise ValueError("El DOCX no contiene texto extraíble.")
+
+    return texto_final
+
+
+def extract_text_from_file(file_bytes: bytes, filename: str, content_type: str | None = None) -> str:
+    nombre = (filename or "").lower()
+    tipo = (content_type or "").lower()
+
+    es_pdf = nombre.endswith(".pdf") or tipo == "application/pdf"
+    es_docx = (
+        nombre.endswith(".docx")
+        or tipo in {
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        }
+    )
+
+    if es_pdf:
+        return extract_text_from_pdf(file_bytes)
+
+    if es_docx and not nombre.endswith(".doc"):
+        return extract_text_from_docx(file_bytes)
+
+    raise ValueError("Solo se aceptan archivos PDF o DOCX.")
 
 
 def chunk_text(texto: str, size: int = 2000, overlap: int = 200) -> list[str]:
@@ -161,14 +217,16 @@ def _insertar_chunks(supabase: Client, documento_id: str, chunks: list[str]) -> 
     return insertados
 
 
-def process_pdf_to_vector_db(file_bytes: bytes, filename: str, origen: str | None = None) -> dict:
-    if not filename.lower().endswith(".pdf"):
-        raise ValueError("Solo se aceptan archivos PDF para la base vectorial.")
-
-    texto = extract_text_from_pdf(file_bytes)
+def process_document_to_vector_db(
+    file_bytes: bytes,
+    filename: str,
+    origen: str | None = None,
+    content_type: str | None = None,
+) -> dict:
+    texto = extract_text_from_file(file_bytes, filename, content_type)
     chunks = chunk_text(texto, size=2000, overlap=200)
     if not chunks:
-        raise ValueError("No se generaron chunks a partir del PDF.")
+        raise ValueError("No se generaron chunks a partir del documento.")
 
     supabase = get_vector_supabase_client()
     hash_archivo = _calcular_hash(file_bytes)
@@ -193,6 +251,10 @@ def process_pdf_to_vector_db(file_bytes: bytes, filename: str, origen: str | Non
         "total_chunks": len(chunks_insertados) or len(chunks),
         "duplicado": False,
     }
+
+
+def process_pdf_to_vector_db(file_bytes: bytes, filename: str, origen: str | None = None) -> dict:
+    return process_document_to_vector_db(file_bytes, filename, origen=origen, content_type="application/pdf")
 
 
 def search_vector_context(query: str, match_count: int = 5) -> list[dict]:
