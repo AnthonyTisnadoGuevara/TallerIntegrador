@@ -19,6 +19,8 @@ let evidenciasMacroprocesosGlobal = {
   gestion_academica: []
 };
 let evidenciaMacroprocesoActual = null;
+let evidenciaSeguimientoActual = null;
+let seguimientosSemanalesGlobal = {};
 let macroprocesoHistorialIAActual = null;
 
 const MACROPROCESOS_CONFIG = {
@@ -144,6 +146,7 @@ async function cargarVistaMacroproceso(macroproceso) {
     }
 
     evidenciasMacroprocesosGlobal[macroproceso] = Array.isArray(result.data) ? result.data : [];
+    await cargarUltimosSeguimientosMacroproceso(macroproceso);
     await cargarAlertasActivasMacroproceso(macroproceso);
     renderDashboardMacroproceso(macroproceso);
     renderEvidenciasMacroproceso(macroproceso);
@@ -242,6 +245,7 @@ function renderEvidenceCard(evidencia, columnas) {
   const archivoUrl = normalizarEnlaceArchivo(evidencia.archivo_url);
   const nombreArchivo = archivoUrl ? obtenerNombreArchivoEvidencia(archivoUrl) : "";
   const alerta = obtenerAlertaActivaEvidencia(evidencia.id);
+  const seguimiento = seguimientosSemanalesGlobal[evidencia.id] || null;
   const detalleSecundario = columnas.includes("tipo_evidencia")
     ? `<p><span>Tipo de evidencia</span><strong>${escaparHtml(evidencia.tipo_evidencia || "-")}</strong></p>`
     : `<p><span>Mes programado</span><strong>${escaparHtml(evidencia.mes_programado || "-")}</strong></p>`;
@@ -268,6 +272,8 @@ function renderEvidenceCard(evidencia, columnas) {
         ${detalleSecundario}
         <p><span>Origen</span><strong>${escaparHtml(evidencia.origen_documento || "-")}</strong></p>
       </div>
+
+      ${renderResumenSeguimientoSemanal(evidencia, seguimiento)}
 
       <div class="evidence-file-panel ${archivoUrl ? "has-file" : "no-file"}">
         <div>
@@ -304,6 +310,8 @@ function renderEvidenceCard(evidencia, columnas) {
               <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar avance</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observaci&oacute;n</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialEvidenciaMacroproceso('${id}')">Ver historial</button>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalSeguimientoSemanal('${id}')">Seguimiento semanal</button>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="verSeguimientosSemanales('${id}')">Ver seguimientos</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="generarAccionDesdeEvidencia('${id}')">Generar acci&oacute;n</button>
             </div>
           </div>
@@ -311,6 +319,78 @@ function renderEvidenceCard(evidencia, columnas) {
       </div>
     </article>
   `;
+}
+
+async function cargarUltimosSeguimientosMacroproceso(macroproceso) {
+  const evidencias = evidenciasMacroprocesosGlobal[macroproceso] || [];
+  const resultados = await Promise.allSettled(
+    evidencias.map((evidencia) =>
+      fetchJson(`${API_URL}/api/macroprocesos/evidencias/${evidencia.id}/seguimiento-semanal/ultimo`)
+        .then((result) => ({ evidenciaId: evidencia.id, seguimiento: result.data || null }))
+    )
+  );
+
+  resultados.forEach((resultado) => {
+    if (resultado.status === "fulfilled") {
+      seguimientosSemanalesGlobal[resultado.value.evidenciaId] = resultado.value.seguimiento;
+    }
+  });
+}
+
+function renderResumenSeguimientoSemanal(evidencia, seguimiento) {
+  const evidenciaId = escaparAtributo(evidencia.id);
+  if (!seguimiento) {
+    return `
+      <div class="weekly-summary no-tracking">
+        <div>
+          <span class="section-label">Seguimiento semanal</span>
+          <strong>Sin seguimiento registrado</strong>
+          <small>Registre el avance semanal para mantener trazabilidad de la evidencia.</small>
+        </div>
+        <div class="weekly-badges">
+          <span class="weekly-badge warning">Sin seguimiento reciente</span>
+          <button class="btn btn-secondary btn-small" type="button" onclick="abrirModalSeguimientoSemanal('${evidenciaId}')">Registrar</button>
+        </div>
+      </div>
+    `;
+  }
+
+  const porcentaje = Math.min(100, Math.max(0, Number(seguimiento.porcentaje_avance || 0)));
+  const nivel = seguimiento.nivel_avance || "Sin avance";
+  const fecha = seguimiento.semana_inicio
+    ? new Date(`${seguimiento.semana_inicio}T00:00:00`).toLocaleDateString()
+    : "Sin fecha";
+  const badges = [];
+  if (!seguimientoEsReciente(seguimiento)) {
+    badges.push(`<span class="weekly-badge warning">Sin seguimiento reciente</span>`);
+  }
+  if (seguimiento.requiere_apoyo) {
+    badges.push(`<span class="weekly-badge support">Requiere apoyo</span>`);
+  }
+  if (nivel === "Sin avance" || porcentaje === 0) {
+    badges.push(`<span class="weekly-badge danger">Riesgo de estancamiento</span>`);
+  }
+
+  return `
+    <div class="weekly-summary">
+      <div>
+        <span class="section-label">Seguimiento semanal</span>
+        <strong>${escaparHtml(nivel)} · ${porcentaje}%</strong>
+        <small>&Uacute;ltimo registro: ${escaparHtml(fecha)}</small>
+      </div>
+      <div class="weekly-badges">
+        ${badges.join("") || `<span class="weekly-badge ok">Seguimiento actualizado</span>`}
+      </div>
+    </div>
+  `;
+}
+
+function seguimientoEsReciente(seguimiento) {
+  if (!seguimiento?.semana_inicio) return false;
+  const fecha = new Date(`${seguimiento.semana_inicio}T00:00:00`);
+  if (Number.isNaN(fecha.getTime())) return false;
+  const diferenciaDias = (Date.now() - fecha.getTime()) / (1000 * 60 * 60 * 24);
+  return diferenciaDias <= 10;
 }
 
 function obtenerAlertaActivaEvidencia(evidenciaId) {
@@ -644,6 +724,259 @@ function abrirModalHistorialEvidencia(historial) {
 
 function cerrarModalHistorialEvidencia() {
   ocultarModal("modalHistorialEvidencia");
+}
+
+function calcularSemanaActual() {
+  const hoy = new Date();
+  const dia = hoy.getDay() || 7;
+  const inicio = new Date(hoy);
+  inicio.setDate(hoy.getDate() - dia + 1);
+  const fin = new Date(inicio);
+  fin.setDate(inicio.getDate() + 6);
+  const iso = (fecha) => fecha.toISOString().slice(0, 10);
+  return { inicio: iso(inicio), fin: iso(fin) };
+}
+
+function abrirModalSeguimientoSemanal(evidenciaId) {
+  const evidencia = buscarEvidenciaMacroproceso(evidenciaId);
+  if (!evidencia) {
+    mostrarToast("No se encontró la evidencia seleccionada.", "warning");
+    return;
+  }
+
+  evidenciaSeguimientoActual = evidencia;
+  const semana = calcularSemanaActual();
+  const form = document.getElementById("formSeguimientoSemanal");
+  if (form) form.reset();
+
+  document.getElementById("seguimientoTituloEvidencia").textContent = `${evidencia.codigo || "-"} · ${evidencia.titulo || "Evidencia"}`;
+  document.getElementById("seguimientoSemanaInicio").value = semana.inicio;
+  document.getElementById("seguimientoSemanaFin").value = semana.fin;
+  document.getElementById("seguimientoResponsable").value = evidencia.responsable || "";
+  document.getElementById("seguimientoNivelAvance").value = "Sin avance";
+  document.getElementById("seguimientoPorcentajeAvance").value = String(Math.min(100, Math.max(0, Number(evidencia.avance || 0))));
+  document.getElementById("seguimientoAccionRealizada").value = "no";
+  document.getElementById("seguimientoRequiereApoyo").value = "false";
+  toggleApoyoSeguimiento();
+  mostrarModal("modalSeguimientoSemanal");
+}
+
+function cerrarModalSeguimientoSemanal() {
+  evidenciaSeguimientoActual = null;
+  ocultarModal("modalSeguimientoSemanal");
+}
+
+function toggleApoyoSeguimiento() {
+  const requiereApoyo = document.getElementById("seguimientoRequiereApoyo")?.value === "true";
+  const grupo = document.getElementById("grupoTipoApoyoSeguimiento");
+  if (grupo) {
+    grupo.classList.toggle("hidden", !requiereApoyo);
+  }
+}
+
+async function guardarSeguimientoSemanal(event) {
+  event.preventDefault();
+  const evidencia = evidenciaSeguimientoActual;
+  if (!evidencia) {
+    mostrarToast("No se pudo identificar la evidencia.", "error");
+    return;
+  }
+
+  const semanaInicio = document.getElementById("seguimientoSemanaInicio").value;
+  const semanaFin = document.getElementById("seguimientoSemanaFin").value;
+  const porcentaje = Number(document.getElementById("seguimientoPorcentajeAvance").value || 0);
+  const accionRealizadaValor = document.getElementById("seguimientoAccionRealizada").value;
+  const requiereApoyo = document.getElementById("seguimientoRequiereApoyo").value === "true";
+  const compromiso = document.getElementById("seguimientoCompromiso").value.trim();
+  const dificultad = document.getElementById("seguimientoDificultad").value.trim();
+  const tipoApoyo = document.getElementById("seguimientoTipoApoyo").value;
+
+  if (!semanaInicio || !semanaFin || new Date(semanaInicio) > new Date(semanaFin)) {
+    mostrarToast("Revise el rango de fechas de la semana.", "warning");
+    return;
+  }
+  if (!Number.isFinite(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+    mostrarToast("El porcentaje de avance debe estar entre 0 y 100.", "warning");
+    return;
+  }
+  if (accionRealizadaValor === "no" && !compromiso && !dificultad) {
+    mostrarToast("Si no hubo acción, registre una dificultad o compromiso para la siguiente semana.", "warning");
+    return;
+  }
+  if (requiereApoyo && !tipoApoyo) {
+    mostrarToast("Seleccione el tipo de apoyo requerido.", "warning");
+    return;
+  }
+
+  const payload = {
+    semana_inicio: semanaInicio,
+    semana_fin: semanaFin,
+    responsable: document.getElementById("seguimientoResponsable").value.trim() || null,
+    accion_realizada: accionRealizadaValor !== "no",
+    nivel_avance: document.getElementById("seguimientoNivelAvance").value,
+    porcentaje_avance: porcentaje,
+    descripcion_accion: document.getElementById("seguimientoDescripcionAccion").value.trim() || null,
+    resultado_observado: document.getElementById("seguimientoResultadoObservado").value.trim() || null,
+    dificultad_encontrada: dificultad || null,
+    compromiso_siguiente_semana: compromiso || null,
+    requiere_apoyo: requiereApoyo,
+    tipo_apoyo_requerido: requiereApoyo ? tipoApoyo : null,
+    observacion: document.getElementById("seguimientoObservacion").value.trim() || null
+  };
+
+  try {
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/evidencias/${evidencia.id}/seguimiento-semanal`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const archivo = document.getElementById("seguimientoArchivoSustento")?.files?.[0];
+    if (archivo && result.data?.id) {
+      await enviarArchivoSeguimientoSemanal(result.data.id, archivo, false);
+    }
+
+    mostrarToast("Seguimiento semanal registrado correctamente.", "success");
+    cerrarModalSeguimientoSemanal();
+    await cargarVistaMacroproceso(evidencia.macroproceso);
+  } catch (error) {
+    console.error("Error al guardar seguimiento semanal:", error);
+    mostrarToast("Error al guardar seguimiento: " + error.message, "error");
+  }
+}
+
+async function verSeguimientosSemanales(evidenciaId) {
+  const evidencia = buscarEvidenciaMacroproceso(evidenciaId);
+  if (!evidencia) {
+    mostrarToast("No se encontró la evidencia seleccionada.", "warning");
+    return;
+  }
+
+  try {
+    evidenciaSeguimientoActual = evidencia;
+    const result = await fetchJson(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/seguimiento-semanal`);
+    abrirModalHistorialSeguimientos(evidencia, result.data || []);
+  } catch (error) {
+    console.error("Error al obtener seguimientos semanales:", error);
+    mostrarToast("No se pudo cargar el seguimiento semanal.", "error");
+  }
+}
+
+function abrirModalHistorialSeguimientos(evidencia, seguimientos) {
+  const titulo = document.getElementById("tituloHistorialSeguimientos");
+  const contenedor = document.getElementById("contenidoHistorialSeguimientos");
+  if (titulo) {
+    titulo.textContent = `Seguimiento semanal - ${evidencia.codigo || "-"}`;
+  }
+
+  if (!contenedor) return;
+  if (!Array.isArray(seguimientos) || seguimientos.length === 0) {
+    contenedor.innerHTML = `<p class="text-muted">No hay seguimiento semanal registrado para esta evidencia.</p>`;
+  } else {
+    contenedor.innerHTML = seguimientos.map((item) => renderTarjetaSeguimientoSemanal(item)).join("");
+  }
+  mostrarModal("modalHistorialSeguimientos");
+}
+
+function renderTarjetaSeguimientoSemanal(item) {
+  const porcentaje = Math.min(100, Math.max(0, Number(item.porcentaje_avance || 0)));
+  const archivoUrl = normalizarEnlaceArchivo(item.archivo_sustento_url);
+  return `
+    <article class="weekly-history-card nivel-${escaparAtributo(normalizarValor(item.nivel_avance || "sin avance").replaceAll(" ", "-"))}">
+      <div class="weekly-history-header">
+        <div>
+          <span class="cycle-badge">${escaparHtml(item.semana_inicio || "-")} al ${escaparHtml(item.semana_fin || "-")}</span>
+          <h3>${escaparHtml(item.nivel_avance || "Sin avance")} · ${porcentaje}%</h3>
+        </div>
+        <div class="weekly-badges">
+          ${item.requiere_apoyo ? `<span class="weekly-badge support">Requiere apoyo</span>` : ""}
+          ${item.accion_realizada ? `<span class="weekly-badge ok">Acción realizada</span>` : `<span class="weekly-badge warning">Sin acción</span>`}
+        </div>
+      </div>
+      <p><strong>Responsable:</strong> ${escaparHtml(item.responsable || "-")}</p>
+      <p><strong>Acción:</strong> ${escaparHtml(item.descripcion_accion || "-")}</p>
+      <p><strong>Resultado:</strong> ${escaparHtml(item.resultado_observado || "-")}</p>
+      <p><strong>Dificultad:</strong> ${escaparHtml(item.dificultad_encontrada || "-")}</p>
+      <p><strong>Compromiso:</strong> ${escaparHtml(item.compromiso_siguiente_semana || "-")}</p>
+      ${item.requiere_apoyo ? `<p><strong>Tipo de apoyo:</strong> ${escaparHtml(item.tipo_apoyo_requerido || "-")}</p>` : ""}
+      <p><strong>Observación:</strong> ${escaparHtml(item.observacion || "-")}</p>
+      <div class="weekly-history-actions">
+        ${archivoUrl
+          ? `<button class="btn btn-secondary" type="button" onclick="verArchivoEvidencia('${escaparAtributo(archivoUrl)}')">Ver sustento</button>`
+          : `<button class="btn btn-primary" type="button" onclick="subirArchivoSeguimientoSemanal('${escaparAtributo(item.id)}')">Subir sustento</button>`}
+        <button class="btn btn-danger" type="button" onclick="eliminarSeguimientoSemanal('${escaparAtributo(item.id)}')">Eliminar</button>
+      </div>
+    </article>
+  `;
+}
+
+function cerrarModalHistorialSeguimientos() {
+  evidenciaSeguimientoActual = null;
+  ocultarModal("modalHistorialSeguimientos");
+}
+
+function subirArchivoSeguimientoSemanal(seguimientoId) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".pdf,.doc,.docx,.xlsx,.png,.jpg,.jpeg";
+  input.onchange = async () => {
+    const archivo = input.files?.[0];
+    if (!archivo) {
+      mostrarToast("Seleccione un archivo válido.", "warning");
+      return;
+    }
+    await enviarArchivoSeguimientoSemanal(seguimientoId, archivo, true);
+  };
+  input.click();
+}
+
+async function enviarArchivoSeguimientoSemanal(seguimientoId, archivo, refrescarHistorial = true) {
+  const extensionesPermitidas = [".pdf", ".doc", ".docx", ".xlsx", ".png", ".jpg", ".jpeg"];
+  const nombreArchivo = archivo?.name || "";
+  const extension = nombreArchivo.includes(".")
+    ? `.${nombreArchivo.split(".").pop().toLowerCase()}`
+    : "";
+
+  if (!archivo || !extensionesPermitidas.includes(extension)) {
+    mostrarToast("Seleccione un archivo válido. Se permiten PDF, DOC, DOCX, XLSX, PNG, JPG o JPEG.", "warning");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("archivo", archivo);
+
+  try {
+    mostrarToast("Subiendo sustento del seguimiento...", "info");
+    await fetchJson(`${API_URL}/api/macroprocesos/evidencias/seguimiento-semanal/${seguimientoId}/archivo`, {
+      method: "POST",
+      body: formData
+    });
+    mostrarToast("Sustento del seguimiento subido correctamente.", "success");
+    if (refrescarHistorial && evidenciaSeguimientoActual?.id) {
+      await verSeguimientosSemanales(evidenciaSeguimientoActual.id);
+    }
+  } catch (error) {
+    console.error("Error al subir sustento de seguimiento:", error);
+    mostrarToast("No se pudo subir el sustento: " + error.message, "error");
+  }
+}
+
+async function eliminarSeguimientoSemanal(seguimientoId) {
+  if (!confirm("¿Deseas eliminar este seguimiento semanal?")) return;
+
+  try {
+    await fetchJson(`${API_URL}/api/macroprocesos/evidencias/seguimiento-semanal/${seguimientoId}`, {
+      method: "DELETE"
+    });
+    mostrarToast("Seguimiento semanal eliminado correctamente.", "success");
+    if (evidenciaSeguimientoActual?.id) {
+      await verSeguimientosSemanales(evidenciaSeguimientoActual.id);
+      await cargarVistaMacroproceso(evidenciaSeguimientoActual.macroproceso);
+    }
+  } catch (error) {
+    console.error("Error al eliminar seguimiento semanal:", error);
+    mostrarToast("No se pudo eliminar el seguimiento: " + error.message, "error");
+  }
 }
 
 async function validarEvidenciaIA(evidenciaId) {

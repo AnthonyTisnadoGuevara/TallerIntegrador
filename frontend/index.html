@@ -1034,6 +1034,119 @@
     </div>
   </div>
 
+  <div id="modalSeguimientoSemanal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalSeguimientoSemanal">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <div>
+          <h2 id="tituloModalSeguimientoSemanal">Registrar seguimiento semanal</h2>
+          <p id="seguimientoTituloEvidencia" class="modal-subtitle">Evidencia seleccionada</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalSeguimientoSemanal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="formSeguimientoSemanal" onsubmit="guardarSeguimientoSemanal(event)">
+          <div class="modal-form-grid">
+            <div class="form-group">
+              <label for="seguimientoSemanaInicio">Inicio de semana *</label>
+              <input id="seguimientoSemanaInicio" type="date" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="seguimientoSemanaFin">Fin de semana *</label>
+              <input id="seguimientoSemanaFin" type="date" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="seguimientoResponsable">Responsable</label>
+              <input id="seguimientoResponsable" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="seguimientoAccionRealizada">Acci&oacute;n realizada *</label>
+              <select id="seguimientoAccionRealizada" class="form-control" required>
+                <option value="no">No</option>
+                <option value="si">S&iacute;</option>
+                <option value="parcial">Parcial</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="seguimientoNivelAvance">Nivel de avance *</label>
+              <select id="seguimientoNivelAvance" class="form-control" required>
+                <option value="Sin avance">Sin avance</option>
+                <option value="Bajo">Bajo</option>
+                <option value="Medio">Medio</option>
+                <option value="Alto">Alto</option>
+                <option value="Completado">Completado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="seguimientoPorcentajeAvance">Porcentaje de avance *</label>
+              <input id="seguimientoPorcentajeAvance" type="number" class="form-control" min="0" max="100" value="0" required />
+            </div>
+            <div class="form-group modal-field-full">
+              <label for="seguimientoDescripcionAccion">Descripci&oacute;n de la acci&oacute;n</label>
+              <textarea id="seguimientoDescripcionAccion" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group modal-field-full">
+              <label for="seguimientoResultadoObservado">Resultado observado</label>
+              <textarea id="seguimientoResultadoObservado" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="seguimientoDificultad">Dificultad encontrada</label>
+              <textarea id="seguimientoDificultad" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="seguimientoCompromiso">Compromiso siguiente semana</label>
+              <textarea id="seguimientoCompromiso" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="seguimientoRequiereApoyo">Requiere apoyo</label>
+              <select id="seguimientoRequiereApoyo" class="form-control" onchange="toggleApoyoSeguimiento()">
+                <option value="false">No</option>
+                <option value="true">S&iacute;</option>
+              </select>
+            </div>
+            <div id="grupoTipoApoyoSeguimiento" class="form-group hidden">
+              <label for="seguimientoTipoApoyo">Tipo de apoyo requerido</label>
+              <select id="seguimientoTipoApoyo" class="form-control">
+                <option value="">Seleccione</option>
+                <option value="Directivo">Directivo</option>
+                <option value="Académico">Acad&eacute;mico</option>
+                <option value="Documental">Documental</option>
+                <option value="Tecnológico">Tecnol&oacute;gico</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            <div class="form-group modal-field-full">
+              <label for="seguimientoArchivoSustento">Archivo de sustento semanal</label>
+              <input id="seguimientoArchivoSustento" type="file" class="form-control" accept=".pdf,.doc,.docx,.xlsx,.png,.jpg,.jpeg" />
+            </div>
+            <div class="form-group modal-field-full">
+              <label for="seguimientoObservacion">Observaci&oacute;n</label>
+              <textarea id="seguimientoObservacion" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalSeguimientoSemanal()">Cancelar</button>
+        <button type="submit" form="formSeguimientoSemanal" class="btn btn-primary">Guardar seguimiento</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalHistorialSeguimientos" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloHistorialSeguimientos">
+    <div class="modal-card modal-extra-large">
+      <div class="modal-header">
+        <h2 id="tituloHistorialSeguimientos">Seguimiento semanal</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalHistorialSeguimientos()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="contenidoHistorialSeguimientos" class="weekly-history-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialSeguimientos()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalAlertasInteligentes" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalAlertasInteligentes">
     <div class="modal-card modal-extra-large">
       <div class="modal-header">
