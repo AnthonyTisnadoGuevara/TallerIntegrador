@@ -55,8 +55,16 @@ CAMPOS_HISTORIAL = {
     "descripcion",
     "tipo_evidencia",
 }
-EXTENSIONES_EVIDENCIA = {".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg"}
-BUCKET_EVIDENCIAS = "silabos"
+EXTENSIONES_EVIDENCIA = {".pdf", ".docx", ".doc", ".xlsx", ".png", ".jpg", ".jpeg"}
+TIPOS_CONTENIDO_EVIDENCIA = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "image/png",
+    "image/jpeg",
+}
+BUCKET_EVIDENCIAS = os.getenv("SUPABASE_STORAGE_BUCKET", "evidencias").strip() or "evidencias"
 
 
 class EvidenciaCreate(BaseModel):
@@ -1869,32 +1877,44 @@ async def subir_archivo_evidencia(evidencia_id: str, archivo: UploadFile = File(
         evidencia = _obtener_evidencia_o_404(evidencia_id)
         nombre_original = archivo.filename or ""
         extension = os.path.splitext(nombre_original)[1].lower()
+        content_type = (archivo.content_type or "").lower()
 
-        if extension not in EXTENSIONES_EVIDENCIA:
+        extension_valida = extension in EXTENSIONES_EVIDENCIA
+        content_type_valido = content_type in TIPOS_CONTENIDO_EVIDENCIA
+        if not extension_valida and not (not extension and content_type_valido):
             raise HTTPException(
                 status_code=400,
-                detail="Formato no permitido. Solo se aceptan PDF, DOCX, XLSX, PNG, JPG o JPEG.",
+                detail="Formato no permitido. Solo se aceptan archivos PDF, DOC, DOCX, XLSX, PNG, JPG o JPEG.",
             )
 
         contenido = await archivo.read()
         if not contenido:
-            raise HTTPException(status_code=400, detail="El archivo esta vacio.")
+            raise HTTPException(status_code=400, detail="El archivo está vacío.")
 
-        nombre_seguro = os.path.basename(nombre_original).replace(" ", "_")
+        nombre_seguro = os.path.basename(nombre_original).replace(" ", "_") or f"evidencia{extension}"
         codigo = (evidencia.get("codigo") or evidencia_id).replace("/", "-").replace("\\", "-")
         ruta_storage = (
             f"macroprocesos/{evidencia.get('macroproceso')}/{codigo}/"
             f"{uuid.uuid4()}_{nombre_seguro}"
         )
 
-        supabase.storage.from_(BUCKET_EVIDENCIAS).upload(
-            path=ruta_storage,
-            file=contenido,
-            file_options={
-                "content-type": archivo.content_type or "application/octet-stream",
-                "upsert": "true",
-            },
-        )
+        try:
+            supabase.storage.from_(BUCKET_EVIDENCIAS).upload(
+                path=ruta_storage,
+                file=contenido,
+                file_options={
+                    "content-type": archivo.content_type or "application/octet-stream",
+                    "upsert": "true",
+                },
+            )
+        except Exception as storage_error:
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "No se pudo subir el archivo de evidencia. "
+                    f"Verifique que el bucket '{BUCKET_EVIDENCIAS}' exista y que la clave de Supabase tenga permisos de Storage."
+                ),
+            ) from storage_error
 
         archivo_url = supabase.storage.from_(BUCKET_EVIDENCIAS).get_public_url(ruta_storage)
         response = (
@@ -1907,23 +1927,32 @@ async def subir_archivo_evidencia(evidencia_id: str, archivo: UploadFile = File(
             .execute()
         )
 
-        _registrar_historial_evidencia(
-            evidencia,
-            "archivo_url",
-            evidencia.get("archivo_url"),
-            archivo_url,
-            observacion="Archivo de evidencia actualizado",
-        )
+        try:
+            _registrar_historial_evidencia(
+                evidencia,
+                "archivo_url",
+                evidencia.get("archivo_url"),
+                archivo_url,
+                observacion="Archivo de sustento subido",
+            )
+        except Exception as historial_error:
+            print("[Macroprocesos] No se pudo registrar historial de archivo:", type(historial_error).__name__, str(historial_error))
 
+        evidencia_actualizada = response.data[0] if response.data else {}
         return {
-            "message": "Evidencia documental subida correctamente.",
+            "message": "Archivo de evidencia subido correctamente",
+            "data": {
+                "id": evidencia_id,
+                "archivo_url": archivo_url,
+                "nombre_archivo": nombre_original,
+                **evidencia_actualizada,
+            },
             "archivo_url": archivo_url,
-            "data": response.data,
         }
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="No se pudo subir el archivo de evidencia.") from e
 
 
 @router.post("/evidencias/{evidencia_id}/generar-accion")
