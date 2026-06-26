@@ -3236,3 +3236,137 @@ textarea.form-control {
     width: 100%;
   }
 }
+
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .macro-module,
+  .macroprocess-section,
+  .panel {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .macroprocess-panel-header,
+  .evidence-section-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .section-actions,
+  .evidence-section-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .section-actions .btn,
+  .evidence-section-actions .btn,
+  .section-actions button,
+  .evidence-section-actions button {
+    width: 100%;
+  }
+
+  .macroprocess-filters,
+  .filters-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .macroprocess-filters input,
+  .macroprocess-filters select,
+  .filters-row input,
+  .filters-row select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .evidence-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .evidence-card,
+  .evidence-card-modern {
+    width: 100%;
+    min-width: 0;
+    padding: 14px;
+  }
+
+  .evidence-card-body,
+  .evidence-file-panel {
+    min-width: 0;
+  }
+
+  .evidence-file-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .evidence-file-panel small {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .evidence-file-badge,
+  .no-file-warning {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .evidence-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .evidence-actions .btn,
+  .evidence-actions button,
+  .evidence-actions .acciones-dropdown {
+    width: 100%;
+  }
+
+  .evidence-actions .acciones-dropdown > .btn {
+    width: 100%;
+  }
+
+  .actions-dropdown-menu {
+    left: auto;
+    right: 0;
+    max-width: calc(100vw - 32px);
+    width: min(260px, calc(100vw - 32px));
+  }
+}
+
+@media (max-width: 480px) {
+  .macro-module,
+  .macroprocesos-view {
+    padding: 0;
+  }
+
+  .panel,
+  .card,
+  .module-header {
+    padding: 14px;
+  }
+
+  .evidence-card h3 {
+    font-size: 15px;
+  }
+
+  .evidence-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .evidence-badges {
+    justify-content: flex-start;
+  }
+}

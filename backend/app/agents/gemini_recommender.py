@@ -6,6 +6,8 @@ try:
 except ImportError:  # pragma: no cover - fallback when dependency is not installed yet
     genai = None
 
+from app.services.vector_context_service import search_vector_context_for_prompt
+
 
 MODELO_REGLAS = "langgraph_reglas_curriculares_v1"
 MODELO_GEMINI = "langgraph_gemini_curricular_v1"
@@ -70,6 +72,15 @@ def _normalizar_respuesta_gemini(data: dict, analisis: dict) -> dict:
 
 def _crear_prompt(texto_silabo: str, silabo: dict, analisis: dict) -> str:
     fragmento = (texto_silabo or "")[:8000]
+    consulta_contexto = " ".join(
+        [
+            str(silabo.get("asignatura") or ""),
+            str(silabo.get("programa_estudios") or ""),
+            str(analisis.get("resumen") or ""),
+            " ".join(str(item) for item in analisis.get("contenidos_detectados", [])[:10]),
+        ]
+    ).strip()
+    contexto_vectorial = search_vector_context_for_prompt(consulta_contexto, match_count=5)
     contexto = {
         "silabo": {
             "asignatura": silabo.get("asignatura"),
@@ -87,6 +98,7 @@ def _crear_prompt(texto_silabo: str, silabo: dict, analisis: dict) -> str:
             "sugerencias": analisis.get("sugerencias", []),
         },
         "fragmento_silabo": fragmento,
+        "contexto_documental_vectorial": contexto_vectorial,
     }
 
     return (
@@ -97,6 +109,8 @@ def _crear_prompt(texto_silabo: str, silabo: dict, analisis: dict) -> str:
         "conceptuales; progresion de contenidos; evidencias e instrumentos de evaluacion; "
         "actualizacion de bibliografia; vinculacion con el perfil de egreso; y acciones de "
         "mejora continua.\n\n"
+        "Si existe contexto documental recuperado desde la base vectorial, usalo como "
+        "sustento institucional para afinar las recomendaciones sin inventar informacion.\n\n"
         "Devuelve SOLO JSON valido, sin markdown, sin texto adicional, con esta estructura:\n"
         "{\n"
         '  "sugerencias": ["sugerencia 1", "sugerencia 2", "sugerencia 3"],\n'

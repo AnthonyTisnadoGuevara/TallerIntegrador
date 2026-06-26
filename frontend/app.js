@@ -555,10 +555,13 @@ function verArchivoEvidencia(url) {
 function subirArchivoEvidenciaMacroproceso(evidenciaId) {
   const input = document.createElement("input");
   input.type = "file";
-  input.accept = ".pdf,.docx,.xlsx,.png,.jpg,.jpeg";
+  input.accept = ".pdf,.doc,.docx,.xlsx,.png,.jpg,.jpeg";
   input.onchange = async () => {
     const archivo = input.files?.[0];
-    if (!archivo) return;
+    if (!archivo) {
+      mostrarToast("Seleccione un archivo válido.", "warning");
+      return;
+    }
     await enviarArchivoEvidenciaMacroproceso(evidenciaId, archivo);
   };
   input.click();
@@ -566,11 +569,22 @@ function subirArchivoEvidenciaMacroproceso(evidenciaId) {
 
 async function enviarArchivoEvidenciaMacroproceso(evidenciaId, archivo) {
   const evidencia = buscarEvidenciaMacroproceso(evidenciaId);
+  const extensionesPermitidas = [".pdf", ".doc", ".docx", ".xlsx", ".png", ".jpg", ".jpeg"];
+  const nombreArchivo = archivo?.name || "";
+  const extension = nombreArchivo.includes(".")
+    ? `.${nombreArchivo.split(".").pop().toLowerCase()}`
+    : "";
+
+  if (!archivo || !extensionesPermitidas.includes(extension)) {
+    mostrarToast("Seleccione un archivo válido. Se permiten PDF, DOC, DOCX, XLSX, PNG, JPG o JPEG.", "warning");
+    return;
+  }
+
   const formData = new FormData();
   formData.append("archivo", archivo);
 
   try {
-    mostrarToast("Subiendo evidencia documental...", "info");
+    mostrarToast("Subiendo archivo de evidencia...", "info");
     const response = await fetch(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/archivo`, {
       method: "POST",
       body: formData
@@ -581,13 +595,14 @@ async function enviarArchivoEvidenciaMacroproceso(evidenciaId, archivo) {
       throw new Error(result.detail || "No se pudo subir la evidencia documental.");
     }
 
-    mostrarToast("Evidencia documental subida correctamente.", "success");
+    mostrarToast(result.message || "Archivo subido correctamente.", "success");
     if (evidencia?.macroproceso) {
       await cargarVistaMacroproceso(evidencia.macroproceso);
     }
+    await cargarSemaforoCumplimiento();
   } catch (error) {
     console.error("Error al subir evidencia documental:", error);
-    mostrarToast("No se pudo subir la evidencia documental.", "error");
+    mostrarToast(error.message || "No se pudo subir la evidencia documental.", "error");
   }
 }
 
