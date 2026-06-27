@@ -1050,7 +1050,7 @@ def analizar_planificacion_estrategica():
         )
 
         return {
-            "message": "An?lisis de planificaci?n estrat?gica generado correctamente",
+            "message": "Análisis de planificación estratégica generado correctamente",
             "data": resultado,
         }
     except Exception as e:
@@ -1070,7 +1070,7 @@ def analizar_gestion_academica():
         )
 
         return {
-            "message": "An?lisis de gesti?n acad?mica generado correctamente",
+            "message": "Análisis de gestión académica generado correctamente",
             "data": resultado,
         }
     except Exception as e:
@@ -1090,7 +1090,7 @@ def analizar_mejora_continua():
         )
 
         return {
-            "message": "An?lisis integral de mejora continua generado correctamente",
+            "message": "Análisis integral de mejora continua generado correctamente",
             "data": resultado,
         }
     except Exception as e:

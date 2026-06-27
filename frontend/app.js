@@ -1,6 +1,6 @@
 ﻿const API_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   ? "http://127.0.0.1:8000"
-  : "https://tallerintegrador.onrender.com";
+  : "https://taller-mejoracontinua.duckdns.org";
 console.log("[API_URL]", API_URL);
 let silabosGlobal = [];
 let paginaActual = 1;
@@ -337,14 +337,24 @@ async function cargarUltimosSeguimientosMacroproceso(macroproceso) {
 function renderResumenSeguimientoSemanal(evidencia, seguimiento, resumen = { total: 0, archivos: 0 }) {
   if (!seguimiento) {
     return `
-      <div class="weekly-summary weekly-summary-card no-tracking">
-        <div>
-          <span>Seguimiento semanal</span>
-          <strong>&Uacute;ltimo: Sin seguimiento registrado</strong>
+      <div class="evidence-followup-summary no-tracking">
+        <div class="followup-summary-header">
+          <span class="followup-title">Seguimiento semanal</span>
+          <span class="followup-badge warning">Sin seguimiento reciente</span>
         </div>
-        <div class="weekly-summary-stats">
-          <small>Total registros: 0</small>
-          <span class="weekly-badge warning">Sin seguimiento reciente</span>
+        <div class="followup-summary-body">
+          <div class="followup-row">
+            <span class="followup-label">Total registros:</span>
+            <strong>0</strong>
+          </div>
+          <div class="followup-row">
+            <span class="followup-label">&Uacute;ltimo:</span>
+            <span>Sin seguimiento registrado</span>
+          </div>
+          <div class="followup-row">
+            <span class="followup-label">Archivos:</span>
+            <span>0</span>
+          </div>
         </div>
       </div>
     `;
@@ -367,15 +377,26 @@ function renderResumenSeguimientoSemanal(evidencia, seguimiento, resumen = { tot
   }
 
   return `
-    <div class="weekly-summary weekly-summary-card">
-      <div>
-        <span>Seguimiento semanal</span>
-        <strong>&Uacute;ltimo: ${escaparHtml(fecha)} - Avance ${escaparHtml(nivel)} ${porcentaje}%</strong>
+    <div class="evidence-followup-summary">
+      <div class="followup-summary-header">
+        <span class="followup-title">Seguimiento semanal</span>
+        <div class="followup-badge-group">
+          ${badges.join("") || `<span class="followup-badge ok">Seguimiento actualizado</span>`}
+        </div>
       </div>
-      <div class="weekly-summary-stats">
-        <small>Total registros: ${Number(resumen.total || 0)}</small>
-        <small>Archivos: ${Number(resumen.archivos || 0)}</small>
-        ${badges.join("") || `<span class="weekly-badge ok">Seguimiento actualizado</span>`}
+      <div class="followup-summary-body">
+        <div class="followup-row">
+          <span class="followup-label">Total registros:</span>
+          <strong>${Number(resumen.total || 0)}</strong>
+        </div>
+        <div class="followup-row">
+          <span class="followup-label">&Uacute;ltimo:</span>
+          <span>${escaparHtml(fecha)} - Avance ${escaparHtml(nivel)} ${porcentaje}%</span>
+        </div>
+        <div class="followup-row">
+          <span class="followup-label">Archivos:</span>
+          <span>${Number(resumen.archivos || 0)}</span>
+        </div>
       </div>
     </div>
   `;
@@ -492,7 +513,7 @@ async function guardarNuevaEvidenciaMacroproceso(event) {
   }
 
   if (existeCodigoEvidenciaEnMacroproceso(macroproceso, codigo)) {
-    mostrarToast("Ya existe una evidencia con ese cÃ³digo en este macroproceso.", "error");
+    mostrarToast("Ya existe una evidencia con ese código en este macroproceso.", "error");
     return;
   }
 
@@ -532,7 +553,7 @@ async function guardarNuevaEvidenciaMacroproceso(event) {
 function abrirModalEvidenciaMacroproceso(id, modo = "detalle") {
   const evidencia = buscarEvidenciaMacroproceso(id);
   if (!evidencia) {
-    mostrarToast("No se encontrÃ³ la evidencia seleccionada.", "warning");
+    mostrarToast("No se encontró la evidencia seleccionada.", "warning");
     return;
   }
 
@@ -545,18 +566,18 @@ function abrirModalEvidenciaMacroproceso(id, modo = "detalle") {
     : "Actualizar evidencia";
   document.getElementById("detalleEvidenciaMacroproceso").innerHTML = `
     <div class="evidence-detail-grid">
-      <div><span>CÃ³digo</span><strong>${escaparHtml(evidencia.codigo || "-")}</strong></div>
+      <div><span>Código</span><strong>${escaparHtml(evidencia.codigo || "-")}</strong></div>
       <div><span>Estado</span><strong>${escaparHtml(formatearTexto(evidencia.estado || "-"))}</strong></div>
       <div><span>Prioridad</span><strong>${escaparHtml(formatearTexto(evidencia.prioridad || "-"))}</strong></div>
       <div><span>Avance</span><strong>${avance}%</strong></div>
     </div>
     <h3>${escaparHtml(evidencia.titulo || "Evidencia")}</h3>
-    <p><strong>DescripciÃ³n:</strong> ${escaparHtml(evidencia.descripcion || "Sin descripciÃ³n registrada.")}</p>
+    <p><strong>Descripción:</strong> ${escaparHtml(evidencia.descripcion || "Sin descripción registrada.")}</p>
     <p><strong>Tipo de evidencia:</strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</p>
     <p><strong>Responsable:</strong> ${escaparHtml(evidencia.responsable || "Sin responsable")}</p>
     <p><strong>Mes programado:</strong> ${escaparHtml(evidencia.mes_programado || "-")}</p>
     <p><strong>Origen:</strong> ${escaparHtml(evidencia.origen_documento || "-")}</p>
-    <p><strong>ObservaciÃ³n:</strong> ${escaparHtml(evidencia.observacion || "Sin observaciÃ³n registrada.")}</p>
+    <p><strong>Observación:</strong> ${escaparHtml(evidencia.observacion || "Sin observación registrada.")}</p>
   `;
 
   document.getElementById("editorEvidenciaMacroproceso").classList.toggle("hidden", esSoloDetalle);
@@ -622,7 +643,7 @@ async function guardarEvidenciaMacroproceso() {
 function verArchivoEvidencia(url) {
   const archivoUrl = normalizarEnlaceArchivo(url);
   if (!archivoUrl) {
-    mostrarToast("La evidencia no tiene un enlace vÃ¡lido.", "warning");
+    mostrarToast("La evidencia no tiene un enlace válido.", "warning");
     return;
   }
   window.open(archivoUrl, "_blank", "noopener");
@@ -635,7 +656,7 @@ function subirArchivoEvidenciaMacroproceso(evidenciaId) {
   input.onchange = async () => {
     const archivo = input.files?.[0];
     if (!archivo) {
-      mostrarToast("Seleccione un archivo vÃ¡lido.", "warning");
+      mostrarToast("Seleccione un archivo válido.", "warning");
       return;
     }
     await enviarArchivoEvidenciaMacroproceso(evidenciaId, archivo);
@@ -652,7 +673,7 @@ async function enviarArchivoEvidenciaMacroproceso(evidenciaId, archivo) {
     : "";
 
   if (!archivo || !extensionesPermitidas.includes(extension)) {
-    mostrarToast("Seleccione un archivo vÃ¡lido. Se permiten PDF, DOC, DOCX, XLSX, PNG, JPG o JPEG.", "warning");
+    mostrarToast("Seleccione un archivo válido. Se permiten PDF, DOC, DOCX, XLSX, PNG, JPG o JPEG.", "warning");
     return;
   }
 
@@ -711,7 +732,7 @@ function abrirModalHistorialEvidencia(historial) {
         </div>
         <p><strong>Valor anterior:</strong> ${escaparHtml(item.valor_anterior ?? "-")}</p>
         <p><strong>Valor nuevo:</strong> ${escaparHtml(item.valor_nuevo ?? "-")}</p>
-        <p><strong>ObservaciÃ³n:</strong> ${escaparHtml(item.observacion || "-")}</p>
+        <p><strong>Observación:</strong> ${escaparHtml(item.observacion || "-")}</p>
       </article>
     `).join("");
   }
@@ -841,7 +862,7 @@ async function guardarSeguimientoSemanal(event) {
     return;
   }
   if (accionRealizadaValor === "no" && !compromiso && !dificultad) {
-    mostrarToast("Si no hubo acciÃ³n, registre una dificultad o compromiso para la siguiente semana.", "warning");
+    mostrarToast("Si no hubo acción, registre una dificultad o compromiso para la siguiente semana.", "warning");
     return;
   }
   if (requiereApoyo && !tipoApoyo) {
@@ -897,7 +918,7 @@ async function guardarSeguimientoSemanal(event) {
 async function verSeguimientosSemanales(evidenciaId) {
   const evidencia = buscarEvidenciaMacroproceso(evidenciaId);
   if (!evidencia) {
-    mostrarToast("No se encontrÃ³ la evidencia seleccionada.", "warning");
+    mostrarToast("No se encontró la evidencia seleccionada.", "warning");
     return;
   }
 
@@ -983,7 +1004,7 @@ function subirArchivoSeguimientoSemanal(seguimientoId) {
   input.onchange = async () => {
     const archivo = input.files?.[0];
     if (!archivo) {
-      mostrarToast("Seleccione un archivo vÃ¡lido.", "warning");
+      mostrarToast("Seleccione un archivo válido.", "warning");
       return;
     }
     await enviarArchivoSeguimientoSemanal(seguimientoId, archivo, true);
@@ -999,7 +1020,7 @@ async function enviarArchivoSeguimientoSemanal(seguimientoId, archivo, refrescar
     : "";
 
   if (!archivo || !extensionesPermitidas.includes(extension)) {
-    mostrarToast("Seleccione un archivo vÃ¡lido. Se permiten PDF, DOC, DOCX, XLSX, PNG, JPG o JPEG.", "warning");
+    mostrarToast("Seleccione un archivo válido. Se permiten PDF, DOC, DOCX, XLSX, PNG, JPG o JPEG.", "warning");
     return;
   }
 
@@ -1023,7 +1044,7 @@ async function enviarArchivoSeguimientoSemanal(seguimientoId, archivo, refrescar
 }
 
 async function eliminarSeguimientoSemanal(seguimientoId) {
-  if (!confirm("Â¿Deseas eliminar este seguimiento semanal?")) return;
+  if (!confirm("¿Deseas eliminar este seguimiento semanal?")) return;
 
   try {
     await fetchJson(`${API_URL}/api/macroprocesos/evidencias/seguimiento-semanal/${seguimientoId}`, {
@@ -1337,7 +1358,7 @@ async function verHistorialAnalisisIA(macroproceso) {
 function renderHistorialAnalisisIA(historial) {
   const contenedor = document.getElementById("contenidoHistorialIA");
   if (!Array.isArray(historial) || historial.length === 0) {
-    contenedor.innerHTML = `<p class="text-muted">No hay anÃ¡lisis IA registrados todavÃ­a.</p>`;
+    contenedor.innerHTML = `<p class="text-muted">No hay análisis IA registrados todavía.</p>`;
     return;
   }
 
@@ -1371,7 +1392,7 @@ async function verDetalleAnalisisIA(analisisId) {
     renderDetalleAnalisisIA(data);
   } catch (error) {
     console.error("Error al cargar detalle IA:", error);
-    mostrarToast("No se pudo cargar el detalle del anÃ¡lisis IA.", "error");
+    mostrarToast("No se pudo cargar el detalle del análisis IA.", "error");
   }
 }
 
@@ -1381,7 +1402,7 @@ function renderDetalleAnalisisIA(analisis) {
   detalle.classList.remove("hidden");
   detalle.innerHTML = `
     <div class="analisis-section">
-      <h3>Detalle del anÃ¡lisis</h3>
+      <h3>Detalle del análisis</h3>
       <p><strong>Fecha:</strong> ${escaparHtml(analisis.created_at ? new Date(analisis.created_at).toLocaleString() : "Sin fecha")}</p>
       <p><strong>Modelo usado:</strong> ${escaparHtml(analisis.modelo_usado || data.modelo_usado || "-")}</p>
       <p><strong>Resumen:</strong> ${escaparHtml(analisis.resumen || data.resumen || data.resumen_general || "-")}</p>
@@ -1399,7 +1420,7 @@ function renderDetalleAnalisisIA(analisis) {
       ${renderAccionesPlanificacion(data.acciones_sugeridas || data.acciones_prioritarias || [])}
     </div>
     <div class="analisis-section">
-      <h3>ObservaciÃ³n general</h3>
+      <h3>Observación general</h3>
       <p>${escaparHtml(data.observacion_general || "-")}</p>
     </div>
     <div class="analisis-section">
@@ -1419,14 +1440,14 @@ async function compararUltimosAnalisisIA() {
     const contenedor = document.getElementById("comparacionHistorialIA");
     contenedor.classList.remove("hidden");
     contenedor.innerHTML = `
-      <h3>ComparaciÃ³n de Ãºltimos anÃ¡lisis</h3>
+      <h3>Comparación de últimos análisis</h3>
       <p><strong>Riesgo anterior:</strong> ${escaparHtml(comparacion.riesgo_anterior || "-")}</p>
       <p><strong>Riesgo actual:</strong> ${escaparHtml(comparacion.riesgo_actual || "-")}</p>
       <p><strong>Cambio:</strong> ${escaparHtml(formatearTexto(comparacion.cambio_riesgo || "sin_datos"))}</p>
-      <p>${escaparHtml(comparacion.resumen || "Sin resumen de comparaciÃ³n.")}</p>
+      <p>${escaparHtml(comparacion.resumen || "Sin resumen de comparación.")}</p>
     `;
   } catch (error) {
-    console.error("Error al comparar anÃ¡lisis IA:", error);
+    console.error("Error al comparar análisis IA:", error);
     mostrarToast("No se pudo comparar el historial IA.", "error");
   }
 }
@@ -1442,11 +1463,11 @@ async function generarAccionDesdeEvidencia(evidenciaId) {
       method: "POST"
     });
 
-    mostrarToast(result.message || "AcciÃ³n de mejora generada correctamente.", "success");
+    mostrarToast(result.message || "Acción de mejora generada correctamente.", "success");
     await cargarDashboardAccionesMejora();
   } catch (error) {
-    console.error("Error al generar acciÃ³n desde evidencia:", error);
-    mostrarToast("No se pudo generar la acciÃ³n de mejora.", "error");
+    console.error("Error al generar acción desde evidencia:", error);
+    mostrarToast("No se pudo generar la acción de mejora.", "error");
   }
 }
 
@@ -1458,7 +1479,7 @@ async function generarAccionesDesdeEvidenciasMacroproceso(macroproceso) {
 
     const creadas = result.acciones_creadas || 0;
     const existentes = result.acciones_existentes || 0;
-    mostrarToast(`Se crearon ${creadas} acciones de mejora. Ya existÃ­an ${existentes}.`, creadas > 0 ? "success" : "info");
+    mostrarToast(`Se crearon ${creadas} acciones de mejora. Ya existían ${existentes}.`, creadas > 0 ? "success" : "info");
     await cargarDashboardAccionesMejora();
     await verAccionesMacroproceso(macroproceso);
   } catch (error) {
@@ -1590,7 +1611,7 @@ async function analizarPlanificacionIA() {
   }
 }
 
-function renderListaPlanificacion(items, vacio = "Sin informaciÃ³n registrada.") {
+function renderListaPlanificacion(items, vacio = "Sin información registrada.") {
   if (!Array.isArray(items) || items.length === 0) {
     return `<p class="text-muted">${escaparHtml(vacio)}</p>`;
   }
@@ -1615,10 +1636,10 @@ function renderAccionesPlanificacion(acciones) {
           <article class="planificacion-action-card priority-${escaparAtributo(prioridad)}">
             <div class="evidence-card-header">
               ${renderBadge(prioridad)}
-              <span class="evidence-code">${escaparHtml(accion.evidencia_relacionada || "Sin cÃ³digo")}</span>
+              <span class="evidence-code">${escaparHtml(accion.evidencia_relacionada || "Sin código")}</span>
             </div>
-            <h3>${escaparHtml(accion.titulo || "AcciÃ³n sugerida")}</h3>
-            <p>${escaparHtml(accion.descripcion || "Sin descripciÃ³n.")}</p>
+            <h3>${escaparHtml(accion.titulo || "Acción sugerida")}</h3>
+            <p>${escaparHtml(accion.descripcion || "Sin descripción.")}</p>
             <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Por definir")}</p>
           </article>
         `;
@@ -1659,8 +1680,8 @@ function abrirModalPlanificacionIA(data) {
     </div>
 
     <div class="analisis-section">
-      <h3>Evidencias crÃ­ticas</h3>
-      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias crÃ­ticas registradas.")}
+      <h3>Evidencias críticas</h3>
+      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
     </div>
 
     <div class="analisis-section">
@@ -1674,8 +1695,8 @@ function abrirModalPlanificacionIA(data) {
     </div>
 
     <div class="analisis-section">
-      <h3>ObservaciÃ³n general</h3>
-      <p>${escaparHtml(data.observacion_general || "Sin observaciÃ³n general.")}</p>
+      <h3>Observación general</h3>
+      <p>${escaparHtml(data.observacion_general || "Sin observación general.")}</p>
     </div>
   `;
 
@@ -1688,18 +1709,18 @@ function cerrarModalPlanificacionIA() {
 
 async function analizarGestionAcademicaIA() {
   try {
-    mostrarToast("Analizando gestiÃ³n acadÃ©mica con IA...", "info");
+    mostrarToast("Analizando gestión académica con IA...", "info");
 
     const result = await fetchJson(`${API_URL}/api/macroprocesos/gestion-academica/analizar`, {
       method: "POST"
     });
 
     abrirModalGestionAcademicaIA(result.data || {});
-    mostrarToast("AnÃ¡lisis de gestiÃ³n acadÃ©mica generado correctamente.", "success");
+    mostrarToast("Análisis de gestión académica generado correctamente.", "success");
   } catch (error) {
-    console.error("Error al analizar gestiÃ³n acadÃ©mica:", error);
+    console.error("Error al analizar gestión académica:", error);
     mostrarToast(
-      "No se pudo generar el anÃ¡lisis de gestiÃ³n acadÃ©mica. Revise la conexiÃ³n con el backend o la configuraciÃ³n del agente.",
+      "No se pudo generar el análisis de gestión académica. Revise la conexión con el backend o la configuración del agente.",
       "error"
     );
   }
@@ -1738,7 +1759,7 @@ function abrirModalGestionAcademicaIA(data) {
   if (!total) {
     document.getElementById("contenidoGestionAcademicaIA").innerHTML = `
       <div class="analisis-section">
-        <p class="text-muted">No se encontraron evidencias suficientes para analizar la gestiÃ³n acadÃ©mica.</p>
+        <p class="text-muted">No se encontraron evidencias suficientes para analizar la gestión académica.</p>
       </div>
     `;
     mostrarModal("modalGestionAcademicaIA");
@@ -1782,13 +1803,13 @@ function abrirModalGestionAcademicaIA(data) {
     </div>
 
     <div class="analisis-section">
-      <h3>Observaciones acadÃ©micas</h3>
-      ${renderListaPlanificacion(data.observaciones_academicas, "Sin observaciones acadÃ©micas registradas.")}
+      <h3>Observaciones académicas</h3>
+      ${renderListaPlanificacion(data.observaciones_academicas, "Sin observaciones académicas registradas.")}
     </div>
 
     <div class="analisis-section">
-      <h3>Evidencias crÃ­ticas</h3>
-      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias crÃ­ticas registradas.")}
+      <h3>Evidencias críticas</h3>
+      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
     </div>
 
     <div class="analisis-section">
@@ -1802,8 +1823,8 @@ function abrirModalGestionAcademicaIA(data) {
     </div>
 
     <div class="analisis-section">
-      <h3>ObservaciÃ³n general</h3>
-      <p>${escaparHtml(data.observacion_general || "Sin observaciÃ³n general.")}</p>
+      <h3>Observación general</h3>
+      <p>${escaparHtml(data.observacion_general || "Sin observación general.")}</p>
     </div>
   `;
 
@@ -1823,11 +1844,11 @@ async function analizarMejoraContinuaIA() {
     });
 
     abrirModalMejoraContinuaIA(result.data || {});
-    mostrarToast("Diagn?stico integral generado correctamente.", "success");
+    mostrarToast("Diagnóstico integral generado correctamente.", "success");
   } catch (error) {
     console.error("Error al analizar mejora continua:", error);
     mostrarToast(
-      "No se pudo generar el anÃ¡lisis integral de mejora continua. Revise la conexiÃ³n con el backend o la configuraciÃ³n del agente coordinador.",
+      "No se pudo generar el análisis integral de mejora continua. Revise la conexión con el backend o la configuración del agente coordinador.",
       "error"
     );
   }
@@ -1837,7 +1858,7 @@ function renderIndicadoresGenerales(indicadores) {
   const items = [
     ["Macroprocesos", indicadores.total_macroprocesos ?? 0],
     ["Evidencias", indicadores.total_evidencias_macroprocesos ?? 0],
-    ["SÃ­labos", indicadores.total_silabos ?? 0],
+    ["Sílabos", indicadores.total_silabos ?? 0],
     ["Brechas", indicadores.total_brechas ?? 0],
     ["Brechas alta prioridad", indicadores.brechas_alta_prioridad ?? 0],
     ["Acciones de mejora", indicadores.total_acciones_mejora ?? 0],
@@ -1898,9 +1919,9 @@ function renderAccionesPrioritarias(acciones) {
               ${renderBadge(prioridad)}
               <span class="evidence-code">${escaparHtml(accion.macroproceso_relacionado || "Mejora continua")}</span>
             </div>
-            <h3>${escaparHtml(accion.titulo || "AcciÃ³n prioritaria")}</h3>
-            <p>${escaparHtml(accion.descripcion || "Sin descripciÃ³n.")}</p>
-            <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "ComitÃ© acadÃ©mico")}</p>
+            <h3>${escaparHtml(accion.titulo || "Acción prioritaria")}</h3>
+            <p>${escaparHtml(accion.descripcion || "Sin descripción.")}</p>
+            <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Comité académico")}</p>
           </article>
         `;
       }).join("")}
@@ -1920,7 +1941,7 @@ function abrirModalMejoraContinuaIA(data) {
   if (!totalDatos) {
     document.getElementById("contenidoMejoraContinuaIA").innerHTML = `
       <div class="analisis-section">
-        <p class="text-muted">No se encontraron datos suficientes para generar el diagn?stico integral.</p>
+        <p class="text-muted">No se encontraron datos suficientes para generar el diagnóstico integral.</p>
       </div>
     `;
     mostrarModal("modalMejoraContinuaIA");
@@ -1959,8 +1980,8 @@ function abrirModalMejoraContinuaIA(data) {
     </div>
 
     <div class="analisis-section">
-      <h3>Macroprocesos crÃ­ticos</h3>
-      ${renderListaPlanificacion(data.macroprocesos_criticos, "Sin macroprocesos crÃ­ticos registrados.")}
+      <h3>Macroprocesos críticos</h3>
+      ${renderListaPlanificacion(data.macroprocesos_criticos, "Sin macroprocesos críticos registrados.")}
     </div>
 
     <div class="analisis-section">
@@ -1969,8 +1990,8 @@ function abrirModalMejoraContinuaIA(data) {
     </div>
 
     <div class="analisis-section">
-      <h3>Evidencias crÃ­ticas</h3>
-      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias crÃ­ticas registradas.")}
+      <h3>Evidencias críticas</h3>
+      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
     </div>
 
     <div class="analisis-section">
@@ -1979,18 +2000,18 @@ function abrirModalMejoraContinuaIA(data) {
     </div>
 
     <div class="analisis-section">
-      <h3>Recomendaciones para el comitÃ© acadÃ©mico</h3>
+      <h3>Recomendaciones para el comité académico</h3>
       ${renderListaPlanificacion(data.recomendaciones_comite, "Sin recomendaciones registradas.")}
     </div>
 
     <div class="analisis-section">
-      <h3>DecisiÃ³n sugerida</h3>
-      <p>${escaparHtml(data.decision_sugerida || "Sin decisiÃ³n sugerida.")}</p>
+      <h3>Decisión sugerida</h3>
+      <p>${escaparHtml(data.decision_sugerida || "Sin decisión sugerida.")}</p>
     </div>
 
     <div class="analisis-section">
-      <h3>ObservaciÃ³n general</h3>
-      <p>${escaparHtml(data.observacion_general || "Sin observaciÃ³n general.")}</p>
+      <h3>Observación general</h3>
+      <p>${escaparHtml(data.observacion_general || "Sin observación general.")}</p>
     </div>
   `;
 
@@ -2048,11 +2069,11 @@ async function exportarReporteIntegralExcel() {
 
 async function exportarReporteSilabosExcel() {
   try {
-    mostrarToast("Descargando reporte de sÃ­labos...", "info");
+    mostrarToast("Descargando reporte de sílabos...", "info");
     const response = await fetch(`${API_URL}/api/silabos/reporte/excel`);
 
     if (!response.ok) {
-      let detalle = "No se pudo exportar el reporte de sÃ­labos.";
+      let detalle = "No se pudo exportar el reporte de sílabos.";
       try {
         const result = await response.json();
         detalle = result.detail || result.message || detalle;
@@ -2071,10 +2092,10 @@ async function exportarReporteSilabosExcel() {
     enlace.click();
     enlace.remove();
     URL.revokeObjectURL(url);
-    mostrarToast("Reporte de sÃ­labos descargado correctamente.", "success");
+    mostrarToast("Reporte de sílabos descargado correctamente.", "success");
   } catch (error) {
-    console.error("Error al exportar reporte de sÃ­labos:", error);
-    mostrarToast(error.message || "No se pudo exportar el reporte de sÃ­labos.", "error");
+    console.error("Error al exportar reporte de sílabos:", error);
+    mostrarToast(error.message || "No se pudo exportar el reporte de sílabos.", "error");
   }
 }
 
@@ -2310,7 +2331,7 @@ async function verMetricasFinales() {
 
 async function mostrarModuloMetricas() {
   try {
-    mostrarToast("Cargando mÃ©tricas e indicadores...", "info");
+    mostrarToast("Cargando métricas e indicadores...", "info");
     document.getElementById("macroprocesosView")?.classList.add("hidden");
     document.querySelectorAll(".macro-module").forEach((seccion) => {
       seccion.classList.add("hidden");
@@ -2322,8 +2343,8 @@ async function mostrarModuloMetricas() {
     renderModuloMetricas(metricasFinalesActual);
     window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (error) {
-    console.error("Error al cargar mÃ©tricas e indicadores:", error);
-    mostrarToast("No se pudieron cargar las mÃ©tricas e indicadores: " + error.message, "error");
+    console.error("Error al cargar métricas e indicadores:", error);
+    mostrarToast("No se pudieron cargar las métricas e indicadores: " + error.message, "error");
   }
 }
 
@@ -2342,8 +2363,8 @@ function renderModuloMetricas(data) {
       renderMetricCard("Evidencias registradas", resumen.total_evidencias, "Registros asociados al plan de mejora.", "total"),
       renderMetricCard("Cumplimiento promedio", cumplimientoPromedio, "Avance consolidado del sistema.", getRiskColor(Number(String(cumplimientoPromedio).replace("%", "")))),
       renderMetricCard("Acciones pendientes", resumen.acciones_pendientes, "Acciones que requieren seguimiento.", "warning"),
-      renderMetricCard("Alertas crÃ­ticas", resumen.alertas_criticas, "Requieren atenciÃ³n prioritaria.", "danger"),
-      renderMetricCard("Uso de IA", Number(resumen.total_analisis_ia || 0) + Number(resumen.total_validaciones_ia || 0), "AnÃ¡lisis y validaciones ejecutadas.", "ia")
+      renderMetricCard("Alertas críticas", resumen.alertas_criticas, "Requieren atención prioritaria.", "danger"),
+      renderMetricCard("Uso de IA", Number(resumen.total_analisis_ia || 0) + Number(resumen.total_validaciones_ia || 0), "Análisis y validaciones ejecutadas.", "ia")
     ].join("");
   }
 
@@ -2361,20 +2382,20 @@ function renderModuloMetricas(data) {
   if (macroContainer) {
     macroContainer.innerHTML = porMacroproceso.length
       ? porMacroproceso.map(renderMacroprocessMetricCard).join("")
-      : `<p class="text-muted">No hay mÃ©tricas por macroproceso.</p>`;
+      : `<p class="text-muted">No hay métricas por macroproceso.</p>`;
   }
 
   const iaContainer = document.getElementById("metricasIA");
   if (iaContainer) {
     iaContainer.innerHTML = [
-      renderMetricCard("AnÃ¡lisis IA ejecutados", metricasIa.analisis_ia_ejecutados, "Uso acumulado de agentes IA.", "ia"),
+      renderMetricCard("Análisis IA ejecutados", metricasIa.analisis_ia_ejecutados, "Uso acumulado de agentes IA.", "ia"),
       renderMetricCard("Validaciones documentales", metricasIa.validaciones_documentales_ia, "Evidencias revisadas con IA.", "ia"),
-      renderMetricCard("Agente de planificaciÃ³n", metricasIa.analisis_planificacion, "AnÃ¡lisis del macroproceso estratÃ©gico.", "ia"),
-      renderMetricCard("Agente de gestiÃ³n acadÃ©mica", metricasIa.analisis_gestion_academica, "AnÃ¡lisis del macroproceso acadÃ©mico.", "ia"),
-      renderMetricCard("Agente coordinador", metricasIa.analisis_integral_mejora_continua, "AnÃ¡lisis integral de mejora continua.", "ia"),
-      renderMetricCard("AnÃ¡lisis de sÃ­labos", metricasIa.analisis_silabos, "AnÃ¡lisis individuales registrados.", "ia"),
+      renderMetricCard("Agente de planificación", metricasIa.analisis_planificacion, "Análisis del macroproceso estratégico.", "ia"),
+      renderMetricCard("Agente de gestión académica", metricasIa.analisis_gestion_academica, "Análisis del macroproceso académico.", "ia"),
+      renderMetricCard("Agente coordinador", metricasIa.analisis_integral_mejora_continua, "Análisis integral de mejora continua.", "ia"),
+      renderMetricCard("Análisis de sílabos", metricasIa.analisis_silabos, "Análisis individuales registrados.", "ia"),
       renderMetricCard("Validaciones altas", metricasIa.validaciones_altas, "Documentos con buena validez.", "success"),
-      renderMetricCard("Historial IA registrado", metricasIa.historial_ia_registrado, "Trazabilidad de anÃ¡lisis IA.", "total")
+      renderMetricCard("Historial IA registrado", metricasIa.historial_ia_registrado, "Trazabilidad de análisis IA.", "total")
     ].join("");
   }
 
@@ -2456,18 +2477,18 @@ function renderMetricasFinales(data) {
         ${renderMetricCard("Acciones", resumen.total_acciones_mejora)}
         ${renderMetricCard("Pendientes", resumen.acciones_pendientes)}
         ${renderMetricCard("Alertas activas", resumen.total_alertas_activas)}
-        ${renderMetricCard("Alertas crÃ­ticas", resumen.alertas_criticas)}
-        ${renderMetricCard("AnÃ¡lisis IA", resumen.total_analisis_ia)}
+        ${renderMetricCard("Alertas críticas", resumen.alertas_criticas)}
+        ${renderMetricCard("Análisis IA", resumen.total_analisis_ia)}
         ${renderMetricCard("Validaciones IA", resumen.total_validaciones_ia)}
         ${renderMetricCard("Brechas", resumen.total_brechas)}
-        ${renderMetricCard("SÃ­labos", resumen.total_silabos)}
+        ${renderMetricCard("Sílabos", resumen.total_silabos)}
       </div>
     </section>
 
     <section class="metric-section">
-      <h3>MÃ©tricas por macroproceso</h3>
+      <h3>Métricas por macroproceso</h3>
       <div class="metrics-grid">
-        ${porMacroproceso.map(renderMacroprocessMetricCard).join("") || `<p class="text-muted">No hay mÃ©tricas por macroproceso.</p>`}
+        ${porMacroproceso.map(renderMacroprocessMetricCard).join("") || `<p class="text-muted">No hay métricas por macroproceso.</p>`}
       </div>
     </section>
 
@@ -2506,9 +2527,9 @@ function renderMacroprocessMetricCard(item) {
       </div>
       <p><span>Evidencias</span><strong>${escaparHtml(item.total_evidencias ?? 0)}</strong></p>
       <p><span>Alertas activas</span><strong>${escaparHtml(item.alertas_activas ?? 0)}</strong></p>
-      <p><span>Alertas crÃ­ticas</span><strong>${escaparHtml(item.alertas_criticas ?? 0)}</strong></p>
+      <p><span>Alertas críticas</span><strong>${escaparHtml(item.alertas_criticas ?? 0)}</strong></p>
       <p><span>Acciones pendientes</span><strong>${escaparHtml(item.acciones_pendientes ?? 0)}</strong></p>
-      <p><span>AnÃ¡lisis IA</span><strong>${escaparHtml(item.analisis_ia ?? 0)}</strong></p>
+      <p><span>Análisis IA</span><strong>${escaparHtml(item.analisis_ia ?? 0)}</strong></p>
       <p><span>Validaciones IA</span><strong>${escaparHtml(item.validaciones_ia ?? 0)}</strong></p>
     </article>
   `;
@@ -2600,20 +2621,20 @@ function renderDashboardVisualMetricas(data) {
     { label: "Sin sustento", value: Number(resumen.evidencias_sin_archivo || 0), color: "danger" }
   ];
   const usoIa = [
-    { label: "AnÃ¡lisis IA", value: Number(metricasIa.analisis_ia_ejecutados || 0), color: "ia" },
+    { label: "Análisis IA", value: Number(metricasIa.analisis_ia_ejecutados || 0), color: "ia" },
     { label: "Validaciones IA", value: Number(metricasIa.validaciones_documentales_ia || 0), color: "success" },
-    { label: "PlanificaciÃ³n", value: Number(metricasIa.analisis_planificacion || 0), color: "ia" },
-    { label: "GestiÃ³n acadÃ©mica", value: Number(metricasIa.analisis_gestion_academica || 0), color: "ia" },
+    { label: "Planificación", value: Number(metricasIa.analisis_planificacion || 0), color: "ia" },
+    { label: "Gestión académica", value: Number(metricasIa.analisis_gestion_academica || 0), color: "ia" },
     { label: "Coordinador", value: Number(metricasIa.analisis_integral_mejora_continua || 0), color: "ia" },
-    { label: "SÃ­labos", value: Number(metricasIa.analisis_silabos || 0), color: "ia" }
+    { label: "Sílabos", value: Number(metricasIa.analisis_silabos || 0), color: "ia" }
   ];
 
   return `
-    ${renderChartCard("Avance por macroproceso", "ComparaciÃ³n del porcentaje promedio de avance.", renderBarChart(avance, { percent: true }), "Rojo < 40%, amarillo 40-69%, verde >= 70%.")}
-    ${renderChartCard("Alertas por macroproceso", "Cantidad de alertas activas por macroproceso.", renderBarChart(alertas), "Las barras rojas indican presencia de alertas crÃ­ticas.")}
+    ${renderChartCard("Avance por macroproceso", "Comparación del porcentaje promedio de avance.", renderBarChart(avance, { percent: true }), "Rojo < 40%, amarillo 40-69%, verde >= 70%.")}
+    ${renderChartCard("Alertas por macroproceso", "Cantidad de alertas activas por macroproceso.", renderBarChart(alertas), "Las barras rojas indican presencia de alertas críticas.")}
     ${renderChartCard("Acciones pendientes por macroproceso", "Acciones de mejora que requieren seguimiento.", renderBarChart(acciones), "Cero acciones pendientes se muestra como avance favorable.")}
-    ${renderChartCard("Evidencias con/sin sustento", "DistribuciÃ³n documental de las evidencias registradas.", renderBarChart(evidencias), `${totalEvidencias} evidencias registradas en total.`)}
-    ${renderChartCard("Uso de IA", "Actividad de agentes y validaciones IA dentro del sistema.", renderBarChart(usoIa), "Incluye agentes por macroproceso, coordinador y anÃ¡lisis de sÃ­labos.")}
+    ${renderChartCard("Evidencias con/sin sustento", "Distribución documental de las evidencias registradas.", renderBarChart(evidencias), `${totalEvidencias} evidencias registradas en total.`)}
+    ${renderChartCard("Uso de IA", "Actividad de agentes y validaciones IA dentro del sistema.", renderBarChart(usoIa), "Incluye agentes por macroproceso, coordinador y análisis de sílabos.")}
   `;
 }
 
@@ -2643,7 +2664,7 @@ function renderInterpretacionGeneral(data) {
   }
 
   if (Number(resumen.alertas_criticas || 0) > 0) {
-    mensajes.push("Existen alertas crÃ­ticas que requieren atenciÃ³n prioritaria.");
+    mensajes.push("Existen alertas críticas que requieren atención prioritaria.");
   }
   if (Number(resumen.acciones_pendientes || 0) > 0) {
     mensajes.push("Se recomienda priorizar el cierre de acciones de mejora pendientes.");
@@ -2653,7 +2674,7 @@ function renderInterpretacionGeneral(data) {
   }
 
   return `
-    <h3>InterpretaciÃ³n general</h3>
+    <h3>Interpretación general</h3>
     <ul>
       ${mensajes.map((mensaje) => `<li>${escaparHtml(mensaje)}</li>`).join("")}
     </ul>
@@ -2673,12 +2694,12 @@ function renderKeyIndicatorCard(item) {
 function descargarMetricasFinalesCsv() {
   const indicadores = metricasFinalesActual?.indicadores_clave || [];
   if (!indicadores.length) {
-    mostrarToast("No hay mÃ©tricas disponibles para descargar.", "warning");
+    mostrarToast("No hay métricas disponibles para descargar.", "warning");
     return;
   }
 
   const filas = [
-    ["Indicador", "Valor", "InterpretaciÃ³n"],
+    ["Indicador", "Valor", "Interpretación"],
     ...indicadores.map((item) => [
       item.indicador || "",
       item.valor ?? "",
@@ -2712,7 +2733,7 @@ function cerrarModalEncuestaAceptacion() {
 
 function poblarSelectsEncuestaAceptacion() {
   const opciones = [
-    ["", "Seleccione una valoraciÃ³n"],
+    ["", "Seleccione una valoración"],
     ["1", "1 = Muy bajo"],
     ["2", "2 = Bajo"],
     ["3", "3 = Regular"],
@@ -2803,7 +2824,7 @@ function renderResultadosEncuestaAceptacion(resultados) {
   if (!contenedor) return;
 
   if (!resultados || !resultados.total_respuestas) {
-    contenedor.innerHTML = `<p class="text-muted">No hay respuestas registradas todavÃ­a.</p>`;
+    contenedor.innerHTML = `<p class="text-muted">No hay respuestas registradas todavía.</p>`;
     contenedor.classList.remove("hidden");
     return;
   }
@@ -2815,8 +2836,8 @@ function renderResultadosEncuestaAceptacion(resultados) {
     utilidad_evidencias: "Utilidad de evidencias",
     utilidad_ia: "Utilidad de agentes IA",
     utilidad_alertas: "Utilidad de alertas",
-    utilidad_semaforo: "Utilidad del semÃ¡foro",
-    satisfaccion_general: "SatisfacciÃ³n general"
+    utilidad_semaforo: "Utilidad del semáforo",
+    satisfaccion_general: "Satisfacción general"
   };
 
   contenedor.innerHTML = `
@@ -2852,7 +2873,7 @@ function renderComentariosEncuesta(comentarios) {
   return comentarios.map((item) => `
     <article class="survey-comment-card">
       <p>${escaparHtml(item.comentario || "-")}</p>
-      <small>${escaparHtml(item.nombre_usuario || "Usuario anÃ³nimo")} Â· ${escaparHtml(item.rol_usuario || "Sin rol")} Â· ${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</small>
+      <small>${escaparHtml(item.nombre_usuario || "Usuario anónimo")} · ${escaparHtml(item.rol_usuario || "Sin rol")} · ${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</small>
     </article>
   `).join("");
 }
@@ -3070,7 +3091,7 @@ async function registrarSilabo(event) {
     !Number.isFinite(duracionSemanas) ||
     duracionSemanas <= 0
   ) {
-    mostrarToast("No se permiten valores negativos en los datos del sÃ­labo.", "error");
+    mostrarToast("No se permiten valores negativos en los datos del sílabo.", "error");
     return;
   }
 
@@ -3117,7 +3138,7 @@ async function registrarSilabo(event) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "Error al registrar el sÃ­labo");
+      throw new Error(result.detail || "Error al registrar el sílabo");
     }
 
     const silaboCreado = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -3130,12 +3151,12 @@ async function registrarSilabo(event) {
       await subirArchivoSilaboConId(silaboId, archivoRegistro);
     }
 
-    mostrarToast("SÃ­labo registrado correctamente.", "success");
+    mostrarToast("Sílabo registrado correctamente.", "success");
     event.target.reset();
     await cargarDatos();
   } catch (error) {
     console.error(error);
-    mostrarToast("No se pudo registrar el sÃ­labo: " + error.message, "error");
+    mostrarToast("No se pudo registrar el sílabo: " + error.message, "error");
   }
 }
 
@@ -3229,28 +3250,28 @@ async function verValidacion(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo obtener la validaciÃ³n del sÃ­labo.");
+      throw new Error(result.detail || "No se pudo obtener la validación del sílabo.");
     }
 
     const detalle = document.getElementById("detalleSilabo");
     if (!detalle) {
-      mostrarToast("No se encontrÃ³ el panel de detalle del sÃ­labo.", "warning");
+      mostrarToast("No se encontró el panel de detalle del sílabo.", "warning");
       return;
     }
 
     const validaciones = Array.isArray(result.validacion) ? result.validacion : [];
     if (validaciones.length === 0) {
-      detalle.innerHTML = `<p class="text-muted">No hay validaciones registradas para este sÃ­labo.</p>`;
-      mostrarToast("No hay validaciones registradas para este sÃ­labo.", "info");
+      detalle.innerHTML = `<p class="text-muted">No hay validaciones registradas para este sílabo.</p>`;
+      mostrarToast("No hay validaciones registradas para este sílabo.", "info");
       return;
     }
 
     let html = `
       <h3>${result.silabo.asignatura}</h3>
-      <p><strong>CÃ³digo:</strong> ${result.silabo.codigo_asignatura}</p>
+      <p><strong>Código:</strong> ${result.silabo.codigo_asignatura}</p>
       <p><strong>Estado:</strong> ${result.silabo.estado}</p>
       <p><strong>Cumplimiento:</strong> ${result.silabo.porcentaje_cumplimiento}%</p>
-      <h4>ValidaciÃ³n de secciones</h4>
+      <h4>Validación de secciones</h4>
       <ul>
     `;
 
@@ -3265,10 +3286,10 @@ async function verValidacion(id) {
 
     html += `</ul>`;
     detalle.innerHTML = html;
-    mostrarToast("ValidaciÃ³n cargada correctamente.", "success");
+    mostrarToast("Validación cargada correctamente.", "success");
   } catch (error) {
-    console.error("Error al consultar validaciÃ³n:", error);
-    mostrarToast("Error al consultar validaciÃ³n: " + error.message, "error");
+    console.error("Error al consultar validación:", error);
+    mostrarToast("Error al consultar validación: " + error.message, "error");
   }
 }
 
@@ -3278,7 +3299,7 @@ async function verHistorial(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo obtener el historial del sÃ­labo.");
+      throw new Error(result.detail || "No se pudo obtener el historial del sílabo.");
     }
 
     const historial = Array.isArray(result.historial) ? result.historial : [];
@@ -3295,7 +3316,7 @@ function abrirModalHistorialSilabo(silabo, historial) {
   if (!contenido) return;
 
   if (subtitulo) {
-    subtitulo.textContent = silabo.asignatura || "SÃ­labo";
+    subtitulo.textContent = silabo.asignatura || "Sílabo";
   }
 
   const estadoActual = silabo.estado_actual || silabo.estado || "Sin estado";
@@ -3308,8 +3329,8 @@ function abrirModalHistorialSilabo(silabo, historial) {
         <strong>${escaparHtml(formatearTexto(estadoActual))}</strong>
       </section>
       <article class="empty-history-card">
-        <h3>No hay historial registrado para este sÃ­labo.</h3>
-        <p>El historial se generarÃ¡ cuando se cambie el estado, se actualice el archivo, se edite el cumplimiento o se ejecute un anÃ¡lisis IA.</p>
+        <h3>No hay historial registrado para este sílabo.</h3>
+        <p>El historial se generará cuando se cambie el estado, se actualice el archivo, se edite el cumplimiento o se ejecute un análisis IA.</p>
       </article>
     `;
     mostrarModal("modalHistorialSilabo");
@@ -3366,7 +3387,7 @@ async function validarDocumento(id) {
 }
 
 async function eliminarSilabo(id) {
-  const confirmar = await confirmarAccion("Â¿Seguro que deseas eliminar este sÃ­labo?");
+  const confirmar = await confirmarAccion("¿Seguro que deseas eliminar este sílabo?");
 
   if (!confirmar) return;
 
@@ -3376,14 +3397,14 @@ async function eliminarSilabo(id) {
     });
 
     if (!response.ok) {
-      throw new Error("Error al eliminar el sÃ­labo");
+      throw new Error("Error al eliminar el sílabo");
     }
 
-    mostrarToast("SÃ­labo eliminado correctamente.", "success");
+    mostrarToast("Sílabo eliminado correctamente.", "success");
     await cargarDatos();
   } catch (error) {
     console.error(error);
-    mostrarToast("No se pudo eliminar el sÃ­labo.", "error");
+    mostrarToast("No se pudo eliminar el sílabo.", "error");
   }
 }
 function seleccionarArchivo(id) {
@@ -3395,7 +3416,7 @@ function seleccionarArchivo(id) {
     const archivo = input.files[0];
 
     if (!archivo) return;
-    const confirmado = await confirmarAccion("Esto reemplazarÃ¡ el archivo actual del sÃ­labo. Â¿Desea continuar?");
+    const confirmado = await confirmarAccion("Esto reemplazará el archivo actual del sílabo. ¿Desea continuar?");
     if (!confirmado) return;
 
     await subirArchivoSilabo(id, archivo);
@@ -3478,7 +3499,7 @@ function cerrarModalConfirmacion(resultado = false) {
 
 function confirmarAccion(mensaje) {
   return abrirModalConfirmacion({
-    titulo: "Confirmar acciÃ³n",
+    titulo: "Confirmar acción",
     mensaje,
     textoConfirmar: "Aceptar",
     tipo: "danger"
@@ -3510,7 +3531,7 @@ async function guardarCambioEstado() {
   const estadosValidos = ["pendiente", "completo", "observado", "incompleto"];
 
   if (!estadosValidos.includes(nuevoEstado)) {
-    mostrarToast("Estado invÃ¡lido. Use: pendiente, completo, observado o incompleto.", "warning");
+    mostrarToast("Estado inválido. Use: pendiente, completo, observado o incompleto.", "warning");
     return;
   }
 
@@ -3552,7 +3573,7 @@ async function abrirModalEditarSilabo(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      mostrarToast(result.detail || "No se pudo obtener el sÃ­labo.", "error");
+      mostrarToast(result.detail || "No se pudo obtener el sílabo.", "error");
       return;
     }
 
@@ -3568,7 +3589,7 @@ async function abrirModalEditarSilabo(id) {
     document.getElementById("editarObservacion").value = silabo.observacion_general ?? "";
     mostrarModal("modalEditarSilabo");
   } catch (error) {
-    mostrarToast("Error al editar el sÃ­labo.", "error");
+    mostrarToast("Error al editar el sílabo.", "error");
     console.error(error);
   }
 }
@@ -3594,22 +3615,22 @@ async function guardarEdicionSilabo() {
   const numeroCreditos = creditos ? Number(creditos) : null;
 
   if (!asignatura || !codigo || !ciclo) {
-    mostrarToast("Complete asignatura, cÃ³digo y ciclo.", "warning");
+    mostrarToast("Complete asignatura, código y ciclo.", "warning");
     return;
   }
 
   if (!Number.isInteger(numeroCiclo) || numeroCiclo < 1 || numeroCiclo > 10) {
-    mostrarToast("El ciclo debe ser un nÃºmero entre 1 y 10.", "warning");
+    mostrarToast("El ciclo debe ser un número entre 1 y 10.", "warning");
     return;
   }
 
   if (numeroCreditos !== null && (!Number.isFinite(numeroCreditos) || numeroCreditos < 0)) {
-    mostrarToast("Los crÃ©ditos deben ser un nÃºmero vÃ¡lido.", "warning");
+    mostrarToast("Los créditos deben ser un número válido.", "warning");
     return;
   }
 
   if (archivoUrl && !normalizarEnlaceArchivo(archivoUrl)) {
-    mostrarToast("Ingrese un enlace vÃ¡lido de Google Drive o Supabase Storage.", "warning");
+    mostrarToast("Ingrese un enlace válido de Google Drive o Supabase Storage.", "warning");
     return;
   }
 
@@ -3635,16 +3656,16 @@ async function guardarEdicionSilabo() {
 
     const result = await response.json();
     if (!response.ok) {
-      mostrarToast(result.detail || "No se pudo actualizar el sÃ­labo.", "error");
+      mostrarToast(result.detail || "No se pudo actualizar el sílabo.", "error");
       return;
     }
 
     cerrarModalEditarSilabo();
-    mostrarToast("InformaciÃ³n del sÃ­labo actualizada correctamente.", "success");
+    mostrarToast("Información del sílabo actualizada correctamente.", "success");
     await cargarDatos();
     await verHistorial(id);
   } catch (error) {
-    mostrarToast("Error al editar el sÃ­labo.", "error");
+    mostrarToast("Error al editar el sílabo.", "error");
     console.error(error);
   }
 }
@@ -3652,15 +3673,15 @@ async function guardarEdicionSilabo() {
 async function analizarSilaboIA(id) {
   try {
     const confirmar = await abrirModalConfirmacion({
-      titulo: "Analizar sÃ­labo con IA",
-      mensaje: "Â¿Deseas analizar este sÃ­labo con el agente curricular?",
+      titulo: "Analizar sílabo con IA",
+      mensaje: "¿Deseas analizar este sílabo con el agente curricular?",
       textoConfirmar: "Analizar IA",
       tipo: "success"
     });
 
     if (!confirmar) return;
 
-    mostrarNotificacion("Analizando sÃ­labo, espere unos segundos...", "info");
+    mostrarNotificacion("Analizando sílabo, espere unos segundos...", "info");
 
     const response = await fetch(`${API_URL}/api/agentes/analizar-silabo/${id}`, {
       method: "POST"
@@ -3669,14 +3690,14 @@ async function analizarSilaboIA(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo analizar el sÃ­labo.");
+      throw new Error(result.detail || "No se pudo analizar el sílabo.");
     }
 
-    mostrarNotificacion("AnÃ¡lisis generado correctamente.", "success");
+    mostrarNotificacion("Análisis generado correctamente.", "success");
     await verAnalisisSilabo(id);
   } catch (error) {
-    console.error("Error al analizar sÃ­labo:", error);
-    mostrarToast("Error al analizar el sÃ­labo: " + error.message, "error");
+    console.error("Error al analizar sílabo:", error);
+    mostrarToast("Error al analizar el sílabo: " + error.message, "error");
   }
 }
 
@@ -3686,20 +3707,20 @@ async function verAnalisisSilabo(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo obtener el anÃ¡lisis.");
+      throw new Error(result.detail || "No se pudo obtener el análisis.");
     }
 
     const analisis = result.data && result.data.length > 0 ? result.data[0] : null;
 
     if (!analisis) {
-      mostrarToast("Este sÃ­labo todavÃ­a no tiene anÃ¡lisis. Presiona primero 'Analizar IA'.", "warning");
+      mostrarToast("Este sílabo todavía no tiene análisis. Presiona primero 'Analizar IA'.", "warning");
       return;
     }
 
     abrirModalAnalisis(analisis);
   } catch (error) {
-    console.error("Error al obtener anÃ¡lisis:", error);
-    mostrarToast("Error al obtener anÃ¡lisis: " + error.message, "error");
+    console.error("Error al obtener análisis:", error);
+    mostrarToast("Error al obtener análisis: " + error.message, "error");
   }
 }
 
@@ -3713,7 +3734,7 @@ function escaparHtml(valor) {
 }
 
 function renderLista(valor) {
-  if (!valor) return "<p class='text-muted'>Sin informaciÃ³n registrada.</p>";
+  if (!valor) return "<p class='text-muted'>Sin información registrada.</p>";
 
   if (typeof valor === "string") {
     try {
@@ -3727,13 +3748,13 @@ function renderLista(valor) {
     return `<ul>${valor.map((item) => `<li>${escaparHtml(typeof item === "object" ? JSON.stringify(item) : item)}</li>`).join("")}</ul>`;
   }
 
-  return "<p class='text-muted'>Sin informaciÃ³n registrada.</p>";
+  return "<p class='text-muted'>Sin información registrada.</p>";
 }
 
 function renderTextoAnalisis(valor) {
   return valor
     ? `<p>${escaparHtml(valor)}</p>`
-    : "<p class='text-muted'>Sin informaciÃ³n registrada.</p>";
+    : "<p class='text-muted'>Sin información registrada.</p>";
 }
 
 function abrirModalAnalisis(analisis) {
@@ -3743,7 +3764,7 @@ function abrirModalAnalisis(analisis) {
     ? new Date(analisis.created_at).toLocaleString()
     : "Sin fecha registrada";
 
-  document.getElementById("tituloModalAnalisis").textContent = "AnÃ¡lisis curricular del sÃ­labo";
+  document.getElementById("tituloModalAnalisis").textContent = "Análisis curricular del sílabo";
   document.getElementById("contenidoAnalisis").innerHTML = `
     <div class="analisis-section analisis-summary">
       <div>
@@ -3755,7 +3776,7 @@ function abrirModalAnalisis(analisis) {
         <p>${escaparHtml(analisis.modelo_usado ?? "Sin modelo registrado")}</p>
       </div>
       <div>
-        <span class="section-label">Fecha de anÃ¡lisis</span>
+        <span class="section-label">Fecha de análisis</span>
         <p>${escaparHtml(fecha)}</p>
       </div>
     </div>
@@ -3785,7 +3806,7 @@ function abrirModalAnalisis(analisis) {
       ${renderLista(analisis.sugerencias)}
     </div>
     <div class="analisis-section">
-      <h3>ObservaciÃ³n general</h3>
+      <h3>Observación general</h3>
       ${renderTextoAnalisis(analisis.observacion_general)}
     </div>
   `;
@@ -3936,10 +3957,10 @@ function renderizarResumenTrazabilidad() {
     renderSummaryCard("Coherencia alta", contarPorCampo(data, "nivel_coherencia", "alto")),
     renderSummaryCard("Coherencia media", contarPorCampo(data, "nivel_coherencia", "medio")),
     renderSummaryCard("Coherencia baja", contarPorCampo(data, "nivel_coherencia", "bajo")),
-    renderSummaryCard("ProgresiÃ³n adecuada", contarPorCampo(data, "tipo_relacion", "progresion_adecuada")),
-    renderSummaryCard("RepeticiÃ³n", contarPorCampo(data, "tipo_relacion", "repeticion")),
-    renderSummaryCard("VacÃ­o formativo", contarPorCampo(data, "tipo_relacion", "vacio_formativo")),
-    renderSummaryCard("Continuidad temÃ¡tica", contarPorCampo(data, "tipo_relacion", "continuidad_tematica"))
+    renderSummaryCard("Progresión adecuada", contarPorCampo(data, "tipo_relacion", "progresion_adecuada")),
+    renderSummaryCard("Repetición", contarPorCampo(data, "tipo_relacion", "repeticion")),
+    renderSummaryCard("Vacío formativo", contarPorCampo(data, "tipo_relacion", "vacio_formativo")),
+    renderSummaryCard("Continuidad temática", contarPorCampo(data, "tipo_relacion", "continuidad_tematica"))
   ].join("");
 }
 
@@ -3951,7 +3972,7 @@ function renderizarTrazabilidadFiltrada() {
 
   if (trazabilidadDataGlobal.length === 0) {
     contenedor.innerHTML = `
-      <p class="text-muted">No hay trazabilidad registrada. Primero ejecuta el anÃ¡lisis de trazabilidad curricular.</p>
+      <p class="text-muted">No hay trazabilidad registrada. Primero ejecuta el análisis de trazabilidad curricular.</p>
     `;
     return;
   }
@@ -3979,7 +4000,7 @@ function renderizarTrazabilidadFiltrada() {
         </div>
         <h3>${escaparHtml(item.asignatura_origen ?? "-")} - ${escaparHtml(item.asignatura_destino ?? "-")}</h3>
         <p><strong>Tipo:</strong> ${escaparHtml(formatearTexto(item.tipo_relacion))}</p>
-        <p><strong>ObservaciÃ³n:</strong> ${escaparHtml(item.observacion ?? "-")}</p>
+        <p><strong>Observación:</strong> ${escaparHtml(item.observacion ?? "-")}</p>
         <p><strong>Sugerencia:</strong> ${escaparHtml(item.sugerencia ?? "-")}</p>
       </article>
     `;
@@ -4033,7 +4054,7 @@ function renderizarBrechasFiltradas() {
   const filtroTipo = document.getElementById("filtroTipoBrechas").value;
 
   if (brechasDataGlobal.length === 0) {
-    contenedor.innerHTML = `<p class="text-muted">No se detectaron brechas curriculares crÃ­ticas. Las relaciones analizadas presentan coherencia aceptable.</p>`;
+    contenedor.innerHTML = `<p class="text-muted">No se detectaron brechas curriculares críticas. Las relaciones analizadas presentan coherencia aceptable.</p>`;
     return;
   }
 
@@ -4045,7 +4066,7 @@ function renderizarBrechasFiltradas() {
   });
 
   if (filtrados.length === 0) {
-    contenedor.innerHTML = `<p class="text-muted">No se detectaron brechas curriculares crÃ­ticas con los filtros aplicados.</p>`;
+    contenedor.innerHTML = `<p class="text-muted">No se detectaron brechas curriculares críticas con los filtros aplicados.</p>`;
     return;
   }
 
@@ -4182,9 +4203,9 @@ function cerrarModalAccionesMejora() {
 
 function nombreMacroproceso(macroproceso) {
   const nombres = {
-    planificacion_estrategica: "PlanificaciÃ³n EstratÃ©gica",
-    gestion_academica: "GestiÃ³n AcadÃ©mica",
-    gestion_silabos: "GestiÃ³n de SÃ­labos",
+    planificacion_estrategica: "Planificación Estratégica",
+    gestion_academica: "Gestión Académica",
+    gestion_silabos: "Gestión de Sílabos",
     mejora_continua: "Mejora continua"
   };
   return nombres[macroproceso] || formatearTexto(macroproceso || "-");
@@ -4256,7 +4277,7 @@ function renderizarTarjetasAcciones(data) {
             <span class="badge badge-estado-${escaparAtributo(estado)}">${escaparHtml(formatearTexto(estado))}</span>
           </div>
         </div>
-        <h3>${escaparHtml(accion.titulo || "AcciÃ³n de mejora")}</h3>
+        <h3>${escaparHtml(accion.titulo || "Acción de mejora")}</h3>
         <p><strong>Macroproceso:</strong> ${escaparHtml(nombreMacroproceso(macroproceso))}</p>
         <p><strong>Origen:</strong> ${escaparHtml(formatearTexto(accion.origen_tipo || "-"))}</p>
         <p><strong>Evidencia relacionada:</strong> ${escaparHtml(
@@ -4294,7 +4315,7 @@ async function actualizarEstadoAccion(id, estado) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo actualizar la acciÃ³n.");
+      throw new Error(result.detail || "No se pudo actualizar la acción.");
     }
 
     mostrarToast("Estado actualizado correctamente.", "success");
@@ -4305,13 +4326,13 @@ async function actualizarEstadoAccion(id, estado) {
     }
     await cargarDashboardAccionesMejora();
   } catch (error) {
-    console.error("Error al actualizar acciÃ³n:", error);
-    mostrarToast("Error al actualizar acciÃ³n: " + error.message, "error");
+    console.error("Error al actualizar acción:", error);
+    mostrarToast("Error al actualizar acción: " + error.message, "error");
   }
 }
 
 async function eliminarAccionMejora(id) {
-  const confirmado = await confirmarAccion("Â¿Deseas eliminar esta acciÃ³n de mejora?");
+  const confirmado = await confirmarAccion("¿Deseas eliminar esta acción de mejora?");
   if (!confirmado) return;
 
   try {
@@ -4321,10 +4342,10 @@ async function eliminarAccionMejora(id) {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.detail || "No se pudo eliminar la acciÃ³n.");
+      throw new Error(result.detail || "No se pudo eliminar la acción.");
     }
 
-    mostrarToast("AcciÃ³n eliminada correctamente.", "success");
+    mostrarToast("Acción eliminada correctamente.", "success");
     if (macroprocesoAccionesActual) {
       await verAccionesMacroproceso(macroprocesoAccionesActual);
     } else {
@@ -4332,11 +4353,10 @@ async function eliminarAccionMejora(id) {
     }
     await cargarDashboardAccionesMejora();
   } catch (error) {
-    console.error("Error al eliminar acciÃ³n:", error);
-    mostrarToast("Error al eliminar acciÃ³n: " + error.message, "error");
+    console.error("Error al eliminar acción:", error);
+    mostrarToast("Error al eliminar acción: " + error.message, "error");
   }
 }
-
 
 
 
