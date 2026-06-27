@@ -1,6 +1,6 @@
 ﻿const API_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   ? "http://127.0.0.1:8000"
-  : "https://tallerintegrador.onrender.com";
+  : "https://taller-mejoracontinua.duckdns.org";
 console.log("[API_URL]", API_URL);
 let silabosGlobal = [];
 let paginaActual = 1;
