@@ -337,14 +337,24 @@ async function cargarUltimosSeguimientosMacroproceso(macroproceso) {
 function renderResumenSeguimientoSemanal(evidencia, seguimiento, resumen = { total: 0, archivos: 0 }) {
   if (!seguimiento) {
     return `
-      <div class="weekly-summary weekly-summary-card no-tracking">
-        <div>
-          <span>Seguimiento semanal</span>
-          <strong>&Uacute;ltimo: Sin seguimiento registrado</strong>
+      <div class="evidence-followup-summary no-tracking">
+        <div class="followup-summary-header">
+          <span class="followup-title">Seguimiento semanal</span>
+          <span class="followup-badge warning">Sin seguimiento reciente</span>
         </div>
-        <div class="weekly-summary-stats">
-          <small>Total registros: 0</small>
-          <span class="weekly-badge warning">Sin seguimiento reciente</span>
+        <div class="followup-summary-body">
+          <div class="followup-row">
+            <span class="followup-label">Total registros:</span>
+            <strong>0</strong>
+          </div>
+          <div class="followup-row">
+            <span class="followup-label">&Uacute;ltimo:</span>
+            <span>Sin seguimiento registrado</span>
+          </div>
+          <div class="followup-row">
+            <span class="followup-label">Archivos:</span>
+            <span>0</span>
+          </div>
         </div>
       </div>
     `;
@@ -367,15 +377,26 @@ function renderResumenSeguimientoSemanal(evidencia, seguimiento, resumen = { tot
   }
 
   return `
-    <div class="weekly-summary weekly-summary-card">
-      <div>
-        <span>Seguimiento semanal</span>
-        <strong>&Uacute;ltimo: ${escaparHtml(fecha)} - Avance ${escaparHtml(nivel)} ${porcentaje}%</strong>
+    <div class="evidence-followup-summary">
+      <div class="followup-summary-header">
+        <span class="followup-title">Seguimiento semanal</span>
+        <div class="followup-badge-group">
+          ${badges.join("") || `<span class="followup-badge ok">Seguimiento actualizado</span>`}
+        </div>
       </div>
-      <div class="weekly-summary-stats">
-        <small>Total registros: ${Number(resumen.total || 0)}</small>
-        <small>Archivos: ${Number(resumen.archivos || 0)}</small>
-        ${badges.join("") || `<span class="weekly-badge ok">Seguimiento actualizado</span>`}
+      <div class="followup-summary-body">
+        <div class="followup-row">
+          <span class="followup-label">Total registros:</span>
+          <strong>${Number(resumen.total || 0)}</strong>
+        </div>
+        <div class="followup-row">
+          <span class="followup-label">&Uacute;ltimo:</span>
+          <span>${escaparHtml(fecha)} - Avance ${escaparHtml(nivel)} ${porcentaje}%</span>
+        </div>
+        <div class="followup-row">
+          <span class="followup-label">Archivos:</span>
+          <span>${Number(resumen.archivos || 0)}</span>
+        </div>
       </div>
     </div>
   `;

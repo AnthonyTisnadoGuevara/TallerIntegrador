@@ -893,6 +893,114 @@ table {
   color: #5b21b6;
 }
 
+.evidence-followup-summary {
+  margin-top: 2px;
+  padding: 10px 12px;
+  overflow: hidden;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+}
+
+.evidence-followup-summary.no-tracking {
+  border-color: #f6d7a8;
+  background: #fff8ed;
+}
+
+.followup-summary-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.followup-title {
+  min-width: 0;
+  color: #526783;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: normal;
+  word-break: normal;
+}
+
+.followup-badge-group {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.followup-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: normal;
+  flex-shrink: 1;
+}
+
+.followup-badge.warning {
+  background: #fff1c2;
+  color: #9a4b00;
+}
+
+.followup-badge.ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.followup-badge.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.followup-badge.support {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.followup-summary-body {
+  display: grid;
+  gap: 4px;
+}
+
+.followup-row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  color: #0f172a;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.followup-label {
+  color: #475569;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.followup-row span:last-child,
+.followup-row strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .btn-small {
   padding: 6px 9px;
   font-size: 12px;
@@ -3517,6 +3625,20 @@ textarea.form-control {
     justify-content: flex-start;
   }
 
+  .followup-summary-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .followup-badge,
+  .followup-badge-group {
+    align-self: flex-start;
+  }
+
+  .followup-row {
+    flex-wrap: wrap;
+  }
+
   .compact-file-button {
     max-width: 100%;
     width: 100%;
@@ -3569,5 +3691,21 @@ textarea.form-control {
 
   .evidence-badges {
     justify-content: flex-start;
+  }
+
+  .evidence-followup-summary {
+    padding: 9px 10px;
+  }
+
+  .followup-title {
+    font-size: 0.72rem;
+  }
+
+  .followup-badge {
+    font-size: 0.65rem;
+  }
+
+  .followup-row {
+    font-size: 0.78rem;
   }
 }
