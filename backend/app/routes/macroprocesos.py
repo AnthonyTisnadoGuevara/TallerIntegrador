@@ -1419,13 +1419,20 @@ def obtener_metricas_finales_sistema():
         total_analisis_ia = len(analisis) + len(analisis_silabos)
         fecha_limite_seguimiento = date.today() - timedelta(days=10)
         ultimos_seguimientos_por_evidencia = {}
+        conteo_seguimientos_por_evidencia = {}
         for item in sorted(seguimientos, key=lambda seg: seg.get("semana_inicio") or "", reverse=True):
             evidencia_id = item.get("evidencia_id")
+            if evidencia_id:
+                conteo_seguimientos_por_evidencia[evidencia_id] = conteo_seguimientos_por_evidencia.get(evidencia_id, 0) + 1
             if evidencia_id and evidencia_id not in ultimos_seguimientos_por_evidencia:
                 ultimos_seguimientos_por_evidencia[evidencia_id] = item
         evidencias_con_seguimiento = len(ultimos_seguimientos_por_evidencia)
         evidencias_sin_seguimiento = max(total_evidencias - evidencias_con_seguimiento, 0)
         seguimientos_requieren_apoyo = sum(1 for item in seguimientos if item.get("requiere_apoyo"))
+        archivos_seguimiento_subidos = sum(1 for item in seguimientos if item.get("archivo_sustento_url"))
+        evidencias_con_mas_de_un_seguimiento = sum(
+            1 for total in conteo_seguimientos_por_evidencia.values() if total > 1
+        )
         promedio_avance_semanal = round(
             sum(int(item.get("porcentaje_avance") or 0) for item in seguimientos) / len(seguimientos)
         ) if seguimientos else 0
@@ -1567,6 +1574,8 @@ def obtener_metricas_finales_sistema():
             "requieren_apoyo": seguimientos_requieren_apoyo,
             "promedio_avance_semanal": promedio_avance_semanal,
             "evidencias_estancadas": evidencias_estancadas,
+            "archivos_seguimiento_subidos": archivos_seguimiento_subidos,
+            "evidencias_con_mas_de_un_seguimiento": evidencias_con_mas_de_un_seguimiento,
         }
 
         return {
@@ -1592,6 +1601,7 @@ def obtener_metricas_finales_sistema():
                     "brechas_alta_prioridad": brechas_alta_prioridad,
                     "total_silabos": len(silabos),
                     "total_seguimientos_semanales": len(seguimientos),
+                    "total_archivos_seguimiento": archivos_seguimiento_subidos,
                     "seguimientos_requieren_apoyo": seguimientos_requieren_apoyo,
                 },
                 "por_macroproceso": por_macroproceso,
@@ -1718,6 +1728,16 @@ def obtener_reporte_integral_mejora_continua():
         acciones_completadas = sum(
             1 for item in acciones if item.get("estado") in {"atendida", "completada"}
         )
+        evidencias_por_id_reporte = {item.get("id"): item for item in evidencias if item.get("id")}
+        seguimientos_enriquecidos = []
+        for item in seguimientos:
+            evidencia = evidencias_por_id_reporte.get(item.get("evidencia_id"), {})
+            seguimientos_enriquecidos.append({
+                **item,
+                "titulo_evidencia": evidencia.get("titulo"),
+                "estado_evidencia": evidencia.get("estado"),
+                "prioridad_evidencia": evidencia.get("prioridad"),
+            })
 
         recomendaciones = []
         if total_alertas_criticas:
@@ -1748,6 +1768,7 @@ def obtener_reporte_integral_mejora_continua():
                 "total_analisis_ia": len(ultimos_analisis),
                 "total_validaciones_ia": len(validaciones_documentales),
                 "total_seguimientos_semanales": len(seguimientos),
+                "total_archivos_seguimiento": sum(1 for item in seguimientos if item.get("archivo_sustento_url")),
             },
             "semaforo": semaforo,
             "evidencias": evidencias,
@@ -1763,7 +1784,7 @@ def obtener_reporte_integral_mejora_continua():
             "ultimos_analisis_ia": ultimos_analisis,
             "validaciones_documentales": validaciones_documentales,
             "brechas_curriculares": brechas,
-            "seguimientos_semanales": seguimientos,
+            "seguimientos_semanales": seguimientos_enriquecidos,
             "recomendaciones_generales": recomendaciones,
         }
 

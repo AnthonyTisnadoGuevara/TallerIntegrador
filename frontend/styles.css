@@ -796,7 +796,19 @@ table {
   background: #fff7ed;
 }
 
-.weekly-summary > span {
+.weekly-summary-card {
+  align-items: flex-start;
+}
+
+.weekly-summary-card > div:first-child {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 4px;
+}
+
+.weekly-summary > span,
+.weekly-summary-card > div:first-child span {
   flex: 0 0 auto;
   color: #64748b;
   font-size: 12px;
@@ -805,7 +817,8 @@ table {
   letter-spacing: 0.02em;
 }
 
-.weekly-summary strong {
+.weekly-summary strong,
+.weekly-summary-card strong {
   flex: 1 1 auto;
   min-width: 0;
   color: #0f172a;
@@ -814,6 +827,27 @@ table {
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.weekly-summary-stats {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.weekly-summary-stats small {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .weekly-badges {
@@ -906,6 +940,14 @@ table {
   margin: 8px 0 0;
   color: #0f172a;
   font-size: 16px;
+}
+
+.weekly-history-header small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .weekly-history-card p {
@@ -3468,6 +3510,10 @@ textarea.form-control {
   }
 
   .weekly-badges {
+    justify-content: flex-start;
+  }
+
+  .weekly-summary-stats {
     justify-content: flex-start;
   }
 
