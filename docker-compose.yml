@@ -1,0 +1,23 @@
+services:
+  backend:
+    build: ./backend
+    container_name: taller_backend
+    restart: always
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+
+  frontend:
+    build: ./frontend
+    container_name: taller_frontend
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  hf_cache:

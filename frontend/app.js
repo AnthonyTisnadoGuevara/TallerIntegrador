@@ -1,4 +1,6 @@
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ? "http://127.0.0.1:8000"
+  : "";
 console.log("[API_URL]", API_URL);
 let silabosGlobal = [];
 let paginaActual = 1;
