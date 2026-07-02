@@ -1,6 +1,4 @@
-﻿const API_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
-  ? "http://127.0.0.1:8000"
-  : "https://taller-mejoracontinua.duckdns.org";
+const API_URL = "http://127.0.0.1:8000";
 console.log("[API_URL]", API_URL);
 let silabosGlobal = [];
 let paginaActual = 1;
@@ -25,6 +23,37 @@ let seguimientosSemanalesGlobal = {};
 let seguimientosResumenGlobal = {};
 let seguimientosDetalleGlobal = {};
 let macroprocesoHistorialIAActual = null;
+let tokenTiempoCargando = null;
+
+function mostrarCargando(texto = "Procesando...") {
+  const overlay = document.getElementById("loadingOverlay");
+  const txt = document.getElementById("loadingText");
+  if (overlay && txt) {
+    txt.textContent = texto;
+    overlay.classList.remove("hidden");
+  }
+  
+  if (tokenTiempoCargando) {
+    clearTimeout(tokenTiempoCargando);
+  }
+  
+  // Si la operación de IA o red tarda más de 45 segundos, ocultamos el bloqueo y advertimos al usuario
+  tokenTiempoCargando = setTimeout(() => {
+    ocultarCargando();
+    mostrarToast("La operación está demorando más de lo esperado. Por favor, verifica la consola o vuelve a intentarlo.", "warning");
+  }, 45000);
+}
+
+function ocultarCargando() {
+  const overlay = document.getElementById("loadingOverlay");
+  if (overlay) {
+    overlay.classList.add("hidden");
+  }
+  if (tokenTiempoCargando) {
+    clearTimeout(tokenTiempoCargando);
+    tokenTiempoCargando = null;
+  }
+}
 
 const MACROPROCESOS_CONFIG = {
   planificacion_estrategica: {
@@ -73,6 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   await cargarDatos();
+  mostrarMacroprocesos();
 
   const form = document.getElementById("formSilabo");
   form.addEventListener("submit", registrarSilabo);
@@ -88,47 +118,94 @@ document.addEventListener("click", function(event) {
 });
 
 async function mostrarMacroproceso(nombre) {
-  const macroprocesosView = document.getElementById("macroprocesosView");
-  const modulos = {
-    planificacion: document.getElementById("macroPlanificacion"),
-    gestionAcademica: document.getElementById("macroGestionAcademica"),
-    gestionSilabos: document.getElementById("macroGestionSilabos")
-  };
 
-  if (macroprocesosView) {
-    macroprocesosView.classList.add("hidden");
-  }
+    const modulos = {
+        planificacion: document.getElementById("macroPlanificacion"),
+        gestionAcademica: document.getElementById("macroGestionAcademica"),
+        gestionSilabos: document.getElementById("macroGestionSilabos")
+    };
 
-  document.querySelectorAll(".macro-module").forEach((seccion) => {
-    seccion.classList.add("hidden");
-  });
+    // Oculta todas las vistas
+    document.querySelectorAll(".view-section").forEach((seccion) => {
+        seccion.classList.add("hidden");
+        seccion.classList.remove("active");
+    });
 
-  if (modulos[nombre]) {
-    modulos[nombre].classList.remove("hidden");
-  }
+    // Muestra únicamente la seleccionada
+    if (modulos[nombre]) {
+        modulos[nombre].classList.remove("hidden");
+        modulos[nombre].classList.add("active");
+    }
 
-  if (nombre === "planificacion") {
-    await cargarVistaMacroproceso("planificacion_estrategica");
-  }
+    if (nombre === "planificacion") {
+        await cargarVistaMacroproceso("planificacion_estrategica");
+    }
 
-  if (nombre === "gestionAcademica") {
-    await cargarVistaMacroproceso("gestion_academica");
-  }
+    if (nombre === "gestionAcademica") {
+        await cargarVistaMacroproceso("gestion_academica");
+    }
 
-  window.scrollTo({ top: 0, behavior: "smooth" });
+    // Actualizar botón activo
+    document.querySelectorAll(".nav-item").forEach((item) => {
+        item.classList.remove("active");
+    });
+
+    const botones = {
+        planificacion: '[data-view="planificacion"]',
+        gestionAcademica: '[data-view="academica"]',
+        gestionSilabos: '[data-view="silabos"]'
+    };
+
+    if (botones[nombre]) {
+        document.querySelector(botones[nombre])?.classList.add("active");
+    }
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
+function mostrarMacroprocesos() {
+
+    // Oculta todas las vistas
+    document.querySelectorAll(".view-section").forEach((seccion) => {
+        seccion.classList.add("hidden");
+        seccion.classList.remove("active");
+    });
+
+    // Muestra el dashboard
+    const dashboard = document.getElementById("macroprocesosView");
+
+    if (dashboard) {
+        dashboard.classList.remove("hidden");
+        dashboard.classList.add("active");
+    }
+
+    // Activa el botón Dashboard
+    document.querySelectorAll(".nav-item").forEach((item) => {
+        item.classList.remove("active");
+    });
+
+    const botonDashboard = document.querySelector('[data-view="dashboard"]');
+
+    if (botonDashboard) {
+        botonDashboard.classList.add("active");
+    }
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+
 }
 
 function volverMacroprocesos() {
-  document.querySelectorAll(".macro-module").forEach((seccion) => {
-    seccion.classList.add("hidden");
-  });
+    mostrarMacroprocesos();
+}
 
-  const macroprocesosView = document.getElementById("macroprocesosView");
-  if (macroprocesosView) {
-    macroprocesosView.classList.remove("hidden");
-  }
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
+function regresarAMacroprocesos() {
+    mostrarMacroprocesos();
 }
 
 async function cargarVistaMacroproceso(macroproceso) {
@@ -271,8 +348,6 @@ function renderEvidenceCard(evidencia, columnas) {
         <p><span>Responsable</span><strong>${escaparHtml(evidencia.responsable || "Sin responsable")}</strong></p>
       </div>
 
-      ${renderResumenSeguimientoSemanal(evidencia, seguimiento, resumenSeguimiento)}
-
       <div class="progress-block evidence-progress">
         <div class="progress-meta">
           <span>Avance</span>
@@ -281,6 +356,32 @@ function renderEvidenceCard(evidencia, columnas) {
         <div class="progress-bar">
           <span style="width: ${avance}%"></span>
         </div>
+      </div>
+
+      <button class="btn-toggle-details" type="button" onclick="toggleEvidenceDetails(this)">
+        Ver detalles 
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+
+      <div class="evidence-details hidden">
+        <div class="evidence-detail-group">
+          <h4>Descripción:</h4>
+          <p>${escaparHtml(evidencia.descripcion || "Sin descripción.")}</p>
+        </div>
+        ${evidencia.observacion ? `
+        <div class="evidence-detail-group">
+          <h4>Observación:</h4>
+          <p>${escaparHtml(evidencia.observacion)}</p>
+        </div>` : ""}
+        
+        <div class="evidence-details-grid">
+          <div><strong>Tipo:</strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</div>
+          <div><strong>Mes:</strong> ${escaparHtml(evidencia.mes_programado || "-")}</div>
+          <div><strong>Origen:</strong> ${escaparHtml(evidencia.origen_documento || "-")}</div>
+          <div><strong>Sustento:</strong> ${archivoUrl ? `<a href="${archivoUrl}" target="_blank" class="file-link">Ver archivo</a>` : "Sin archivo"}</div>
+        </div>
+
+        ${renderResumenSeguimientoSemanal(evidencia, seguimiento, resumenSeguimiento)}
       </div>
 
       <div class="evidence-actions evidence-actions-primary primary-action-row">
@@ -1069,7 +1170,7 @@ async function validarEvidenciaIA(evidenciaId) {
   }
 
   try {
-    mostrarToast("Validando evidencia documental con IA...", "info");
+    mostrarCargando("Validando evidencia documental con IA... Por favor, espere.");
     const result = await fetchJson(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/validar-ia`, {
       method: "POST"
     });
@@ -1079,6 +1180,8 @@ async function validarEvidenciaIA(evidenciaId) {
   } catch (error) {
     console.error("Error al validar evidencia con IA:", error);
     mostrarToast("Error al validar evidencia: " + error.message, "error");
+  } finally {
+    ocultarCargando();
   }
 }
 
@@ -1837,7 +1940,7 @@ function cerrarModalGestionAcademicaIA() {
 
 async function analizarMejoraContinuaIA() {
   try {
-    mostrarToast("Analizando mejora continua con IA...", "info");
+    mostrarCargando("Analizando mejora continua con IA y generando diagnóstico integral... Por favor, espere.");
 
     const result = await fetchJson(`${API_URL}/api/macroprocesos/mejora-continua/analizar`, {
       method: "POST"
@@ -1851,6 +1954,8 @@ async function analizarMejoraContinuaIA() {
       "No se pudo generar el análisis integral de mejora continua. Revise la conexión con el backend o la configuración del agente coordinador.",
       "error"
     );
+  } finally {
+    ocultarCargando();
   }
 }
 
@@ -2332,11 +2437,19 @@ async function verMetricasFinales() {
 async function mostrarModuloMetricas() {
   try {
     mostrarToast("Cargando métricas e indicadores...", "info");
-    document.getElementById("macroprocesosView")?.classList.add("hidden");
-    document.querySelectorAll(".macro-module").forEach((seccion) => {
+    
+    // Ocultar todas las secciones de vista activas
+    document.querySelectorAll(".view-section").forEach((seccion) => {
       seccion.classList.add("hidden");
+      seccion.classList.remove("active");
     });
     document.getElementById("moduloMetricasIndicadores")?.classList.remove("hidden");
+    document.getElementById("moduloMetricasIndicadores")?.classList.add("active");
+
+    // Desactivar botones nav activos
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.classList.remove("active");
+    });
 
     const result = await fetchJson(`${API_URL}/api/macroprocesos/metricas-finales`);
     metricasFinalesActual = result.data || {};
@@ -2958,21 +3071,36 @@ async function cargarSilabos() {
 
 function renderizarTablaSilabos() {
   const tbody = document.getElementById("tablaSilabos");
-  const paginacion = document.getElementById("paginacionSilabos");
+  const paginacion = document.getElementById("paginacionSilabos") || document.getElementById("paginacionContenedor");
   tbody.innerHTML = "";
 
-  if (silabosGlobal.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7">No hay silabos registrados.</td></tr>`;
+  const busqueda = normalizarValor(document.getElementById("buscarSilabo")?.value || "");
+  const filtroEstado = document.getElementById("filtroEstadoSilabo")?.value || "";
+  const filtroPeriodo = document.getElementById("filtroPeriodoSilabo")?.value || "";
+  const filtroCondicion = document.getElementById("filtroCondicionSilabo")?.value || "";
+
+  const filtrados = silabosGlobal.filter(silabo => {
+    const coincideBusqueda = !busqueda || 
+      normalizarValor(silabo.asignatura || "").includes(busqueda) || 
+      normalizarValor(silabo.codigo_asignatura || "").includes(busqueda);
+    const coincideEstado = !filtroEstado || silabo.estado === filtroEstado;
+    const coincidePeriodo = !filtroPeriodo || silabo.periodo === filtroPeriodo;
+    const coincideCondicion = !filtroCondicion || silabo.condicion === filtroCondicion;
+    return coincideBusqueda && coincideEstado && coincidePeriodo && coincideCondicion;
+  });
+
+  if (filtrados.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--text-secondary);">No se encontraron sílabos con los filtros aplicados.</td></tr>`;
     if (paginacion) paginacion.innerHTML = "";
     return;
   }
 
-  const totalPaginas = Math.ceil(silabosGlobal.length / SILABOS_POR_PAGINA);
+  const totalPaginas = Math.ceil(filtrados.length / SILABOS_POR_PAGINA);
   paginaActual = Math.min(Math.max(paginaActual, 1), totalPaginas);
 
   const inicio = (paginaActual - 1) * SILABOS_POR_PAGINA;
-  const fin = Math.min(inicio + SILABOS_POR_PAGINA, silabosGlobal.length);
-  const silabosPagina = silabosGlobal.slice(inicio, fin);
+  const fin = Math.min(inicio + SILABOS_POR_PAGINA, filtrados.length);
+  const silabosPagina = filtrados.slice(inicio, fin);
 
   silabosPagina.forEach((silabo) => {
     const tr = document.createElement("tr");
@@ -2985,6 +3113,7 @@ function renderizarTablaSilabos() {
       : `<button class="btn btn-disabled" disabled>Sin archivo</button>`;
 
     tr.innerHTML = `
+      <td><input type="checkbox" class="select-silabo" data-id="${silabo.id}" /></td>
       <td>${silabo.ciclo}</td>
       <td>${silabo.codigo_asignatura}</td>
       <td>${silabo.asignatura}</td>
@@ -3024,7 +3153,7 @@ function renderizarTablaSilabos() {
 
   if (paginacion) {
     paginacion.innerHTML = `
-      <span class="paginacion-info">Mostrando ${inicio + 1} - ${fin} de ${silabosGlobal.length} s&iacute;labos</span>
+      <span class="paginacion-info">Mostrando ${inicio + 1} - ${fin} de ${filtrados.length} s&iacute;labos</span>
       <div class="paginacion-controles">
         <button class="btn btn-secondary" onclick="cambiarPaginaSilabos(${paginaActual - 1})" ${paginaActual === 1 ? "disabled" : ""}>Anterior</button>
         <span class="paginacion-info">P&aacute;gina ${paginaActual} de ${totalPaginas}</span>
@@ -3035,10 +3164,89 @@ function renderizarTablaSilabos() {
 }
 
 function cambiarPaginaSilabos(nuevaPagina) {
-  const totalPaginas = Math.ceil(silabosGlobal.length / SILABOS_POR_PAGINA);
+  const busqueda = normalizarValor(document.getElementById("buscarSilabo")?.value || "");
+  const filtroEstado = document.getElementById("filtroEstadoSilabo")?.value || "";
+  const filtroPeriodo = document.getElementById("filtroPeriodoSilabo")?.value || "";
+  const filtroCondicion = document.getElementById("filtroCondicionSilabo")?.value || "";
+
+  const filtrados = silabosGlobal.filter(silabo => {
+    const coincideBusqueda = !busqueda || 
+      normalizarValor(silabo.asignatura || "").includes(busqueda) || 
+      normalizarValor(silabo.codigo_asignatura || "").includes(busqueda);
+    const coincideEstado = !filtroEstado || silabo.estado === filtroEstado;
+    const coincidePeriodo = !filtroPeriodo || silabo.periodo === filtroPeriodo;
+    const coincideCondicion = !filtroCondicion || silabo.condicion === filtroCondicion;
+    return coincideBusqueda && coincideEstado && coincidePeriodo && coincideCondicion;
+  });
+
+  const totalPaginas = Math.ceil(filtrados.length / SILABOS_POR_PAGINA);
   if (nuevaPagina < 1 || nuevaPagina > totalPaginas) return;
   paginaActual = nuevaPagina;
   renderizarTablaSilabos();
+}
+
+function aplicarFiltrosSilabos() {
+  paginaActual = 1;
+  renderizarTablaSilabos();
+}
+
+function limpiarFiltrosSilabos() {
+  const buscar = document.getElementById("buscarSilabo");
+  const estado = document.getElementById("filtroEstadoSilabo");
+  const periodo = document.getElementById("filtroPeriodoSilabo");
+  const condicion = document.getElementById("filtroCondicionSilabo");
+  if (buscar) buscar.value = "";
+  if (estado) estado.value = "";
+  if (periodo) periodo.value = "";
+  if (condicion) condicion.value = "";
+  paginaActual = 1;
+  renderizarTablaSilabos();
+}
+
+async function procesarTodosLosSilabosSeleccionados() {
+  const seleccionados = Array.from(document.querySelectorAll(".select-silabo:checked")).map(cb => cb.dataset.id);
+  if (seleccionados.length === 0) {
+    mostrarToast("Por favor, selecciona al menos un sílabo para procesar.", "warning");
+    return;
+  }
+
+  const confirmar = await abrirModalConfirmacion({
+    titulo: "Procesar sílabos seleccionados",
+    mensaje: `¿Deseas analizar en bloque los ${seleccionados.length} sílabos seleccionados con el agente curricular?`,
+    textoConfirmar: "Analizar Bloque",
+    tipo: "success"
+  });
+
+  if (!confirmar) return;
+
+  try {
+    mostrarCargando(`Analizando ${seleccionados.length} sílabos en bloque... Por favor, espere.`);
+    let exitosos = 0;
+    let fallidos = 0;
+    
+    for (const id of seleccionados) {
+      try {
+        const response = await fetch(`${API_URL}/api/agentes/analizar-silabo/${id}`, {
+          method: "POST"
+        });
+        if (response.ok) {
+          exitosos++;
+        } else {
+          fallidos++;
+        }
+      } catch (err) {
+        fallidos++;
+      }
+    }
+    
+    mostrarToast(`Proceso completado. Éxitos: ${exitosos}, Fallas: ${fallidos}.`, "success");
+    await cargarDatos();
+  } catch (error) {
+    console.error("Error en procesamiento por lote:", error);
+    mostrarToast("Error al procesar en lote: " + error.message, "error");
+  } finally {
+    ocultarCargando();
+  }
 }
 
 function toggleMenuAcciones(id) {
@@ -3287,6 +3495,7 @@ async function verValidacion(id) {
     html += `</ul>`;
     detalle.innerHTML = html;
     mostrarToast("Validación cargada correctamente.", "success");
+    detalle.scrollIntoView({ behavior: "smooth" });
   } catch (error) {
     console.error("Error al consultar validación:", error);
     mostrarToast("Error al consultar validación: " + error.message, "error");
@@ -3440,13 +3649,23 @@ let silaboIdEdicionActual = null;
 let resolverConfirmacion = null;
 
 function mostrarModal(modalId) {
-  document.getElementById(modalId).classList.remove("hidden");
-  document.body.classList.add("modal-open");
+  const el = document.getElementById(modalId);
+  if (el) {
+    el.classList.remove("hidden");
+    document.body.classList.add("modal-open");
+  } else {
+    console.warn(`mostrarModal: El modal con ID "${modalId}" no existe en el DOM.`);
+  }
 }
 
 function ocultarModal(modalId) {
-  document.getElementById(modalId).classList.add("hidden");
-  document.body.classList.remove("modal-open");
+  const el = document.getElementById(modalId);
+  if (el) {
+    el.classList.add("hidden");
+    document.body.classList.remove("modal-open");
+  } else {
+    console.warn(`ocultarModal: El modal con ID "${modalId}" no existe en el DOM.`);
+  }
 }
 
 function mostrarNotificacion(mensaje, tipo = "info") {
@@ -3681,7 +3900,7 @@ async function analizarSilaboIA(id) {
 
     if (!confirmar) return;
 
-    mostrarNotificacion("Analizando sílabo, espere unos segundos...", "info");
+    mostrarCargando("Analizando sílabo con el agente curricular... Por favor, espere unos segundos.");
 
     const response = await fetch(`${API_URL}/api/agentes/analizar-silabo/${id}`, {
       method: "POST"
@@ -3698,6 +3917,8 @@ async function analizarSilaboIA(id) {
   } catch (error) {
     console.error("Error al analizar sílabo:", error);
     mostrarToast("Error al analizar el sílabo: " + error.message, "error");
+  } finally {
+    ocultarCargando();
   }
 }
 
@@ -3821,7 +4042,7 @@ function cerrarModalAnalisis() {
 
 async function analizarTrazabilidadCurricular() {
   try {
-    mostrarToast("Analizando trazabilidad curricular con LangGraph...", "info");
+    mostrarCargando("Analizando trazabilidad curricular con LangGraph... Esto puede tardar unos segundos.");
 
     const response = await fetch(`${API_URL}/api/agentes/analizar-trazabilidad-curricular`, {
       method: "POST"
@@ -3841,6 +4062,8 @@ async function analizarTrazabilidadCurricular() {
   } catch (error) {
     console.error("Error al analizar trazabilidad:", error);
     mostrarToast("Error al analizar trazabilidad: " + error.message, "error");
+  } finally {
+    ocultarCargando();
   }
 }
 
@@ -4095,7 +4318,7 @@ function cerrarModalBrechas() {
 
 async function generarAccionesDesdeBrechas() {
   try {
-    mostrarToast("Generando acciones de mejora desde brechas...", "info");
+    mostrarCargando("Generando acciones de mejora desde brechas curriculares... Por favor, espere.");
 
     const response = await fetch(`${API_URL}/api/acciones-mejora/generar-desde-brechas`, {
       method: "POST"
@@ -4112,6 +4335,8 @@ async function generarAccionesDesdeBrechas() {
   } catch (error) {
     console.error("Error al generar acciones:", error);
     mostrarToast("Error al generar acciones: " + error.message, "error");
+  } finally {
+    ocultarCargando();
   }
 }
 
@@ -4268,6 +4493,11 @@ function renderizarTarjetasAcciones(data) {
       ? new Date(accion.created_at).toLocaleString()
       : "Sin fecha";
 
+    // Truncate description preview
+    const descPreview = accion.descripcion 
+      ? (accion.descripcion.length > 90 ? escaparHtml(accion.descripcion.substring(0, 90)) + "..." : escaparHtml(accion.descripcion))
+      : "Sin descripción";
+
     return `
       <article class="accion-card accion-prioridad-${escaparAtributo(prioridad)}">
         <div class="accion-header">
@@ -4278,22 +4508,44 @@ function renderizarTarjetasAcciones(data) {
           </div>
         </div>
         <h3>${escaparHtml(accion.titulo || "Acción de mejora")}</h3>
-        <p><strong>Macroproceso:</strong> ${escaparHtml(nombreMacroproceso(macroproceso))}</p>
-        <p><strong>Origen:</strong> ${escaparHtml(formatearTexto(accion.origen_tipo || "-"))}</p>
-        <p><strong>Evidencia relacionada:</strong> ${escaparHtml(
-          evidenciaRelacionada.codigo
-            ? `${evidenciaRelacionada.codigo} - ${evidenciaRelacionada.titulo || ""}`
-            : origenId
-        )}</p>
-        <p><strong>Asignatura:</strong> ${escaparHtml(accion.asignatura || "-")}</p>
-        <p><strong>Descripci&oacute;n:</strong> ${escaparHtml(accion.descripcion || "-")}</p>
-        <p><strong>Recomendaci&oacute;n:</strong> ${escaparHtml(accion.recomendacion || "-")}</p>
-        <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(prioridad))}</p>
-        <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(estado))}</p>
-        <p><strong>Responsable:</strong> ${escaparHtml(accion.responsable || "Sin responsable")}</p>
-        <p><strong>Fecha l&iacute;mite:</strong> ${escaparHtml(accion.fecha_limite || "No definida")}</p>
-        <p><strong>Observaci&oacute;n:</strong> ${escaparHtml(accion.observacion || "-")}</p>
-        <p><strong>Fecha de creaci&oacute;n:</strong> ${escaparHtml(fechaCreacion)}</p>
+        
+        <div class="accion-quick-info">
+          <span><strong>Curso:</strong> ${escaparHtml(accion.asignatura || "-")}</span>
+          <span><strong>Proceso:</strong> ${escaparHtml(nombreMacroproceso(macroproceso))}</span>
+        </div>
+
+        <p class="accion-preview">${descPreview}</p>
+
+        <button class="btn-toggle-details" onclick="toggleAccionDetails(this)">
+          Ver detalles 
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+
+        <div class="accion-details hidden">
+          <div class="accion-detail-group">
+            <h4>Descripción Completa:</h4>
+            <p>${escaparHtml(accion.descripcion || "-")}</p>
+          </div>
+          <div class="accion-detail-group highlight-recommendation">
+            <h4>Recomendación de la IA:</h4>
+            <p>${escaparHtml(accion.recomendacion || "-")}</p>
+          </div>
+          <div class="accion-details-grid">
+            <div><strong>Responsable:</strong> ${escaparHtml(accion.responsable || "Sin responsable")}</div>
+            <div><strong>Fecha límite:</strong> ${escaparHtml(accion.fecha_limite || "No definida")}</div>
+            <div><strong>Origen:</strong> ${escaparHtml(formatearTexto(accion.origen_tipo || "-"))}</div>
+            <div><strong>Evidencia:</strong> ${escaparHtml(evidenciaRelacionada.codigo ? `${evidenciaRelacionada.codigo} - ${evidenciaRelacionada.titulo || ""}` : origenId)}</div>
+          </div>
+          ${accion.observacion ? `
+          <div class="accion-detail-group">
+            <h4>Observación:</h4>
+            <p>${escaparHtml(accion.observacion)}</p>
+          </div>` : ''}
+          <div class="accion-detail-footer">
+            <small>Creado el ${escaparHtml(fechaCreacion)}</small>
+          </div>
+        </div>
+
         <div class="accion-actions">
           <button class="btn btn-secondary" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'en_proceso')">En proceso</button>
           <button class="btn btn-success" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'atendida')">Atendida</button>
@@ -4305,29 +4557,31 @@ function renderizarTarjetasAcciones(data) {
   }).join("");
 }
 
-async function actualizarEstadoAccion(id, estado) {
-  try {
-    const response = await fetch(`${API_URL}/api/acciones-mejora/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado })
-    });
-    const result = await response.json();
+function toggleAccionDetails(button) {
+  const card = button.closest(".accion-card");
+  const details = card.querySelector(".accion-details");
+  const isExpanded = !details.classList.contains("hidden");
 
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo actualizar la acción.");
-    }
+  if (isExpanded) {
+    details.classList.add("hidden");
+    button.innerHTML = 'Ver detalles <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>';
+  } else {
+    details.classList.remove("hidden");
+    button.innerHTML = 'Ocultar detalles <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-up"><path d="m18 15-6-6-6 6"/></svg>';
+  }
+}
 
-    mostrarToast("Estado actualizado correctamente.", "success");
-    if (macroprocesoAccionesActual) {
-      await verAccionesMacroproceso(macroprocesoAccionesActual);
-    } else {
-      await verAccionesMejora();
-    }
-    await cargarDashboardAccionesMejora();
-  } catch (error) {
-    console.error("Error al actualizar acción:", error);
-    mostrarToast("Error al actualizar acción: " + error.message, "error");
+function toggleEvidenceDetails(button) {
+  const card = button.closest(".evidence-card");
+  const details = card.querySelector(".evidence-details");
+  const isExpanded = !details.classList.contains("hidden");
+
+  if (isExpanded) {
+    details.classList.add("hidden");
+    button.innerHTML = 'Ver detalles <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>';
+  } else {
+    details.classList.remove("hidden");
+    button.innerHTML = 'Ocultar detalles <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-up"><path d="m18 15-6-6-6 6"/></svg>';
   }
 }
 
