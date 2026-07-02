@@ -1,1220 +1,1190 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Monitoreo de Gestión de Sílabos</title>
+  <meta name="theme-color" content="#2563eb" />
+  <title>ISIA Monitor - Monitoreo de Mejora Continua</title>
+  <!-- Inline SVG icons are used instead of external Lucide stylesheet -->
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <header class="header">
-    <div>
-      <h1>Sistema de Monitoreo del Plan de Mejora Continua</h1>
-      <p>Programa de Ingeniería de Sistemas e Inteligencia Artificial - ISIA</p>
-    </div>
-    <div class="user-session">
-      <span id="usuarioSesion">Usuario</span>
-      <button class="btn btn-secondary" onclick="cerrarSesion()">Cerrar sesión</button>
-    </div>
-  </header>
 
-  <main class="container">
-    <section id="macroprocesosView" class="macroprocesos-view">
-      <div class="macro-hero">
-        <h2>Panel de Macroprocesos</h2>
-        <p>Seleccione el macroproceso que desea gestionar dentro del sistema de monitoreo del plan de mejora continua.</p>
-        <div class="panel-actions-group">
-          <div class="primary-action-row">
-            <button class="btn btn-primary" type="button" onclick="analizarMejoraContinuaIA()">Analizar mejora continua con IA</button>
-            <button class="btn btn-secondary" type="button" onclick="mostrarModuloMetricas()">Ver m&eacute;tricas finales</button>
-            <button class="btn btn-success export-excel-btn" type="button" onclick="exportarReporteIntegralExcel()">Exportar Excel</button>
-          </div>
-          <div class="acciones-dropdown more-options-menu">
-            <button class="btn btn-menu btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('macroprocesos-opciones')">M&aacute;s opciones &#9662;</button>
-            <div id="menu-acciones-macroprocesos-opciones" class="acciones-menu actions-dropdown-menu hidden">
-              <div class="menu-section">
-                <span class="menu-label">M&aacute;s opciones</span>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialAnalisisIA('mejora_continua')">Ver historial integral IA</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="generarAlertasInteligentes()">Generar alertas inteligentes</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="verAlertasInteligentes()">Ver alertas inteligentes</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEncuestaAceptacion()">Encuesta de aceptaci&oacute;n</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalAyudaUsuario()">Ayuda / Manual de usuario</button>
-              </div>
-            </div>
+<body>
+  <!-- SIDEBAR NAVIGATION -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <h1 class="brand-title">ISIA Monitor</h1>
+      <p class="brand-subtitle">Mejora Continua</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="dashboard" onclick="mostrarMacroprocesos()">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 1 1 18 0 9 9 0 0 1-18 0M3 5h18M3 19h18" />
+        </svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-view="planificacion" onclick="mostrarMacroproceso('planificacion')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M9 11h6M9 15h6M9 7h6" />
+        </svg>
+        <span>Planificación</span>
+      </button>
+      <button class="nav-item" data-view="academica" onclick="mostrarMacroproceso('gestionAcademica')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 5c0 1.5.895 2.8 2.15 3.5M6.5 7A2.5 2.5 0 0 1 9 4.5" />
+        </svg>
+        <span>Académica</span>
+      </button>
+      <button class="nav-item" data-view="silabos" onclick="mostrarMacroproceso('gestionSilabos')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20" />
+        </svg>
+        <span>Sílabos</span>
+      </button>
+
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <span id="usuarioSesion" class="user-email">usuario@email.com</span>
+      </div>
+      <button class="btn-logout" onclick="cerrarSesion()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 3l7 7-7 7M23 10H9" />
+        </svg>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- DASHBOARD VIEW -->
+    <section id="macroprocesosView" class="view-section">
+      <div class="section-header">
+        <div>
+          <h1>Panel de Control</h1>
+          <p>Monitoreo integral de mejora continua del programa ISIA</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions-group">
+        <button class="action-btn primary" onclick="analizarMejoraContinuaIA()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M12 2v6m6-4.41L20.59 8M22 12h-6m4.41 6L20.59 16M12 22v-6m-6 4.41L3.41 16M2 12h6M3.41 8L3.41 3.41" />
+          </svg>
+          Análisis IA
+        </button>
+        <button class="action-btn secondary" onclick="mostrarModuloMetricas()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="2" x2="12" y2="22" />
+            <polyline points="17 5 12 9 7 4" />
+          </svg>
+          Métricas
+        </button>
+        <button class="action-btn secondary" onclick="verAccionesMejora()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          Acciones
+        </button>
+        <div class="more-options">
+          <button class="action-btn icon"
+            onclick="event.stopPropagation(); toggleMenuAcciones('macroprocesos-opciones')">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </button>
+          <div id="menu-acciones-macroprocesos-opciones" class="dropdown-menu hidden">
+            <button class="menu-item" onclick="verHistorialAnalisisIA('mejora_continua')">Historial IA</button>
+            <button class="menu-item" onclick="generarAlertasInteligentes()">Generar alertas</button>
+            <button class="menu-item" onclick="verAlertasInteligentes()">Ver alertas</button>
+            <button class="menu-item" onclick="exportarReporteIntegral()">Reporte integral</button>
+            <button class="menu-item" onclick="abrirModalEncuestaAceptacion()">Encuesta</button>
+            <button class="menu-item" onclick="abrirModalAyudaUsuario()">Ayuda</button>
           </div>
         </div>
       </div>
 
-      <section class="traffic-light-dashboard">
-        <div class="panel-header macroprocess-panel-header">
-          <div>
-            <h2>Sem&aacute;foro de cumplimiento</h2>
-            <p>Vista r&aacute;pida de avance, alertas activas y riesgo IA por macroproceso.</p>
-          </div>
-          <button class="btn btn-secondary" type="button" onclick="cargarSemaforoCumplimiento()">Actualizar</button>
+      <!-- Compliance Panel (Traffic Light) -->
+      <section class="compliance-panel">
+        <div class="panel-header">
+          <h2>Estado de Cumplimiento</h2>
+          <button class="btn-refresh" onclick="cargarSemaforoCumplimiento()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10" />
+              <polyline points="23 20 23 14 17 14" />
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64M3.51 15A9 9 0 0 0 18.36 18.36" />
+            </svg>
+          </button>
         </div>
-        <div id="semaforoCumplimiento" class="traffic-light-grid">
-          <p class="text-muted">Cargando sem&aacute;foro de cumplimiento...</p>
+        <div id="semaforoCumplimiento" class="compliance-grid">
+          <div class="compliance-pill">Cargando...</div>
         </div>
       </section>
 
-      <div class="macro-grid">
+      <!-- Onboarding Stepper -->
+      <section class="onboarding-stepper">
+        <div class="stepper-step completed">
+          <div class="stepper-circle">1</div>
+          <div class="stepper-content">
+            <h3>Definir Plan</h3>
+            <p>Establecer objetivos y metas</p>
+          </div>
+        </div>
+        <div class="stepper-line"></div>
+        <div class="stepper-step active">
+          <div class="stepper-circle">2</div>
+          <div class="stepper-content">
+            <h3>Cargar Evidencias</h3>
+            <p>Registrar progreso y avances</p>
+          </div>
+        </div>
+        <div class="stepper-line"></div>
+        <div class="stepper-step">
+          <div class="stepper-circle">3</div>
+          <div class="stepper-content">
+            <h3>Diagnóstico IA</h3>
+            <p>Análisis y recomendaciones</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Macroprocess Grid -->
+      <div class="macroprocess-grid">
         <article class="macro-card">
-          <span class="macro-status process">En proceso</span>
-          <h3>Planificaci&oacute;n Estrat&eacute;gica</h3>
-          <p>Permitir&aacute; gestionar objetivos estrat&eacute;gicos, indicadores, metas, responsables, evidencias y seguimiento del plan de mejora continua.</p>
-          <p class="macro-note">Vista base disponible para carga progresiva de informaci&oacute;n.</p>
-          <button class="btn btn-primary" type="button" onclick="mostrarMacroproceso('planificacion')">Ingresar</button>
+          <div class="card-header">
+            <h3>Planificación Estratégica</h3>
+            <span class="status-badge in-process">En proceso</span>
+          </div>
+          <p class="card-description">Gestión de objetivos estratégicos, indicadores, metas y evidencias del plan de
+            mejora.</p>
+          <button class="btn btn-primary" onclick="mostrarMacroproceso('planificacion')">
+            Ingresar
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
         </article>
 
         <article class="macro-card">
-          <span class="macro-status process">En proceso</span>
-          <h3>Gesti&oacute;n Acad&eacute;mica del Programa de Estudio</h3>
-          <p>Permitir&aacute; analizar la malla curricular, perfil de egreso, competencias del programa y coherencia acad&eacute;mica del plan de estudios.</p>
-          <p class="macro-note">Vista base disponible para carga progresiva de informaci&oacute;n.</p>
-          <button class="btn btn-primary" type="button" onclick="mostrarMacroproceso('gestionAcademica')">Ingresar</button>
+          <div class="card-header">
+            <h3>Gestión Académica</h3>
+            <span class="status-badge in-process">En proceso</span>
+          </div>
+          <p class="card-description">Análisis de malla curricular, perfil de egreso y coherencia académica del
+            programa.</p>
+          <button class="btn btn-primary" onclick="mostrarMacroproceso('gestionAcademica')">
+            Ingresar
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
         </article>
 
         <article class="macro-card featured">
-          <span class="macro-status ready">Implementado</span>
-          <h3>Gestión de Sílabos</h3>
-          <p>Registra, valida, analiza y monitorea sílabos mediante agentes IA, LangGraph, Gemini y Supabase.</p>
-          <p class="macro-note">MVP disponible para el programa ISIA.</p>
-          <button class="btn btn-primary" type="button" onclick="mostrarMacroproceso('gestionSilabos')">Ingresar</button>
+          <div class="card-header">
+            <h3>Gestión de Sílabos</h3>
+            <span class="status-badge completed">Implementado</span>
+          </div>
+          <p class="card-description">Registra, valida, analiza y monitorea sílabos con IA, LangGraph y Supabase.</p>
+          <button class="btn btn-primary" onclick="mostrarMacroproceso('gestionSilabos')">
+            Ingresar
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
         </article>
       </div>
     </section>
 
-    <section id="macroPlanificacion" class="macro-module hidden">
-      <div class="module-header">
+    <!-- PLANIFICACIÓN ESTRATÉGICA VIEW -->
+    <section id="macroPlanificacion" class="view-section hidden">
+      <div class="section-header">
+        <button class="btn-back" onclick="regresarAMacroprocesos()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
         <div>
-          <h2>Planificaci&oacute;n Estrat&eacute;gica</h2>
-          <p>Seguimiento del Plan General de Desarrollo 2025-2028.</p>
-        </div>
-        <div class="section-actions panel-actions-group">
-          <div class="primary-action-row">
-            <button class="btn btn-primary" type="button" onclick="analizarPlanificacionIA()">Analizar con IA</button>
-            <button class="btn btn-secondary" type="button" onclick="verAccionesMacroproceso('planificacion_estrategica')">Ver acciones</button>
-            <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
-          </div>
-          <div class="acciones-dropdown more-options-menu">
-            <button class="btn btn-menu btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('planificacion-opciones')">M&aacute;s opciones &#9662;</button>
-            <div id="menu-acciones-planificacion-opciones" class="acciones-menu actions-dropdown-menu hidden">
-              <div class="menu-section">
-                <span class="menu-label">M&aacute;s opciones</span>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialAnalisisIA('planificacion_estrategica')">Ver historial IA</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('planificacion_estrategica')">Generar acciones desde evidencias</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalRegistroAccionMacroproceso('planificacion_estrategica')">Registrar nueva acci&oacute;n</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
-              </div>
-            </div>
-          </div>
+          <h1>Planificación Estratégica</h1>
+          <p>Plan General de Desarrollo 2025-2028</p>
         </div>
       </div>
 
-      <section id="dashboardPlanificacion" class="cards macroprocess-dashboard"></section>
+      <div class="section-actions">
+        <button class="btn btn-primary" onclick="analizarPlanificacionIA()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v6m6-4.41L20.59 8M22 12h-6" />
+          </svg>
+          Analizar IA
+        </button>
+        <button class="btn btn-secondary" onclick="verAccionesMacroproceso('planificacion_estrategica')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          Ver acciones
+        </button>
+      </div>
 
-      <section class="panel basic-table-card">
-        <div class="panel-header macroprocess-panel-header">
-          <div>
-            <h2>Evidencias de planificaci&oacute;n</h2>
-            <p>Filtre y actualice el seguimiento de evidencias del macroproceso.</p>
-          </div>
-          <div class="section-actions evidence-section-actions">
-            <button class="btn btn-success" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('planificacion_estrategica')">Registrar nueva evidencia</button>
-            <button class="btn btn-secondary" type="button" onclick="cargarVistaMacroproceso('planificacion_estrategica')">Actualizar</button>
+      <section id="dashboardPlanificacion" class="cards-grid"></section>
+
+      <section class="form-panel">
+        <div class="panel-header">
+          <h2>Evidencias de Planificación</h2>
+          <div class="panel-actions">
+            <button class="btn btn-success"
+              onclick="abrirModalRegistroEvidenciaMacroproceso('planificacion_estrategica')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Nueva evidencia
+            </button>
+            <button class="btn btn-secondary" onclick="cargarVistaMacroproceso('planificacion_estrategica')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+              Actualizar
+            </button>
           </div>
         </div>
-        <div class="macroprocess-filters">
-          <input type="search" id="buscarPlanificacion" class="form-control" placeholder="Buscar por t&iacute;tulo o responsable" oninput="renderEvidenciasMacroproceso('planificacion_estrategica')" />
-          <select id="estadoPlanificacion" class="form-control" onchange="renderEvidenciasMacroproceso('planificacion_estrategica')">
+
+        <div class="filter-row">
+          <input type="search" id="buscarPlanificacion" class="input-field" placeholder="Buscar evidencias..."
+            oninput="renderEvidenciasMacroproceso('planificacion_estrategica')" />
+          <select id="estadoPlanificacion" class="select-field"
+            onchange="renderEvidenciasMacroproceso('planificacion_estrategica')">
             <option value="">Todos los estados</option>
             <option value="pendiente">Pendiente</option>
             <option value="en_proceso">En proceso</option>
             <option value="completado">Completado</option>
             <option value="observado">Observado</option>
           </select>
-          <select id="prioridadPlanificacion" class="form-control" onchange="renderEvidenciasMacroproceso('planificacion_estrategica')">
+          <select id="prioridadPlanificacion" class="select-field"
+            onchange="renderEvidenciasMacroproceso('planificacion_estrategica')">
             <option value="">Todas las prioridades</option>
             <option value="alta">Alta</option>
             <option value="media">Media</option>
             <option value="baja">Baja</option>
           </select>
         </div>
+
         <div id="evidenciasPlanificacion" class="evidence-grid"></div>
       </section>
     </section>
 
-    <section id="macroGestionAcademica" class="macro-module hidden">
-      <div class="module-header">
+    <!-- GESTIÓN ACADÉMICA VIEW -->
+    <section id="macroGestionAcademica" class="view-section hidden">
+      <div class="section-header">
+        <button class="btn-back" onclick="regresarAMacroprocesos()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
         <div>
-          <h2>Gesti&oacute;n Acad&eacute;mica del Programa de Estudio</h2>
-          <p>Seguimiento de actualizaci&oacute;n curricular, actas, acuerdos y evidencias acad&eacute;micas.</p>
-        </div>
-        <div class="section-actions panel-actions-group">
-          <div class="primary-action-row">
-            <button class="btn btn-primary" type="button" onclick="analizarGestionAcademicaIA()">Analizar con IA</button>
-            <button class="btn btn-secondary" type="button" onclick="verAccionesMacroproceso('gestion_academica')">Ver acciones</button>
-            <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
-          </div>
-          <div class="acciones-dropdown more-options-menu">
-            <button class="btn btn-menu btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('gestion-academica-opciones')">M&aacute;s opciones &#9662;</button>
-            <div id="menu-acciones-gestion-academica-opciones" class="acciones-menu actions-dropdown-menu hidden">
-              <div class="menu-section">
-                <span class="menu-label">M&aacute;s opciones</span>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialAnalisisIA('gestion_academica')">Ver historial IA</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="generarAccionesDesdeEvidenciasMacroproceso('gestion_academica')">Generar acciones desde evidencias</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalRegistroAccionMacroproceso('gestion_academica')">Registrar nueva acci&oacute;n</button>
-                <button class="menu-item actions-dropdown-item" type="button" onclick="exportarReporteIntegral()">Exportar reporte integral</button>
-              </div>
-            </div>
-          </div>
+          <h1>Gestión Académica del Programa</h1>
+          <p>Seguimiento de actualización curricular y evidencias académicas</p>
         </div>
       </div>
 
-      <section id="dashboardGestionAcademica" class="cards macroprocess-dashboard"></section>
+      <div class="section-actions">
+        <button class="btn btn-primary" onclick="analizarGestionAcademicaIA()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v6m6-4.41L20.59 8M22 12h-6" />
+          </svg>
+          Analizar IA
+        </button>
+        <button class="btn btn-secondary" onclick="verAccionesMacroproceso('gestion_academica')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          Ver acciones
+        </button>
+      </div>
 
-      <section class="panel basic-table-card">
-        <div class="panel-header macroprocess-panel-header">
-          <div>
-            <h2>Evidencias acad&eacute;micas</h2>
-            <p>Revise y actualice las evidencias asociadas a la gesti&oacute;n acad&eacute;mica del programa.</p>
-          </div>
-          <div class="section-actions evidence-section-actions">
-            <button class="btn btn-success" type="button" onclick="abrirModalRegistroEvidenciaMacroproceso('gestion_academica')">Registrar nueva evidencia</button>
-            <button class="btn btn-secondary" type="button" onclick="cargarVistaMacroproceso('gestion_academica')">Actualizar</button>
+      <section id="dashboardGestionAcademica" class="cards-grid"></section>
+
+      <section class="form-panel">
+        <div class="panel-header">
+          <h2>Evidencias Académicas</h2>
+          <div class="panel-actions">
+            <button class="btn btn-success" onclick="abrirModalRegistroEvidenciaMacroproceso('gestion_academica')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Nueva evidencia
+            </button>
+            <button class="btn btn-secondary" onclick="cargarVistaMacroproceso('gestion_academica')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+              Actualizar
+            </button>
           </div>
         </div>
-        <div class="macroprocess-filters">
-          <input type="search" id="buscarGestionAcademica" class="form-control" placeholder="Buscar por t&iacute;tulo o responsable" oninput="renderEvidenciasMacroproceso('gestion_academica')" />
-          <select id="estadoGestionAcademica" class="form-control" onchange="renderEvidenciasMacroproceso('gestion_academica')">
+
+        <div class="filter-row">
+          <input type="search" id="buscarGestionAcademica" class="input-field" placeholder="Buscar evidencias..."
+            oninput="renderEvidenciasMacroproceso('gestion_academica')" />
+          <select id="estadoGestionAcademica" class="select-field"
+            onchange="renderEvidenciasMacroproceso('gestion_academica')">
             <option value="">Todos los estados</option>
             <option value="pendiente">Pendiente</option>
             <option value="en_proceso">En proceso</option>
             <option value="completado">Completado</option>
             <option value="observado">Observado</option>
           </select>
-          <select id="prioridadGestionAcademica" class="form-control" onchange="renderEvidenciasMacroproceso('gestion_academica')">
+          <select id="prioridadGestionAcademica" class="select-field"
+            onchange="renderEvidenciasMacroproceso('gestion_academica')">
             <option value="">Todas las prioridades</option>
             <option value="alta">Alta</option>
             <option value="media">Media</option>
             <option value="baja">Baja</option>
           </select>
         </div>
+
         <div id="evidenciasGestionAcademica" class="evidence-grid"></div>
       </section>
     </section>
 
-    <section id="macroGestionSilabos" class="macro-module hidden">
-      <div class="module-header">
-        <div>
-          <h2>Gestión de Sílabos</h2>
-          <p>MVP implementado para registrar, validar, analizar y monitorear sílabos del programa.</p>
-        </div>
-        <div class="section-actions syllabus-report-actions">
-          <button class="btn btn-success export-syllabus-report-btn" type="button" onclick="exportarReporteSilabosExcel()">Exportar reporte de sílabos</button>
-          <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
-        </div>
-      </div>
-
-    <section class="cards">
-      <div class="card">
-        <h3>Total de sílabos</h3>
-        <p id="totalSilabos">0</p>
-      </div>
-
-      <div class="card success">
-        <h3>Completos</h3>
-        <p id="silabosCompletos">0</p>
-      </div>
-
-      <div class="card warning">
-        <h3>Observados</h3>
-        <p id="silabosObservados">0</p>
-      </div>
-
-      <div class="card danger">
-        <h3>Pendientes</h3>
-        <p id="silabosPendientes">0</p>
-      </div>
-
-      <div class="card">
-        <h3>Cumplimiento promedio</h3>
-        <p id="cumplimientoPromedio">0%</p>
-      </div>
-    </section>
-
-    <section class="card analisis-curricular-card">
+    <!-- GESTIÓN DE SÍLABOS VIEW -->
+    <section id="macroGestionSilabos" class="view-section hidden">
       <div class="section-header">
+        <button class="btn-back" onclick="regresarAMacroprocesos()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
         <div>
-          <h2>Análisis curricular con LangGraph</h2>
-          <p>Evalúa la progresión curricular entre ciclos, detecta relaciones entre asignaturas y brechas formativas.</p>
-        </div>
-        <div class="section-actions">
-          <button class="btn btn-primary" onclick="analizarTrazabilidadCurricular()">Analizar trazabilidad curricular</button>
-          <button class="btn btn-secondary" onclick="verTrazabilidadCurricular()">Ver trazabilidad</button>
-          <button class="btn btn-secondary" onclick="verBrechasCurriculares()">Ver brechas</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="card acciones-mejora-card">
-      <div class="section-header">
-        <div>
-          <h2>Acciones de mejora continua</h2>
-          <p>Realiza el seguimiento de acciones generadas a partir de brechas curriculares detectadas por los agentes.</p>
-        </div>
-        <div class="section-actions">
-          <button class="btn btn-warning" onclick="generarAccionesDesdeBrechas()">Generar desde brechas</button>
-          <button class="btn btn-secondary" onclick="verAccionesMejora()">Ver acciones</button>
-          <button class="btn btn-secondary" onclick="cargarDashboardAccionesMejora()">Actualizar dashboard</button>
-        </div>
-      </div>
-      <div id="dashboardAccionesMejora" class="summary-grid"></div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
-        <h2>Listado de Sílabos</h2>
-        <button onclick="cargarDatos()">Actualizar</button>
-      </div>
-
-      <div class="table-responsive">
-        <table>
-        <thead>
-          <tr>
-            <th>Ciclo</th>
-            <th>Código</th>
-            <th>Asignatura</th>
-            <th>Estado</th>
-            <th>Cumplimiento</th>
-            <th>Archivo</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tablaSilabos">
-          <tr>
-            <td colspan="7">Cargando datos...</td>
-          </tr>
-        </tbody>
-        </table>
-      </div>
-      <div id="paginacionSilabos" class="paginacion"></div>
-    </section>
-
-    <section class="panel">
-      <h2>Registrar nuevo sílabo</h2>
-
-      <form id="formSilabo">
-        <div class="file-autofill-box">
-          <label for="archivoSilaboRegistro">Archivo del s&iacute;labo (opcional)</label>
-          <div class="file-autofill-actions">
-            <input type="file" id="archivoSilaboRegistro" accept=".docx,.pdf" />
-            <button type="button" class="btn btn-secondary" onclick="extraerDatosDesdeArchivoRegistro()">
-              Leer archivo y autocompletar
-            </button>
-          </div>
-          <small class="file-help-text">Puede subir un DOCX o PDF con texto para autocompletar los datos. Si falta alg&uacute;n dato, puede completarlo manualmente.</small>
-        </div>
-
-        <div class="form-grid">
-          <input type="text" id="semestre" placeholder="Semestre académico" value="202510" required />
-          <input type="text" id="facultad" placeholder="Facultad" value="Ingeniería" />
-          <input type="text" id="programa" placeholder="Programa de estudios" value="Ingeniería de Sistemas e Inteligencia Artificial" />
-          <input type="text" id="asignatura" placeholder="Asignatura" required />
-          <input type="text" id="codigo" placeholder="Código de asignatura" required />
-          <input type="number" id="ciclo" placeholder="Ciclo" min="1" max="10" required />
-          <input type="text" id="modalidad" placeholder="Modalidad" value="Presencial" />
-          <input type="number" id="creditos" placeholder="Créditos" min="0" />
-          <input type="number" id="horasSemestrales" placeholder="Horas semestrales" min="0" />
-          <input type="number" id="horasSemanales" placeholder="Horas semanales" min="0" />
-          <input type="date" id="fechaInicio" />
-          <input type="date" id="fechaFin" />
-          <input type="number" id="duracion" placeholder="Duración en semanas" min="1" value="17" />
-          <input type="text" id="docente" placeholder="Docente responsable" />
-          <input type="email" id="correo" placeholder="Correo docente" />
-        </div>
-
-        <textarea id="observacion" placeholder="Observación general"></textarea>
-
-        <button type="submit">Registrar sílabo</button>
-      </form>
-    </section>
-
-    <section class="panel">
-      <h2>Detalle del sílabo</h2>
-      <div id="detalleSilabo" class="detalle">
-        Selecciona un sílabo para ver su validación o historial.
-      </div>
-    </section>
-    </section>
-
-    <section id="moduloMetricasIndicadores" class="macro-module metrics-page hidden">
-      <div class="metrics-header">
-        <div>
-          <h2>M&eacute;tricas e Indicadores</h2>
-          <p>Vista general del avance, evidencias, acciones, alertas y uso de IA del sistema.</p>
-        </div>
-        <div class="metrics-actions">
-          <button class="btn btn-secondary" type="button" onclick="volverMacroprocesos()">Volver a macroprocesos</button>
-          <button class="btn btn-primary" type="button" onclick="descargarMetricasFinalesCsv()">Exportar m&eacute;tricas CSV</button>
-          <button class="btn btn-success" type="button" onclick="exportarReporteIntegralExcel()">Exportar m&eacute;tricas en Excel</button>
+          <h1>Gestión de Sílabos</h1>
+          <p>Registrar, validar, analizar y monitorear sílabos del programa ISIA</p>
         </div>
       </div>
 
-      <section class="metric-section">
-        <h3>Resumen general</h3>
-        <div id="metricasResumenGeneral" class="metrics-summary-grid">
-          <p class="text-muted">Cargando m&eacute;tricas...</p>
+      <div class="kpi-cards">
+        <div class="kpi-card primary">
+          <p class="kpi-label">Total de sílabos</p>
+          <p class="kpi-value" id="totalSilabos">0</p>
+        </div>
+        <div class="kpi-card success">
+          <p class="kpi-label">Completos</p>
+          <p class="kpi-value" id="silabosCompletos">0</p>
+        </div>
+        <div class="kpi-card warning">
+          <p class="kpi-label">Observados</p>
+          <p class="kpi-value" id="silabosObservados">0</p>
+        </div>
+        <div class="kpi-card accent">
+          <p class="kpi-label">Pendientes</p>
+          <p class="kpi-value" id="silabosPendientes">0</p>
+        </div>
+        <div class="kpi-card primary">
+          <p class="kpi-label">Cumplimiento</p>
+          <p class="kpi-value" id="cumplimientoPromedio">0%</p>
+        </div>
+      </div>
+
+      <!-- Análisis Curricular -->
+      <section class="form-panel">
+        <div class="panel-header">
+          <h2>Análisis Curricular</h2>
+          <p class="panel-description">Evalúa progresión curricular, relaciones entre asignaturas y brechas formativas
+          </p>
+        </div>
+        <div class="panel-actions">
+          <button class="btn btn-primary" onclick="analizarTrazabilidadCurricular()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 17 12 21 20 13M4 12a8 8 0 0 1 15.888-2" />
+            </svg>
+            Analizar
+          </button>
+          <button class="btn btn-secondary" onclick="verTrazabilidadCurricular()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Trazabilidad
+          </button>
+          <button class="btn btn-secondary" onclick="verBrechasCurriculares()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="16" />
+            </svg>
+            Brechas
+          </button>
         </div>
       </section>
 
-      <section id="interpretacionMetricas" class="interpretation-card"></section>
+      <!-- Acciones de Mejora -->
+      <section class="form-panel">
+        <div class="panel-header">
+          <h2>Acciones de Mejora</h2>
+          <p class="panel-description">Seguimiento de acciones generadas desde brechas curriculares detectadas</p>
+        </div>
+        <div class="panel-actions">
+          <button class="btn btn-warning" onclick="generarAccionesDesdeBrechas()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            Generar acciones
+          </button>
+          <button class="btn btn-secondary" onclick="verAccionesMejora()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Ver acciones
+          </button>
+          <button class="btn btn-secondary" onclick="cargarDashboardAccionesMejora()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            Actualizar
+          </button>
+        </div>
+        <div id="dashboardAccionesMejora" class="cards-grid"></div>
+      </section>
 
-      <div class="metrics-tabs" role="tablist" aria-label="Secciones de m&eacute;tricas">
-        <button class="metrics-tab active" type="button" data-metrics-tab="resumen" onclick="cambiarPestanaMetricas('resumen')">Resumen</button>
-        <button class="metrics-tab" type="button" data-metrics-tab="macroprocesos" onclick="cambiarPestanaMetricas('macroprocesos')">Macroprocesos</button>
-        <button class="metrics-tab" type="button" data-metrics-tab="ia" onclick="cambiarPestanaMetricas('ia')">IA</button>
-        <button class="metrics-tab" type="button" data-metrics-tab="indicadores" onclick="cambiarPestanaMetricas('indicadores')">Indicadores clave</button>
-      </div>
+      <!-- Tabla de Sílabos -->
+      <section class="form-panel">
+        <div class="panel-header">
+          <h2>Listado de Sílabos</h2>
+          <button class="btn btn-secondary" onclick="cargarDatos()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            Actualizar
+          </button>
+        </div>
 
-      <div class="metrics-panel" data-metrics-panel="resumen">
-        <section class="metric-section metrics-dashboard">
-          <h3>Dashboard visual</h3>
-          <div id="metricasDashboardVisual" class="charts-grid"></div>
-        </section>
-      </div>
+        <div class="filter-row">
+          <input type="search" id="buscarSilabo" class="input-field" placeholder="Buscar..." />
+          <select id="filtroEstadoSilabo" class="select-field">
+            <option value="">Estado</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="en_proceso">En proceso</option>
+            <option value="completo">Completo</option>
+            <option value="observado">Observado</option>
+          </select>
+          <select id="filtroPeriodoSilabo" class="select-field">
+            <option value="">Período</option>
+          </select>
+          <select id="filtroCondicionSilabo" class="select-field">
+            <option value="">Condición</option>
+          </select>
+          <button class="btn btn-primary" onclick="aplicarFiltrosSilabos()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+            Filtrar
+          </button>
+          <button class="btn btn-secondary" onclick="limpiarFiltrosSilabos()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M3 8v5h5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16m18-4v5h-5" />
+            </svg>
+            Limpiar
+          </button>
+        </div>
 
-      <div class="metrics-panel hidden" data-metrics-panel="macroprocesos">
-        <section class="metric-section">
-          <h3>M&eacute;tricas por macroproceso</h3>
-          <div id="metricasPorMacroproceso" class="macroprocess-metrics-grid"></div>
-        </section>
-      </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th><input type="checkbox" /></th>
+                <th>Ciclo</th>
+                <th>Código</th>
+                <th>Asignatura</th>
+                <th>Estado</th>
+                <th>Cumplimiento</th>
+                <th>Archivo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaSilabos">
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 32px;">Cargando sílabos...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      <div class="metrics-panel hidden" data-metrics-panel="ia">
-        <section class="metric-section ia-metrics-section">
-          <div>
-            <h3>M&eacute;tricas de IA</h3>
-            <p>Estas m&eacute;tricas muestran el uso de los agentes IA dentro del sistema.</p>
+        <div class="pagination-container" id="paginacionContenedor"></div>
+
+        <div class="bulk-actions">
+          <button class="btn btn-secondary" onclick="procesarTodosLosSilabosSeleccionados()">
+            Procesar seleccionados
+          </button>
+        </div>
+      </section>
+
+      <!-- Registrar Nuevo Sílabo -->
+      <section class="form-panel">
+        <h2>Registrar Nuevo Sílabo</h2>
+        <form id="formSilabo" onsubmit="registrarSilabo(event)">
+          <div class="file-upload-section">
+            <label for="archivoSilaboRegistro">Archivo del sílabo (opcional)</label>
+            <div class="file-upload-wrapper">
+              <input type="file" id="archivoSilaboRegistro" accept=".docx,.pdf" />
+              <button type="button" class="btn btn-secondary" onclick="extraerDatosDesdeArchivoRegistro()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                  <polyline points="13 2 13 9 20 9" />
+                </svg>
+                Autocompletar
+              </button>
+            </div>
+            <small>Puede subir un DOCX o PDF para autocompletar los datos</small>
           </div>
-          <div id="metricasIA" class="metrics-summary-grid ia-metrics-grid"></div>
-        </section>
+
+          <div class="form-grid">
+            <input type="text" id="semestre" class="input-field" placeholder="Semestre académico" value="202510"
+              required />
+            <input type="text" id="facultad" class="input-field" placeholder="Facultad" value="Ingeniería" />
+            <input type="text" id="programa" class="input-field" placeholder="Programa de estudios"
+              value="Ingeniería de Sistemas e Inteligencia Artificial" />
+            <input type="text" id="asignatura" class="input-field" placeholder="Asignatura" required />
+            <input type="text" id="codigo" class="input-field" placeholder="Código" required />
+            <input type="number" id="ciclo" class="input-field" placeholder="Ciclo" min="1" max="10" required />
+            <input type="text" id="modalidad" class="input-field" placeholder="Modalidad" value="Presencial" />
+            <input type="number" id="creditos" class="input-field" placeholder="Créditos" min="0" />
+            <input type="number" id="horasSemestrales" class="input-field" placeholder="Horas semestrales" min="0" />
+            <input type="number" id="horasSemanales" class="input-field" placeholder="Horas semanales" min="0" />
+            <input type="date" id="fechaInicio" class="input-field" />
+            <input type="date" id="fechaFin" class="input-field" />
+            <input type="number" id="duracion" class="input-field" placeholder="Duración (semanas)" min="1"
+              value="17" />
+            <input type="text" id="docente" class="input-field" placeholder="Docente responsable" />
+            <input type="email" id="correo" class="input-field" placeholder="Correo docente" />
+          </div>
+
+          <div class="form-group">
+            <label for="observacion">Observación</label>
+            <textarea id="observacion" class="textarea-field"
+              placeholder="Observaciones generales del sílabo"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Registrar sílabo
+          </button>
+        </form>
+      </section>
+
+      <!-- Detalle del Sílabo -->
+      <section class="form-panel">
+        <h2>Detalle del Sílabo</h2>
+        <div id="detalleSilabo" class="info-box">
+          Selecciona un sílabo para ver su validación o historial
+        </div>
+      </section>
+    </section>
+
+    <!-- MÉTRICAS VIEW -->
+    <section id="moduloMetricasIndicadores" class="view-section hidden">
+      <div class="section-header">
+        <button class="btn-back" onclick="regresarAMacroprocesos()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <div>
+          <h1>Métricas e Indicadores</h1>
+          <p>Vista general del avance, evidencias, acciones, alertas y uso de IA</p>
+        </div>
       </div>
 
-      <div class="metrics-panel hidden" data-metrics-panel="indicadores">
-        <section class="metric-section">
-          <h3>Indicadores clave</h3>
-          <div class="basic-table-card">
-            <table class="indicators-table">
+      <div class="section-actions">
+        <button class="btn btn-secondary" onclick="descargarMetricasFinalesCsv()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Descargar CSV
+        </button>
+        <button class="btn btn-success" onclick="exportarReporteIntegralExcel()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Exportar Excel
+        </button>
+      </div>
+
+      <section class="form-panel">
+        <h3>Resumen General</h3>
+        <div id="metricasResumenGeneral" class="metrics-grid"></div>
+      </section>
+
+      <section id="interpretacionMetricas" class="form-panel"></section>
+
+      <div class="tabs-row">
+        <button class="tab-btn active" data-tab="resumen" onclick="cambiarPestanaMetricas('resumen')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3v12m-8-3h16M5 18h14" />
+          </svg>
+          Resumen
+        </button>
+        <button class="tab-btn" data-tab="macroprocesos" onclick="cambiarPestanaMetricas('macroprocesos')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+          </svg>
+          Macroprocesos
+        </button>
+        <button class="tab-btn" data-tab="ia" onclick="cambiarPestanaMetricas('ia')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v6m6-4.41L20.59 8M22 12h-6" />
+          </svg>
+          IA
+        </button>
+        <button class="tab-btn" data-tab="indicadores" onclick="cambiarPestanaMetricas('indicadores')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19" />
+          </svg>
+          Indicadores
+        </button>
+      </div>
+
+      <div class="metrics-panel" data-panel="resumen">
+        <div class="form-panel">
+          <h3>Dashboard Visual</h3>
+          <div id="metricasDashboardVisual" class="metrics-grid"></div>
+        </div>
+      </div>
+
+      <div class="metrics-panel hidden" data-panel="macroprocesos">
+        <div class="form-panel">
+          <h3>Métricas por Macroproceso</h3>
+          <div id="metricasPorMacroproceso" class="metrics-grid"></div>
+        </div>
+      </div>
+
+      <div class="metrics-panel hidden" data-panel="ia">
+        <div class="form-panel">
+          <h3>Métricas de IA</h3>
+          <p class="panel-description">Uso de agentes IA en el sistema</p>
+          <div id="metricasIA" class="metrics-grid"></div>
+        </div>
+      </div>
+
+      <div class="metrics-panel hidden" data-panel="indicadores">
+        <div class="form-panel">
+          <h3>Indicadores Clave</h3>
+          <div class="table-responsive">
+            <table>
               <thead>
                 <tr>
                   <th>Indicador</th>
                   <th>Valor</th>
-                  <th>Interpretaci&oacute;n</th>
+                  <th>Interpretación</th>
                 </tr>
               </thead>
               <tbody id="tablaIndicadoresMetricas">
                 <tr>
-                  <td colspan="3">Cargando indicadores...</td>
+                  <td colspan="3" style="text-align: center; padding: 32px;">Cargando...</td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
       </div>
     </section>
-
   </main>
 
-  <div id="modalEstado" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalEstado">
-    <div class="modal-card modal-card-small">
+  <!-- MODALS -->
+  <!-- Modal: Cambiar Estado -->
+  <div id="modalEstado" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalCambioEstado()"></div>
+    <div class="modal-content">
       <div class="modal-header">
-        <h2 id="tituloModalEstado">Cambiar estado del sílabo</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalCambioEstado()">&times;</button>
+        <h3>Cambiar estado del sílabo</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalCambioEstado()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="estadoNuevo">Nuevo estado</label>
-          <select id="estadoNuevo" class="form-control">
-            <option value="pendiente">Pendiente</option>
-            <option value="completo">Completo</option>
-            <option value="observado">Observado</option>
-            <option value="incompleto">Incompleto</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="estadoObservacion">Observación general</label>
-          <textarea id="estadoObservacion" class="form-control" placeholder="Describe el motivo del cambio de estado"></textarea>
-        </div>
+      <div class="form-group">
+        <label for="estadoNuevo">Nuevo estado</label>
+        <select id="estadoNuevo" class="select-field">
+          <option value="pendiente">Pendiente</option>
+          <option value="completo">Completo</option>
+          <option value="observado">Observado</option>
+          <option value="incompleto">Incompleto</option>
+        </select>
       </div>
-      <div class="modal-footer">
+      <div class="form-group">
+        <label for="estadoObservacion">Observación</label>
+        <textarea id="estadoObservacion" class="textarea-field" placeholder="Describe el cambio..."></textarea>
+      </div>
+      <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalCambioEstado()">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="guardarCambioEstado()">Guardar cambios</button>
+        <button type="button" class="btn btn-primary" onclick="guardarCambioEstado()">Guardar</button>
       </div>
     </div>
   </div>
 
-  <div id="modalEditarSilabo" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalEditar">
-    <div class="modal-card">
+  <!-- Modal: Editar Sílabo -->
+  <div id="modalEditarSilabo" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalEditarSilabo()"></div>
+    <div class="modal-content">
       <div class="modal-header">
-        <h2 id="tituloModalEditar">Editar información del sílabo</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalEditarSilabo()">&times;</button>
+        <h3>Editar Sílabo</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalEditarSilabo()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="modal-body">
-        <div class="modal-form-grid">
-          <div class="form-group">
-            <label for="editarAsignatura">Asignatura</label>
-            <input id="editarAsignatura" class="form-control" type="text" required />
-          </div>
-          <div class="form-group">
-            <label for="editarCodigo">Código de asignatura</label>
-            <input id="editarCodigo" class="form-control" type="text" required />
-          </div>
-          <div class="form-group">
-            <label for="editarCiclo">Ciclo</label>
-            <input id="editarCiclo" class="form-control" type="number" min="1" max="10" required />
-          </div>
-          <div class="form-group">
-            <label for="editarCreditos">Créditos</label>
-            <input id="editarCreditos" class="form-control" type="number" min="0" />
-          </div>
-          <div class="form-group">
-            <label for="editarDocente">Docente responsable</label>
-            <input id="editarDocente" class="form-control" type="text" />
-          </div>
-          <div class="form-group">
-            <label for="editarCorreo">Correo docente</label>
-            <input id="editarCorreo" class="form-control" type="email" />
-          </div>
-          <div class="form-group full-width">
-            <label for="editarArchivoUrl">Enlace del archivo en Google Drive o Supabase</label>
-            <input id="editarArchivoUrl" class="form-control" type="url" placeholder="https://..." />
-          </div>
-          <div class="form-group full-width">
-            <label for="editarObservacion">Observación general</label>
-            <textarea id="editarObservacion" class="form-control" placeholder="Observaciones del sílabo"></textarea>
-          </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="editarAsignatura">Asignatura</label>
+          <input id="editarAsignatura" class="input-field" type="text" required />
+        </div>
+        <div class="form-group">
+          <label for="editarCodigo">Código</label>
+          <input id="editarCodigo" class="input-field" type="text" required />
+        </div>
+        <div class="form-group">
+          <label for="editarCiclo">Ciclo</label>
+          <input id="editarCiclo" class="input-field" type="number" min="1" max="10" required />
+        </div>
+        <div class="form-group">
+          <label for="editarCreditos">Créditos</label>
+          <input id="editarCreditos" class="input-field" type="number" min="0" />
+        </div>
+        <div class="form-group">
+          <label for="editarDocente">Docente</label>
+          <input id="editarDocente" class="input-field" type="text" />
+        </div>
+        <div class="form-group">
+          <label for="editarCorreo">Email</label>
+          <input id="editarCorreo" class="input-field" type="email" />
+        </div>
+        <div class="form-group">
+          <label for="editarArchivoUrl">URL del archivo</label>
+          <input id="editarArchivoUrl" class="input-field" type="url" placeholder="https://..." />
         </div>
       </div>
-      <div class="modal-footer">
+      <div class="form-group">
+        <label for="editarObservacion">Observación</label>
+        <textarea id="editarObservacion" class="textarea-field"></textarea>
+      </div>
+      <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarSilabo()">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="guardarEdicionSilabo()">Guardar cambios</button>
+        <button type="button" class="btn btn-primary" onclick="guardarEdicionSilabo()">Guardar</button>
       </div>
     </div>
   </div>
 
-  <div id="modalHistorialSilabo" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalHistorialSilabo">
-    <div class="modal-card syllabus-history-modal">
+  <!-- Modal: Historial del Sílabo -->
+  <div id="modalHistorialSilabo" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalHistorialSilabo()"></div>
+    <div class="modal-content modal-lg">
       <div class="modal-header">
         <div>
-          <h2 id="tituloModalHistorialSilabo">Historial del sílabo</h2>
+          <h3>Historial del sílabo</h3>
           <p id="subtituloModalHistorialSilabo" class="modal-subtitle">Asignatura</p>
         </div>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalHistorialSilabo()">&times;</button>
+        <button type="button" class="modal-close" onclick="cerrarModalHistorialSilabo()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="modal-body" id="contenidoHistorialSilabo"></div>
-      <div class="modal-footer">
+      <div id="contenidoHistorialSilabo"></div>
+      <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialSilabo()">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <div id="modalAnalisis" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalAnalisis">
-    <div class="modal-card modal-large">
+  <!-- Modal: Análisis Curricular -->
+  <div id="modalAnalisis" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalAnalisis()"></div>
+    <div class="modal-content modal-lg">
       <div class="modal-header">
-        <h2 id="tituloModalAnalisis">Análisis curricular del sílabo</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalAnalisis()">&times;</button>
+        <h3 id="tituloModalAnalisis">Análisis Curricular</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalAnalisis()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div id="contenidoAnalisis" class="modal-body">
-      </div>
-      <div class="modal-footer">
+      <div id="contenidoAnalisis"></div>
+      <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalAnalisis()">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <div id="modalTrazabilidad" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalTrazabilidad">
-    <div class="modal-card modal-extra-large">
+  <!-- Modal: Trazabilidad -->
+  <div id="modalTrazabilidad" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalTrazabilidad()"></div>
+    <div class="modal-content modal-xl">
       <div class="modal-header">
-        <h2 id="tituloModalTrazabilidad">Trazabilidad curricular</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalTrazabilidad()">&times;</button>
+        <h3>Trazabilidad Curricular</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalTrazabilidad()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="modal-body">
-        <div id="resumenTrazabilidad" class="summary-grid"></div>
-        <div class="filters-bar">
-          <input id="buscarTrazabilidad" type="search" placeholder="Buscar asignatura..." />
-          <select id="filtroCoherenciaTrazabilidad">
-            <option value="todos">Todos los niveles</option>
-            <option value="alto">Alto</option>
-            <option value="medio">Medio</option>
-            <option value="bajo">Bajo</option>
-          </select>
-          <select id="filtroTipoTrazabilidad">
-            <option value="todos">Todos los tipos</option>
-            <option value="progresion_adecuada">Progresión adecuada</option>
-            <option value="continuidad_tematica">Continuidad temática</option>
-            <option value="repeticion">Repetición</option>
-            <option value="vacio_formativo">Vacío formativo</option>
-          </select>
-        </div>
-        <div id="contenidoTrazabilidad" class="cards-list"></div>
+      <div id="resumenTrazabilidad" class="cards-grid"></div>
+      <div class="filter-row">
+        <input id="buscarTrazabilidad" type="search" class="input-field" placeholder="Buscar..." />
+        <select id="filtroCoherenciaTrazabilidad" class="select-field">
+          <option value="todos">Todos los niveles</option>
+          <option value="alto">Alto</option>
+          <option value="medio">Medio</option>
+          <option value="bajo">Bajo</option>
+        </select>
+        <select id="filtroTipoTrazabilidad" class="select-field">
+          <option value="todos">Todos los tipos</option>
+          <option value="progresion_adecuada">Progresión adecuada</option>
+          <option value="continuidad_tematica">Continuidad temática</option>
+          <option value="repeticion">Repetición</option>
+          <option value="vacio_formativo">Vacío formativo</option>
+        </select>
       </div>
-      <div class="modal-footer">
+      <div id="contenidoTrazabilidad" class="cards-grid"></div>
+      <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalTrazabilidad()">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <div id="modalBrechas" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalBrechas">
-    <div class="modal-card modal-extra-large">
+  <!-- Modal: Brechas Curriculares -->
+  <div id="modalBrechas" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalBrechas()"></div>
+    <div class="modal-content modal-xl">
       <div class="modal-header">
-        <h2 id="tituloModalBrechas">Brechas curriculares detectadas</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalBrechas()">&times;</button>
+        <h3>Brechas Curriculares</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalBrechas()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="modal-body">
-        <div id="resumenBrechas" class="summary-grid"></div>
-        <div class="filters-bar">
-          <input id="buscarBrechas" type="search" placeholder="Buscar asignatura..." />
-          <select id="filtroPrioridadBrechas">
-            <option value="todas">Todas las prioridades</option>
-            <option value="alta">Alta</option>
-            <option value="media">Media</option>
-            <option value="baja">Baja</option>
-          </select>
-          <select id="filtroTipoBrechas">
-            <option value="todos">Todos los tipos</option>
-          </select>
-        </div>
-        <div id="contenidoBrechas" class="cards-list"></div>
+      <div id="resumenBrechas" class="cards-grid"></div>
+      <div class="filter-row">
+        <input id="buscarBrechas" type="search" class="input-field" placeholder="Buscar..." />
+        <select id="filtroPrioridadBrechas" class="select-field">
+          <option value="todas">Todas las prioridades</option>
+          <option value="alta">Alta</option>
+          <option value="media">Media</option>
+          <option value="baja">Baja</option>
+        </select>
+        <select id="filtroTipoBrechas" class="select-field">
+          <option value="todos">Todos los tipos</option>
+        </select>
       </div>
-      <div class="modal-footer">
+      <div id="contenidoBrechas" class="cards-grid"></div>
+      <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalBrechas()">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <div id="modalAccionesMejora" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalAccionesMejora">
-    <div class="modal-card modal-extra-large">
+  <!-- Modal: Acciones de Mejora -->
+  <div id="modalAccionesMejora" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalAccionesMejora()"></div>
+    <div class="modal-content modal-xl">
       <div class="modal-header">
-        <h2 id="tituloModalAccionesMejora">Acciones de mejora continua</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalAccionesMejora()">&times;</button>
+        <h3>Acciones de Mejora Continua</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalAccionesMejora()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="modal-body">
-        <div id="resumenAccionesMejora" class="summary-grid"></div>
-        <div class="filters-bar">
-          <input id="buscarAccionesMejora" type="text" placeholder="Buscar por asignatura, título o responsable..." />
-          <select id="filtroEstadoAcciones">
-            <option value="todos">Todos los estados</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="en_proceso">En proceso</option>
-            <option value="atendida">Atendida</option>
-            <option value="descartada">Descartada</option>
-          </select>
-          <select id="filtroPrioridadAcciones">
-            <option value="todos">Todas las prioridades</option>
-            <option value="alta">Alta</option>
-            <option value="media">Media</option>
-            <option value="baja">Baja</option>
-          </select>
-        </div>
-        <div id="contenidoAccionesMejora" class="cards-list"></div>
+      <div id="resumenAccionesMejora" class="cards-grid"></div>
+      <div class="filter-row">
+        <input id="buscarAccionesMejora" type="text" class="input-field" placeholder="Buscar..." />
+        <select id="filtroEstadoAcciones" class="select-field">
+          <option value="todos">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="en_proceso">En proceso</option>
+          <option value="atendida">Atendida</option>
+          <option value="descartada">Descartada</option>
+        </select>
+        <select id="filtroPrioridadAcciones" class="select-field">
+          <option value="todos">Todas las prioridades</option>
+          <option value="alta">Alta</option>
+          <option value="media">Media</option>
+          <option value="baja">Baja</option>
+        </select>
       </div>
-      <div class="modal-footer">
+      <div id="contenidoAccionesMejora" class="cards-grid"></div>
+      <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalAccionesMejora()">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <div id="modalRegistroAccionMacroproceso" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalRegistroAccionMacroproceso">
-    <div class="modal-card modal-large">
+  <!-- Modal: Registrar Acción de Mejora -->
+  <div id="modalRegistroAccionMacroproceso" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalRegistroAccionMacroproceso()"></div>
+    <div class="modal-content modal-lg">
       <div class="modal-header">
-        <h2 id="tituloModalRegistroAccionMacroproceso">Registrar acci&oacute;n de mejora</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalRegistroAccionMacroproceso()">&times;</button>
+        <h3>Registrar Acción de Mejora</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalRegistroAccionMacroproceso()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="modal-body">
-        <form id="formAccionMacroproceso" class="macro-action-form" onsubmit="guardarAccionMacroproceso(event)">
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="accionMacroTitulo">T&iacute;tulo de la acci&oacute;n *</label>
-              <input id="accionMacroTitulo" type="text" class="form-control" required />
-            </div>
-            <div class="form-group">
-              <label for="accionMacroResponsable">Responsable</label>
-              <input id="accionMacroResponsable" type="text" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label for="accionMacroPrioridad">Prioridad *</label>
-              <select id="accionMacroPrioridad" class="form-control" required>
-                <option value="alta">Alta</option>
-                <option value="media" selected>Media</option>
-                <option value="baja">Baja</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="accionMacroEstado">Estado *</label>
-              <select id="accionMacroEstado" class="form-control" required>
-                <option value="pendiente" selected>Pendiente</option>
-                <option value="en_proceso">En proceso</option>
-                <option value="atendida">Completada</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="accionMacroFechaLimite">Fecha programada</label>
-              <input id="accionMacroFechaLimite" type="date" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label for="accionMacroEvidencia">Evidencia relacionada</label>
-              <select id="accionMacroEvidencia" class="form-control">
-                <option value="">Sin evidencia relacionada</option>
-              </select>
-            </div>
-            <div class="form-group form-group-full">
-              <label for="accionMacroDescripcion">Descripci&oacute;n *</label>
-              <textarea id="accionMacroDescripcion" class="form-control" rows="4" required></textarea>
-            </div>
-            <div class="form-group form-group-full">
-              <label for="accionMacroObservacion">Observaci&oacute;n</label>
-              <textarea id="accionMacroObservacion" class="form-control" rows="3"></textarea>
-            </div>
+      <form id="formAccionMacroproceso" onsubmit="guardarAccionMacroproceso(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="accionMacroTitulo">Título <span class="required">*</span></label>
+            <input id="accionMacroTitulo" type="text" class="input-field" required />
           </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalRegistroAccionMacroproceso()">Cancelar</button>
-        <button type="submit" form="formAccionMacroproceso" class="btn btn-primary">Guardar acci&oacute;n</button>
+          <div class="form-group">
+            <label for="accionMacroResponsable">Responsable</label>
+            <input id="accionMacroResponsable" type="text" class="input-field" />
+          </div>
+          <div class="form-group">
+            <label for="accionMacroPrioridad">Prioridad <span class="required">*</span></label>
+            <select id="accionMacroPrioridad" class="select-field" required>
+              <option value="alta">Alta</option>
+              <option value="media" selected>Media</option>
+              <option value="baja">Baja</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="accionMacroEstado">Estado <span class="required">*</span></label>
+            <select id="accionMacroEstado" class="select-field" required>
+              <option value="pendiente" selected>Pendiente</option>
+              <option value="en_proceso">En proceso</option>
+              <option value="atendida">Completada</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="accionMacroFechaLimite">Fecha límite</label>
+            <input id="accionMacroFechaLimite" type="date" class="input-field" />
+          </div>
+          <div class="form-group">
+            <label for="accionMacroEvidencia">Evidencia relacionada</label>
+            <select id="accionMacroEvidencia" class="select-field">
+              <option value="">Sin relación</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="accionMacroDescripcion">Descripción <span class="required">*</span></label>
+          <textarea id="accionMacroDescripcion" class="textarea-field" rows="4" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="accionMacroObservacion">Observación</label>
+          <textarea id="accionMacroObservacion" class="textarea-field" rows="3"></textarea>
+        </div>
+      </form>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary"
+          onclick="cerrarModalRegistroAccionMacroproceso()">Cancelar</button>
+        <button type="submit" form="formAccionMacroproceso" class="btn btn-primary">Guardar</button>
       </div>
     </div>
   </div>
 
-  <div id="modalMejoraContinuaIA" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalMejoraContinuaIA">
-    <div class="modal-card modal-extra-large">
+  <!-- Modal: Mejora Continua IA -->
+  <div id="modalMejoraContinuaIA" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalMejoraContinuaIA()"></div>
+    <div class="modal-content modal-xl">
       <div class="modal-header">
-        <h2 id="tituloModalMejoraContinuaIA">Diagn&oacute;stico integral de mejora continua</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalMejoraContinuaIA()">&times;</button>
+        <h3>Diagnóstico de Mejora Continua</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalMejoraContinuaIA()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="modal-body">
-        <div id="contenidoMejoraContinuaIA" class="coordinator-modal"></div>
-      </div>
-      <div class="modal-footer">
+      <div id="contenidoMejoraContinuaIA"></div>
+      <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalMejoraContinuaIA()">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <div id="modalReporteIntegral" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalReporteIntegral">
-    <div class="modal-card modal-extra-large report-modal">
-      <div class="modal-header no-print">
-        <h2 id="tituloModalReporteIntegral">Reporte integral de mejora continua</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalReporteIntegral()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="contenidoReporteIntegral" class="report-content report-print-area"></div>
-      </div>
-      <div class="modal-footer report-actions no-print">
-        <button type="button" class="btn btn-primary download-json-btn" onclick="descargarReporteIntegralJson()">Descargar como JSON</button>
-        <button type="button" class="btn btn-secondary print-report-btn" onclick="imprimirReporteIntegral()">Imprimir / Guardar como PDF</button>
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalReporteIntegral()">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalMetricasFinales" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalMetricasFinales">
-    <div class="modal-card modal-extra-large metrics-modal">
+  <!-- Modal: Historial IA -->
+  <div id="modalHistorialIA" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalHistorialIA()"></div>
+    <div class="modal-content modal-xl">
       <div class="modal-header">
-        <h2 id="tituloModalMetricasFinales">M&eacute;tricas finales del sistema</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalMetricasFinales()">&times;</button>
+        <h3>Historial de Análisis IA</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalHistorialIA()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="modal-body">
-        <div id="contenidoMetricasFinales" class="metrics-content"></div>
+      <div class="modal-actions" style="margin-top: 0; margin-bottom: var(--sp-lg); border-top: none; padding-top: 0; justify-content: flex-start;">
+        <button type="button" class="btn btn-primary" onclick="compararUltimosAnalisisIA()">Comparar últimos análisis</button>
       </div>
-      <div class="modal-footer metrics-actions">
-        <button type="button" class="btn btn-primary" onclick="descargarMetricasFinalesCsv()">Descargar m&eacute;tricas CSV</button>
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalMetricasFinales()">Cerrar</button>
+      <div id="comparacionHistorialIA" class="form-panel hidden" style="margin: 0 0 var(--sp-lg) 0;"></div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--sp-lg);">
+        <div id="contenidoHistorialIA"></div>
+        <div id="detalleHistorialIA" class="form-panel hidden" style="margin: 0;"></div>
       </div>
-    </div>
-  </div>
-
-  <div id="modalEncuestaAceptacion" class="modal-overlay hidden survey-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalEncuestaAceptacion">
-    <div class="modal-card modal-extra-large">
-      <div class="modal-header">
-        <h2 id="tituloModalEncuestaAceptacion">Encuesta de aceptaci&oacute;n del sistema</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalEncuestaAceptacion()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="formEncuestaAceptacion" class="survey-form" onsubmit="enviarEncuestaAceptacion(event)">
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="encuestaNombre">Nombre del usuario</label>
-              <input id="encuestaNombre" type="text" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label for="encuestaRol">Rol del usuario</label>
-              <input id="encuestaRol" type="text" class="form-control" placeholder="Estudiante / Usuario evaluador" />
-            </div>
-            <div class="form-group survey-question">
-              <label for="encuestaClaridad">Claridad de la interfaz *</label>
-              <select id="encuestaClaridad" class="form-control survey-score" required></select>
-            </div>
-            <div class="form-group survey-question">
-              <label for="encuestaFacilidad">Facilidad de uso *</label>
-              <select id="encuestaFacilidad" class="form-control survey-score" required></select>
-            </div>
-            <div class="form-group survey-question">
-              <label for="encuestaEvidencias">Utilidad para registrar y consultar evidencias *</label>
-              <select id="encuestaEvidencias" class="form-control survey-score" required></select>
-            </div>
-            <div class="form-group survey-question">
-              <label for="encuestaIa">Utilidad de los agentes IA *</label>
-              <select id="encuestaIa" class="form-control survey-score" required></select>
-            </div>
-            <div class="form-group survey-question">
-              <label for="encuestaAlertas">Utilidad de las alertas inteligentes *</label>
-              <select id="encuestaAlertas" class="form-control survey-score" required></select>
-            </div>
-            <div class="form-group survey-question">
-              <label for="encuestaSemaforo">Utilidad del sem&aacute;foro de cumplimiento *</label>
-              <select id="encuestaSemaforo" class="form-control survey-score" required></select>
-            </div>
-            <div class="form-group survey-question">
-              <label for="encuestaSatisfaccion">Satisfacci&oacute;n general *</label>
-              <select id="encuestaSatisfaccion" class="form-control survey-score" required></select>
-            </div>
-            <div class="form-group form-group-full">
-              <label for="encuestaComentario">Comentario</label>
-              <textarea id="encuestaComentario" class="form-control" rows="4"></textarea>
-            </div>
-          </div>
-        </form>
-        <div id="resultadosEncuestaAceptacion" class="survey-results hidden"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="submit" form="formEncuestaAceptacion" class="btn btn-primary">Enviar encuesta</button>
-        <button type="button" class="btn btn-secondary" onclick="verResultadosEncuestaAceptacion()">Ver resultados</button>
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalEncuestaAceptacion()">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalAyudaUsuario" class="modal-overlay hidden help-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalAyudaUsuario">
-    <div class="modal-card modal-extra-large">
-      <div class="modal-header no-print">
-        <h2 id="tituloModalAyudaUsuario">Ayuda / Manual de usuario</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalAyudaUsuario()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="contenidoAyudaUsuario" class="help-content help-print-area">
-          <aside class="help-index">
-            <a href="#manual-login">Inicio de sesi&oacute;n</a>
-            <a href="#manual-panel">Panel principal</a>
-            <a href="#manual-planificacion">Planificaci&oacute;n Estrat&eacute;gica</a>
-            <a href="#manual-academica">Gesti&oacute;n Acad&eacute;mica</a>
-            <a href="#manual-silabos">Gesti&oacute;n de S&iacute;labos</a>
-            <a href="#manual-agentes">Agentes IA</a>
-            <a href="#manual-alertas">Alertas inteligentes</a>
-            <a href="#manual-semaforo">Sem&aacute;foro</a>
-            <a href="#manual-acciones">Acciones de mejora</a>
-            <a href="#manual-reporte">Reporte integral</a>
-            <a href="#manual-metricas">M&eacute;tricas finales</a>
-            <a href="#manual-encuesta">Encuesta</a>
-          </aside>
-          <div class="help-sections">
-            <section id="manual-login" class="help-section help-card">
-              <h3>Inicio de sesi&oacute;n</h3>
-              <p class="help-step">Ingrese con un usuario autorizado, valide sus credenciales y acceda al panel principal del sistema.</p>
-            </section>
-            <section id="manual-panel" class="help-section help-card">
-              <h3>Panel principal</h3>
-              <p class="help-step">Visualice los tres macroprocesos, revise el sem&aacute;foro de cumplimiento, genere alertas inteligentes, consulte m&eacute;tricas finales y exporte el reporte integral.</p>
-            </section>
-            <section id="manual-planificacion" class="help-section help-card">
-              <h3>Planificaci&oacute;n Estrat&eacute;gica</h3>
-              <p class="help-step">Revise evidencias de planificaci&oacute;n, registre nuevas evidencias, cambie estado, edite avance, agregue observaciones, suba archivos, valide con IA, genere acciones y consulte historial.</p>
-            </section>
-            <section id="manual-academica" class="help-section help-card">
-              <h3>Gesti&oacute;n Acad&eacute;mica del Programa de Estudio</h3>
-              <p class="help-step">Revise evidencias acad&eacute;micas, registre nuevas evidencias, suba actas, resoluciones o informes, valide evidencias con IA y consulte alertas o evidencias cr&iacute;ticas.</p>
-            </section>
-            <section id="manual-silabos" class="help-section help-card">
-              <h3>Gesti&oacute;n de S&iacute;labos</h3>
-              <p class="help-step">Registre o consulte s&iacute;labos, suba archivos, ejecute an&aacute;lisis IA individual, revise trazabilidad curricular, brechas y acciones de mejora.</p>
-            </section>
-            <section id="manual-agentes" class="help-section help-card">
-              <h3>Agentes IA</h3>
-              <p class="help-step">El sistema usa agentes IA para analizar Planificaci&oacute;n Estrat&eacute;gica, Gesti&oacute;n Acad&eacute;mica, Gesti&oacute;n de S&iacute;labos y un agente coordinador de mejora continua.</p>
-            </section>
-            <section id="manual-alertas" class="help-section help-card">
-              <h3>Alertas inteligentes</h3>
-              <p class="help-step">Las alertas pueden ser bajas, medias, altas o cr&iacute;ticas. Puede generarlas, revisarlas y marcarlas como atendidas o descartadas.</p>
-            </section>
-            <section id="manual-semaforo" class="help-section help-card">
-              <h3>Sem&aacute;foro de cumplimiento</h3>
-              <p class="help-step">Verde indica cumplimiento adecuado, amarillo requiere seguimiento, rojo requiere atenci&oacute;n prioritaria y pendiente de an&aacute;lisis indica que a&uacute;n falta ejecutar IA.</p>
-            </section>
-            <section id="manual-acciones" class="help-section help-card">
-              <h3>Acciones de mejora</h3>
-              <p class="help-step">Consulte acciones generadas autom&aacute;ticamente, registre acciones manuales, relaci&oacute;nelas con evidencias y revise su estado.</p>
-            </section>
-            <section id="manual-reporte" class="help-section help-card">
-              <h3>Reporte integral</h3>
-              <p class="help-step">Exporte el reporte integral, descargue el JSON o use imprimir para guardar una versi&oacute;n PDF.</p>
-            </section>
-            <section id="manual-metricas" class="help-section help-card">
-              <h3>M&eacute;tricas finales</h3>
-              <p class="help-step">Interprete indicadores generales como evidencias con sustento, alertas cr&iacute;ticas, acciones pendientes y uso de IA.</p>
-            </section>
-            <section id="manual-encuesta" class="help-section help-card">
-              <h3>Encuesta de aceptaci&oacute;n</h3>
-              <p class="help-step">Responda la encuesta para valorar claridad, utilidad y satisfacci&oacute;n del sistema. Tambi&eacute;n puede consultar los resultados acumulados.</p>
-            </section>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer no-print">
-        <button type="button" class="btn btn-primary help-print-btn" onclick="imprimirManualUsuario()">Imprimir manual</button>
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalAyudaUsuario()">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalPlanificacionIA" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalPlanificacionIA">
-    <div class="modal-card modal-extra-large">
-      <div class="modal-header">
-        <h2 id="tituloModalPlanificacionIA">An&aacute;lisis IA de planificaci&oacute;n estrat&eacute;gica</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalPlanificacionIA()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="contenidoPlanificacionIA" class="planificacion-ai-content"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalPlanificacionIA()">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalGestionAcademicaIA" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalGestionAcademicaIA">
-    <div class="modal-card modal-extra-large">
-      <div class="modal-header">
-        <h2 id="tituloModalGestionAcademicaIA">An&aacute;lisis IA de gesti&oacute;n acad&eacute;mica</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalGestionAcademicaIA()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="contenidoGestionAcademicaIA" class="ai-analysis-modal"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalGestionAcademicaIA()">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalEvidenciaMacroproceso" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalEvidencia">
-    <div class="modal-card modal-large">
-      <div class="modal-header">
-        <h2 id="tituloModalEvidencia">Detalle de evidencia</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalEvidenciaMacroproceso()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="detalleEvidenciaMacroproceso" class="evidence-detail"></div>
-        <div id="editorEvidenciaMacroproceso" class="modal-form-grid">
-          <div class="form-group">
-            <label for="evidenciaEstado">Estado</label>
-            <select id="evidenciaEstado" class="form-control">
-              <option value="pendiente">Pendiente</option>
-              <option value="en_proceso">En proceso</option>
-              <option value="completado">Completado</option>
-              <option value="observado">Observado</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="evidenciaAvance">Avance</label>
-            <input type="number" id="evidenciaAvance" class="form-control" min="0" max="100" />
-          </div>
-          <div class="form-group modal-field-full">
-            <label for="evidenciaObservacion">Observaci&oacute;n</label>
-            <textarea id="evidenciaObservacion" class="form-control" placeholder="Agregue una observaci&oacute;n de seguimiento"></textarea>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalEvidenciaMacroproceso()">Cerrar</button>
-        <button type="button" id="botonGuardarEvidencia" class="btn btn-primary" onclick="guardarEvidenciaMacroproceso()">Guardar cambios</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalRegistroEvidenciaMacroproceso" class="modal-overlay hidden evidence-form-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalRegistroEvidenciaMacroproceso">
-    <div class="modal-card modal-large">
-      <div class="modal-header">
-        <h2 id="tituloModalRegistroEvidenciaMacroproceso">Registrar nueva evidencia</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalRegistroEvidenciaMacroproceso()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="formRegistroEvidenciaMacroproceso" class="macro-evidence-form" onsubmit="guardarNuevaEvidenciaMacroproceso(event)">
-          <div class="form-grid evidence-form-grid">
-            <div class="form-group">
-              <label for="nuevaEvidenciaCodigo">C&oacute;digo de evidencia *</label>
-              <input id="nuevaEvidenciaCodigo" type="text" class="form-control" required />
-            </div>
-            <div class="form-group">
-              <label for="nuevaEvidenciaTitulo">T&iacute;tulo de la evidencia *</label>
-              <input id="nuevaEvidenciaTitulo" type="text" class="form-control" required />
-            </div>
-            <div class="form-group">
-              <label for="nuevaEvidenciaTipo">Tipo de evidencia</label>
-              <input id="nuevaEvidenciaTipo" type="text" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label for="nuevaEvidenciaResponsable">Responsable</label>
-              <input id="nuevaEvidenciaResponsable" type="text" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label for="nuevaEvidenciaMes">Mes programado</label>
-              <input id="nuevaEvidenciaMes" type="text" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label for="nuevaEvidenciaFecha">Fecha programada</label>
-              <input id="nuevaEvidenciaFecha" type="date" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label for="nuevaEvidenciaEstado">Estado *</label>
-              <select id="nuevaEvidenciaEstado" class="form-control" required>
-                <option value="pendiente">Pendiente</option>
-                <option value="en_proceso">En proceso</option>
-                <option value="completado">Completado</option>
-                <option value="observado">Observado</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="nuevaEvidenciaPrioridad">Prioridad *</label>
-              <select id="nuevaEvidenciaPrioridad" class="form-control" required>
-                <option value="alta">Alta</option>
-                <option value="media" selected>Media</option>
-                <option value="baja">Baja</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="nuevaEvidenciaAvance">Avance</label>
-              <input id="nuevaEvidenciaAvance" type="number" class="form-control" min="0" max="100" value="0" />
-            </div>
-            <div class="form-group form-group-full">
-              <label for="nuevaEvidenciaDescripcion">Descripci&oacute;n</label>
-              <textarea id="nuevaEvidenciaDescripcion" class="form-control" rows="3"></textarea>
-            </div>
-            <div class="form-group form-group-full">
-              <label for="nuevaEvidenciaObservacion">Observaci&oacute;n</label>
-              <textarea id="nuevaEvidenciaObservacion" class="form-control" rows="3"></textarea>
-            </div>
-            <div class="form-group form-group-full">
-              <label for="nuevaEvidenciaOrigen">Origen del documento</label>
-              <input id="nuevaEvidenciaOrigen" type="text" class="form-control" placeholder="Registro manual" />
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer evidence-form-actions">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalRegistroEvidenciaMacroproceso()">Cancelar</button>
-        <button type="submit" form="formRegistroEvidenciaMacroproceso" class="btn btn-primary">Guardar evidencia</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalHistorialEvidencia" class="modal-overlay hidden evidence-history-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalHistorialEvidencia">
-    <div class="modal-card modal-large">
-      <div class="modal-header">
-        <h2 id="tituloModalHistorialEvidencia">Historial de evidencia</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalHistorialEvidencia()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="contenidoHistorialEvidencia" class="history-timeline"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialEvidencia()">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalSeguimientoSemanal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalSeguimientoSemanal">
-    <div class="modal-card modal-extra-large">
-      <div class="modal-header">
-        <div>
-          <h2 id="tituloModalSeguimientoSemanal">Registrar seguimiento semanal</h2>
-          <p id="seguimientoTituloEvidencia" class="modal-subtitle">Evidencia seleccionada</p>
-        </div>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalSeguimientoSemanal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="formSeguimientoSemanal" onsubmit="guardarSeguimientoSemanal(event)">
-          <div class="modal-form-grid">
-            <div class="form-group">
-              <label for="seguimientoSemanaInicio">Inicio de semana *</label>
-              <input id="seguimientoSemanaInicio" type="date" class="form-control" required />
-            </div>
-            <div class="form-group">
-              <label for="seguimientoSemanaFin">Fin de semana *</label>
-              <input id="seguimientoSemanaFin" type="date" class="form-control" required />
-            </div>
-            <div class="form-group">
-              <label for="seguimientoResponsable">Responsable</label>
-              <input id="seguimientoResponsable" type="text" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label for="seguimientoAccionRealizada">&iquest;Se realiz&oacute; mejora esta semana? *</label>
-              <select id="seguimientoAccionRealizada" class="form-control" required>
-                <option value="no">No</option>
-                <option value="si">S&iacute;</option>
-                <option value="parcial">Parcialmente</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="seguimientoNivelAvance">Nivel de avance *</label>
-              <select id="seguimientoNivelAvance" class="form-control" required>
-                <option value="Sin avance">Sin avance</option>
-                <option value="Bajo">Bajo</option>
-                <option value="Medio">Medio</option>
-                <option value="Alto">Alto</option>
-                <option value="Completado">Completado</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="seguimientoPorcentajeAvance">Porcentaje de avance *</label>
-              <input id="seguimientoPorcentajeAvance" type="number" class="form-control" min="0" max="100" value="0" required />
-            </div>
-            <div class="form-group modal-field-full">
-              <label for="seguimientoDescripcionAccion">Acci&oacute;n realizada esta semana</label>
-              <textarea id="seguimientoDescripcionAccion" class="form-control" rows="3"></textarea>
-            </div>
-            <div class="form-group modal-field-full">
-              <label for="seguimientoResultadoObservado">Resultado observado</label>
-              <textarea id="seguimientoResultadoObservado" class="form-control" rows="3"></textarea>
-            </div>
-            <div class="form-group">
-              <label for="seguimientoDificultad">Dificultad encontrada</label>
-              <textarea id="seguimientoDificultad" class="form-control" rows="3"></textarea>
-            </div>
-            <div class="form-group">
-              <label for="seguimientoCompromiso">Compromiso siguiente semana</label>
-              <textarea id="seguimientoCompromiso" class="form-control" rows="3"></textarea>
-            </div>
-            <div class="form-group">
-              <label for="seguimientoRequiereApoyo">Requiere apoyo</label>
-              <select id="seguimientoRequiereApoyo" class="form-control" onchange="toggleApoyoSeguimiento()">
-                <option value="false">No</option>
-                <option value="true">S&iacute;</option>
-              </select>
-            </div>
-            <div id="grupoTipoApoyoSeguimiento" class="form-group hidden">
-              <label for="seguimientoTipoApoyo">Tipo de apoyo requerido</label>
-              <select id="seguimientoTipoApoyo" class="form-control">
-                <option value="">Seleccione</option>
-                <option value="Directivo">Directivo</option>
-                <option value="Académico">Acad&eacute;mico</option>
-                <option value="Documental">Documental</option>
-                <option value="Tecnológico">Tecnol&oacute;gico</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </div>
-            <div class="form-group modal-field-full">
-              <label for="seguimientoArchivoSustento">Archivo de sustento semanal</label>
-              <input id="seguimientoArchivoSustento" type="file" class="form-control" accept=".pdf,.doc,.docx,.xlsx,.png,.jpg,.jpeg" />
-            </div>
-            <div class="form-group modal-field-full">
-              <label for="seguimientoObservacion">Observaci&oacute;n</label>
-              <textarea id="seguimientoObservacion" class="form-control" rows="3"></textarea>
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalSeguimientoSemanal()">Cancelar</button>
-        <button type="submit" form="formSeguimientoSemanal" class="btn btn-primary">Guardar seguimiento</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalHistorialSeguimientos" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloHistorialSeguimientos">
-    <div class="modal-card modal-extra-large">
-      <div class="modal-header">
-        <h2 id="tituloHistorialSeguimientos">Seguimiento semanal</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalHistorialSeguimientos()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="contenidoHistorialSeguimientos" class="weekly-history-list"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialSeguimientos()">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalAlertasInteligentes" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalAlertasInteligentes">
-    <div class="modal-card modal-extra-large">
-      <div class="modal-header">
-        <h2 id="tituloModalAlertasInteligentes">Alertas inteligentes activas</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalAlertasInteligentes()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="contenidoAlertasInteligentes" class="alerts-panel"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalAlertasInteligentes()">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalValidacionEvidenciaIA" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalValidacionEvidenciaIA">
-    <div class="modal-card modal-extra-large">
-      <div class="modal-header">
-        <h2 id="tituloModalValidacionEvidenciaIA">Validaci&oacute;n IA de evidencia documental</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalValidacionEvidenciaIA()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="contenidoValidacionEvidenciaIA" class="ai-analysis-modal"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalValidacionEvidenciaIA()">Cerrar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalHistorialIA" class="modal-overlay hidden ia-history-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalHistorialIA">
-    <div class="modal-card modal-extra-large">
-      <div class="modal-header">
-        <h2 id="tituloModalHistorialIA">Historial de an&aacute;lisis IA</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalHistorialIA()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="section-actions ia-history-actions">
-          <button type="button" class="btn btn-secondary" onclick="compararUltimosAnalisisIA()">Comparar &uacute;ltimos an&aacute;lisis</button>
-        </div>
-        <div id="comparacionHistorialIA" class="ia-comparison-box hidden"></div>
-        <div id="contenidoHistorialIA" class="ia-timeline"></div>
-        <div id="detalleHistorialIA" class="ia-history-detail hidden"></div>
-      </div>
-      <div class="modal-footer">
+      <div class="modal-actions">
         <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialIA()">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <div id="modalConfirmacion" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="confirmacionTitulo">
-    <div class="modal-card modal-card-small">
+  <!-- Modal: Alertas Inteligentes -->
+  <div id="modalAlertasInteligentes" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalAlertasInteligentes()"></div>
+    <div class="modal-content modal-lg">
       <div class="modal-header">
-        <h2 id="confirmacionTitulo">Confirmar acción</h2>
-        <button type="button" class="modal-close" aria-label="Cerrar" onclick="cerrarModalConfirmacion(false)">&times;</button>
+        <h3>Alertas Inteligentes Activas</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalAlertasInteligentes()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <div class="modal-body">
-        <p id="confirmacionMensaje" class="confirmacion-mensaje"></p>
+      <div id="contenidoAlertasInteligentes" style="display: flex; flex-direction: column; gap: var(--sp-md); max-height: 60vh; overflow-y: auto;"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalAlertasInteligentes()">Cerrar</button>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalConfirmacion(false)">Cancelar</button>
-        <button type="button" id="confirmacionAceptar" class="btn btn-primary" onclick="cerrarModalConfirmacion(true)">Aceptar</button>
+    </div>
+  </div>
+
+  <!-- Modal: Encuesta de Aceptación -->
+  <div id="modalEncuestaAceptacion" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalEncuestaAceptacion()"></div>
+    <div class="modal-content modal-xl">
+      <div class="modal-header">
+        <h3>Encuesta de Aceptación del Sistema</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalEncuestaAceptacion()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--sp-xl); max-height: 60vh; overflow-y: auto; padding-right: var(--sp-sm);">
+        <div>
+          <form id="formEncuestaAceptacion" onsubmit="enviarEncuestaAceptacion(event)" class="auth-form" style="gap: var(--sp-md);">
+            <div class="form-group">
+              <label for="encuestaNombre">Nombre completo</label>
+              <input type="text" id="encuestaNombre" class="input-field" placeholder="Tu nombre..." required />
+            </div>
+            <div class="form-group">
+              <label for="encuestaRol">Rol en el programa</label>
+              <input type="text" id="encuestaRol" class="input-field" placeholder="Ej. Docente, Director..." required />
+            </div>
+            
+            <div class="form-group">
+              <label for="encuestaClaridad">Claridad de la interfaz</label>
+              <select id="encuestaClaridad" class="select-field survey-score" required></select>
+            </div>
+            <div class="form-group">
+              <label for="encuestaFacilidad">Facilidad de uso</label>
+              <select id="encuestaFacilidad" class="select-field survey-score" required></select>
+            </div>
+            <div class="form-group">
+              <label for="encuestaEvidencias">Utilidad de evidencias</label>
+              <select id="encuestaEvidencias" class="select-field survey-score" required></select>
+            </div>
+            <div class="form-group">
+              <label for="encuestaIa">Utilidad de agentes IA</label>
+              <select id="encuestaIa" class="select-field survey-score" required></select>
+            </div>
+            <div class="form-group">
+              <label for="encuestaAlertas">Utilidad de alertas</label>
+              <select id="encuestaAlertas" class="select-field survey-score" required></select>
+            </div>
+            <div class="form-group">
+              <label for="encuestaSemaforo">Utilidad del semáforo</label>
+              <select id="encuestaSemaforo" class="select-field survey-score" required></select>
+            </div>
+            <div class="form-group">
+              <label for="encuestaSatisfaccion">Satisfacción general</label>
+              <select id="encuestaSatisfaccion" class="select-field survey-score" required></select>
+            </div>
+            
+            <div class="form-group">
+              <label for="encuestaComentario">Comentario / Sugerencia</label>
+              <textarea id="encuestaComentario" class="textarea-field" placeholder="Escribe aquí tu comentario..."></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: var(--sp-md);">Enviar Encuesta</button>
+          </form>
+        </div>
+        <div>
+          <h3>Resultados de la encuesta</h3>
+          <div id="resultadosEncuestaAceptacion" class="form-panel hidden" style="margin: var(--sp-md) 0 0 0; padding: var(--sp-md);"></div>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalEncuestaAceptacion()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ayuda y Manual de Usuario -->
+  <div id="modalAyudaUsuario" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalAyudaUsuario()"></div>
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h3>Manual de Usuario e Instrucciones</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalAyudaUsuario()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: var(--sp-lg); max-height: 50vh; overflow-y: auto; padding-right: var(--sp-sm);">
+        <section>
+          <h4>1. Flujo General de Monitoreo</h4>
+          <p>El sistema se enfoca en el seguimiento semanal de evidencias académicas y en el análisis curricular automatizado de sílabos con IA para la mejora continua del programa ISIA.</p>
+        </section>
+        <section>
+          <h4>2. Carga y Validación de Evidencias</h4>
+          <p>Ingrese al módulo Planificación o Académica, seleccione una evidencia, y cargue el archivo sustentatorio. Use "Validar IA" para ejecutar una auditoría documental con inteligencia artificial sobre la pertinencia y validez del archivo subido.</p>
+        </section>
+        <section>
+          <h4>3. Sílabos y Análisis Curricular</h4>
+          <p>En el módulo Sílabos, puede agregar nuevos documentos. El botón azul "Analizar" ejecuta el flujo LangGraph del agente curricular para detectar coherencias y brechas formativas con respecto al plan de estudios.</p>
+        </section>
+        <section>
+          <h4>4. Acciones de Mejora y Alertas</h4>
+          <p>Cualquier brecha detectada genera de forma automática sugerencias de acciones de mejora continua. Puede consultar alertas en tiempo real y completarlas desde la barra superior de acciones.</p>
+        </section>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" onclick="imprimirManualUsuario()">Imprimir Manual</button>
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalAyudaUsuario()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla de bloqueo de carga para procesos de IA -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loading-spinner-container">
+      <div class="loading-spinner"></div>
+      <p id="loadingText" class="loading-text">Cargando...</p>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./auth.js"></script>
-  <script src="app.js"></script>
+  <script src="./app.js"></script>
 </body>
+
 </html>
