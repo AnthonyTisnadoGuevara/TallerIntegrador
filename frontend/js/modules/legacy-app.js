@@ -3212,7 +3212,6 @@ function renderizarTablaSilabos() {
             <div id="menu-acciones-${silabo.id}" class="acciones-menu hidden">
               <div class="menu-section">
                 <span class="menu-label">Consulta</span>
-                <button class="menu-item" onclick="verValidacion('${silabo.id}')">Ver validaci&oacute;n</button>
                 <button class="menu-item" onclick="verHistorial('${silabo.id}')">Ver historial</button>
                 <button class="menu-item" onclick="verAnalisisSilabo('${silabo.id}')">Ver an&aacute;lisis</button>
               </div>
@@ -3535,56 +3534,6 @@ async function subirArchivoSilaboConId(silaboId, archivo) {
   return result;
 }
 
-async function verValidacion(id) {
-  try {
-    const response = await fetch(`${API_URL}/api/silabos/${id}/validacion`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo obtener la validación del sílabo.");
-    }
-
-    const detalle = document.getElementById("detalleSilabo");
-    if (!detalle) {
-      mostrarToast("No se encontró el panel de detalle del sílabo.", "warning");
-      return;
-    }
-
-    const validaciones = Array.isArray(result.validacion) ? result.validacion : [];
-    if (validaciones.length === 0) {
-      detalle.innerHTML = `<p class="text-muted">No hay validaciones registradas para este sílabo.</p>`;
-      mostrarToast("No hay validaciones registradas para este sílabo.", "info");
-      return;
-    }
-
-    let html = `
-      <h3>${result.silabo.asignatura}</h3>
-      <p><strong>Código:</strong> ${result.silabo.codigo_asignatura}</p>
-      <p><strong>Estado:</strong> ${result.silabo.estado}</p>
-      <p><strong>Cumplimiento:</strong> ${result.silabo.porcentaje_cumplimiento}%</p>
-      <h4>Validación de secciones</h4>
-      <ul>
-    `;
-
-    validaciones.forEach((item) => {
-      html += `
-        <li>
-          ${item.cumple ? "Cumple" : "No cumple"}
-          <strong>${item.seccion}</strong>: ${item.observacion}
-        </li>
-      `;
-    });
-
-    html += `</ul>`;
-    detalle.innerHTML = html;
-    mostrarToast("Validación cargada correctamente.", "success");
-    detalle.scrollIntoView({ behavior: "smooth" });
-  } catch (error) {
-    console.error("Error al consultar validación:", error);
-    mostrarToast("Error al consultar validación: " + error.message, "error");
-  }
-}
-
 async function verHistorial(id) {
   try {
     const response = await fetch(`${API_URL}/api/silabos/${id}/historial`);
@@ -3654,28 +3603,6 @@ function abrirModalHistorialSilabo(silabo, historial) {
 
 function cerrarModalHistorialSilabo() {
   ocultarModal("modalHistorialSilabo");
-}
-
-async function validarDocumento(id) {
-  try {
-    const response = await fetch(`${API_URL}/api/silabos/${id}/validar-documento`, {
-      method: "POST"
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      mostrarToast(result.detail || "No se pudo validar el documento.", "error");
-      return;
-    }
-
-    mostrarToast(`Documento validado. Cumplimiento: ${result.porcentaje_cumplimiento}%.`, "success");
-    await cargarDatos();
-    await verValidacion(id);
-  } catch (error) {
-    console.error(error);
-    mostrarToast("Error al validar documento.", "error");
-  }
 }
 
 async function eliminarSilabo(id) {
@@ -4833,7 +4760,6 @@ Object.assign(window, {
   toggleApoyoSeguimiento,
   toggleEvidenceDetails,
   toggleMenuAcciones,
-  validarDocumento,
   validarEvidenciaIA,
   verAccionesMacroproceso,
   verAccionesMejora,
@@ -4850,6 +4776,5 @@ Object.assign(window, {
   verSeguimientosSemanales,
   verTrazabilidadCurricular,
   verUltimaValidacionEvidenciaIA,
-  verValidacion,
   volverMacroprocesos
 });
