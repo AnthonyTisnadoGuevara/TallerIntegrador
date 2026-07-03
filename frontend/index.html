@@ -1137,6 +1137,297 @@
     </div>
   </div>
 
+  <!-- Modal: Registrar Evidencia de Macroproceso -->
+  <div id="modalRegistroEvidenciaMacroproceso" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalRegistroEvidenciaMacroproceso()"></div>
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h3 id="tituloModalRegistroEvidencia">Registrar evidencia</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalRegistroEvidenciaMacroproceso()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="formRegistroEvidenciaMacroproceso" onsubmit="guardarNuevaEvidenciaMacroproceso(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="nuevaEvidenciaCodigo">Código <span class="required">*</span></label>
+            <input id="nuevaEvidenciaCodigo" class="input-field" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="nuevaEvidenciaTitulo">Título <span class="required">*</span></label>
+            <input id="nuevaEvidenciaTitulo" class="input-field" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="nuevaEvidenciaEstado">Estado</label>
+            <select id="nuevaEvidenciaEstado" class="select-field">
+              <option value="pendiente">Pendiente</option>
+              <option value="en_proceso">En proceso</option>
+              <option value="completada">Completada</option>
+              <option value="observada">Observada</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="nuevaEvidenciaPrioridad">Prioridad</label>
+            <select id="nuevaEvidenciaPrioridad" class="select-field">
+              <option value="alta">Alta</option>
+              <option value="media" selected>Media</option>
+              <option value="baja">Baja</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="nuevaEvidenciaAvance">Avance (%)</label>
+            <input id="nuevaEvidenciaAvance" class="input-field" type="number" min="0" max="100" value="0" />
+          </div>
+          <div class="form-group">
+            <label for="nuevaEvidenciaTipo">Tipo de evidencia</label>
+            <input id="nuevaEvidenciaTipo" class="input-field" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="nuevaEvidenciaResponsable">Responsable</label>
+            <input id="nuevaEvidenciaResponsable" class="input-field" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="nuevaEvidenciaMes">Mes programado</label>
+            <input id="nuevaEvidenciaMes" class="input-field" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="nuevaEvidenciaFecha">Fecha programada</label>
+            <input id="nuevaEvidenciaFecha" class="input-field" type="date" />
+          </div>
+          <div class="form-group">
+            <label for="nuevaEvidenciaOrigen">Origen</label>
+            <input id="nuevaEvidenciaOrigen" class="input-field" type="text" value="Registro manual" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="nuevaEvidenciaDescripcion">Descripción</label>
+          <textarea id="nuevaEvidenciaDescripcion" class="textarea-field" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="nuevaEvidenciaObservacion">Observación</label>
+          <textarea id="nuevaEvidenciaObservacion" class="textarea-field" rows="3"></textarea>
+        </div>
+      </form>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalRegistroEvidenciaMacroproceso()">Cancelar</button>
+        <button type="submit" form="formRegistroEvidenciaMacroproceso" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Evidencia de Macroproceso -->
+  <div id="modalEvidenciaMacroproceso" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalEvidenciaMacroproceso()"></div>
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h3 id="tituloModalEvidencia">Detalle de evidencia</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalEvidenciaMacroproceso()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="detalleEvidenciaMacroproceso"></div>
+      <div id="editorEvidenciaMacroproceso" class="hidden">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="evidenciaEstado">Estado</label>
+            <select id="evidenciaEstado" class="select-field">
+              <option value="pendiente">Pendiente</option>
+              <option value="en_proceso">En proceso</option>
+              <option value="completada">Completada</option>
+              <option value="observada">Observada</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="evidenciaAvance">Avance (%)</label>
+            <input id="evidenciaAvance" class="input-field" type="number" min="0" max="100" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="evidenciaObservacion">Observación</label>
+          <textarea id="evidenciaObservacion" class="textarea-field" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalEvidenciaMacroproceso()">Cerrar</button>
+        <button id="botonGuardarEvidencia" type="button" class="btn btn-primary hidden" onclick="guardarEvidenciaMacroproceso()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Historial de Evidencia -->
+  <div id="modalHistorialEvidencia" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalHistorialEvidencia()"></div>
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h3>Historial de evidencia</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalHistorialEvidencia()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="contenidoHistorialEvidencia"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialEvidencia()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Seguimiento Semanal -->
+  <div id="modalSeguimientoSemanal" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalSeguimientoSemanal()"></div>
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3 id="tituloModalSeguimientoSemanal">Nuevo seguimiento semanal</h3>
+          <p id="seguimientoTituloEvidencia" class="modal-subtitle">Evidencia</p>
+        </div>
+        <button type="button" class="modal-close" onclick="cerrarModalSeguimientoSemanal()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="formSeguimientoSemanal" onsubmit="guardarSeguimientoSemanal(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="seguimientoSemanaInicio">Inicio de semana</label>
+            <input id="seguimientoSemanaInicio" class="input-field" type="date" required />
+          </div>
+          <div class="form-group">
+            <label for="seguimientoSemanaFin">Fin de semana</label>
+            <input id="seguimientoSemanaFin" class="input-field" type="date" required />
+          </div>
+          <div class="form-group">
+            <label for="seguimientoResponsable">Responsable</label>
+            <input id="seguimientoResponsable" class="input-field" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="seguimientoNivelAvance">Nivel de avance</label>
+            <select id="seguimientoNivelAvance" class="select-field">
+              <option>Sin avance</option>
+              <option>Inicial</option>
+              <option>En proceso</option>
+              <option>Avanzado</option>
+              <option>Completado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="seguimientoPorcentajeAvance">Porcentaje de avance</label>
+            <input id="seguimientoPorcentajeAvance" class="input-field" type="number" min="0" max="100" value="0" />
+          </div>
+          <div class="form-group">
+            <label for="seguimientoAccionRealizada">Acción realizada</label>
+            <select id="seguimientoAccionRealizada" class="select-field">
+              <option value="no">No</option>
+              <option value="si">Sí</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="seguimientoRequiereApoyo">Requiere apoyo</label>
+            <select id="seguimientoRequiereApoyo" class="select-field" onchange="toggleApoyoSeguimiento()">
+              <option value="false">No</option>
+              <option value="true">Sí</option>
+            </select>
+          </div>
+          <div id="grupoTipoApoyoSeguimiento" class="form-group hidden">
+            <label for="seguimientoTipoApoyo">Tipo de apoyo</label>
+            <input id="seguimientoTipoApoyo" class="input-field" type="text" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="seguimientoDescripcionAccion">Descripción de la acción</label>
+          <textarea id="seguimientoDescripcionAccion" class="textarea-field" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="seguimientoResultadoObservado">Resultado observado</label>
+          <textarea id="seguimientoResultadoObservado" class="textarea-field" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="seguimientoDificultad">Dificultad encontrada</label>
+          <textarea id="seguimientoDificultad" class="textarea-field" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="seguimientoCompromiso">Compromiso siguiente semana</label>
+          <textarea id="seguimientoCompromiso" class="textarea-field" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="seguimientoArchivoSustento">Archivo de sustento</label>
+          <input id="seguimientoArchivoSustento" class="input-field" type="file" accept=".pdf,.doc,.docx,.xlsx,.png,.jpg,.jpeg" />
+        </div>
+        <div class="form-group">
+          <label for="seguimientoObservacion">Observación</label>
+          <textarea id="seguimientoObservacion" class="textarea-field" rows="3"></textarea>
+        </div>
+      </form>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalSeguimientoSemanal()">Cancelar</button>
+        <button type="submit" form="formSeguimientoSemanal" class="btn btn-primary">Guardar seguimiento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Historial de Seguimientos -->
+  <div id="modalHistorialSeguimientos" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalHistorialSeguimientos()"></div>
+    <div class="modal-content modal-xl">
+      <div class="modal-header">
+        <h3 id="tituloHistorialSeguimientos">Seguimiento semanal</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalHistorialSeguimientos()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="contenidoHistorialSeguimientos" class="weekly-history-list"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalHistorialSeguimientos()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Planificación IA -->
+  <div id="modalPlanificacionIA" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalPlanificacionIA()"></div>
+    <div class="modal-content modal-xl">
+      <div class="modal-header">
+        <h3>Análisis IA de Planificación Estratégica</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalPlanificacionIA()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="contenidoPlanificacionIA"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalPlanificacionIA()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Gestión Académica IA -->
+  <div id="modalGestionAcademicaIA" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalGestionAcademicaIA()"></div>
+    <div class="modal-content modal-xl">
+      <div class="modal-header">
+        <h3>Análisis IA de Gestión Académica</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalGestionAcademicaIA()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="contenidoGestionAcademicaIA"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalGestionAcademicaIA()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Ayuda y Manual de Usuario -->
   <div id="modalAyudaUsuario" class="modal hidden" role="dialog">
     <div class="modal-overlay" onclick="cerrarModalAyudaUsuario()"></div>

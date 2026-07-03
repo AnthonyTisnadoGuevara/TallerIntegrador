@@ -96,6 +96,18 @@ async function fetchJson(url, options = {}) {
   return data;
 }
 
+function getRequiredElement(id, context = "UI") {
+  const element = document.getElementById(id);
+  if (!element) {
+    console.error(`[${context}] No existe el elemento DOM: ${id}`);
+    if (typeof mostrarToast === "function") {
+      mostrarToast(`No se encontró un elemento necesario de la interfaz: ${id}`, "error");
+    }
+    return null;
+  }
+  return element;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   if (typeof window.protegerPagina === "function") {
     const sesionValida = await window.protegerPagina();
@@ -662,11 +674,22 @@ function abrirModalEvidenciaMacroproceso(id, modo = "detalle") {
   evidenciaMacroprocesoActual = evidencia;
   const esSoloDetalle = modo === "detalle";
   const avance = Math.min(100, Math.max(0, Number(evidencia.avance || 0)));
+  const tituloModal = getRequiredElement("tituloModalEvidencia", "Evidencia macroproceso");
+  const detalle = getRequiredElement("detalleEvidenciaMacroproceso", "Evidencia macroproceso");
+  const editor = getRequiredElement("editorEvidenciaMacroproceso", "Evidencia macroproceso");
+  const botonGuardar = getRequiredElement("botonGuardarEvidencia", "Evidencia macroproceso");
+  const estadoInput = getRequiredElement("evidenciaEstado", "Evidencia macroproceso");
+  const avanceInput = getRequiredElement("evidenciaAvance", "Evidencia macroproceso");
+  const observacionInput = getRequiredElement("evidenciaObservacion", "Evidencia macroproceso");
 
-  document.getElementById("tituloModalEvidencia").textContent = esSoloDetalle
+  if (!tituloModal || !detalle || !editor || !botonGuardar || !estadoInput || !avanceInput || !observacionInput) {
+    return;
+  }
+
+  tituloModal.textContent = esSoloDetalle
     ? "Detalle de evidencia"
     : "Actualizar evidencia";
-  document.getElementById("detalleEvidenciaMacroproceso").innerHTML = `
+  detalle.innerHTML = `
     <div class="evidence-detail-grid">
       <div><span>Código</span><strong>${escaparHtml(evidencia.codigo || "-")}</strong></div>
       <div><span>Estado</span><strong>${escaparHtml(formatearTexto(evidencia.estado || "-"))}</strong></div>
@@ -682,11 +705,11 @@ function abrirModalEvidenciaMacroproceso(id, modo = "detalle") {
     <p><strong>Observación:</strong> ${escaparHtml(evidencia.observacion || "Sin observación registrada.")}</p>
   `;
 
-  document.getElementById("editorEvidenciaMacroproceso").classList.toggle("hidden", esSoloDetalle);
-  document.getElementById("botonGuardarEvidencia").classList.toggle("hidden", esSoloDetalle);
-  document.getElementById("evidenciaEstado").value = evidencia.estado || "pendiente";
-  document.getElementById("evidenciaAvance").value = avance;
-  document.getElementById("evidenciaObservacion").value = evidencia.observacion || "";
+  editor.classList.toggle("hidden", esSoloDetalle);
+  botonGuardar.classList.toggle("hidden", esSoloDetalle);
+  estadoInput.value = evidencia.estado || "pendiente";
+  avanceInput.value = avance;
+  observacionInput.value = evidencia.observacion || "";
 
   if (!esSoloDetalle) {
     const focoPorModo = {
@@ -822,7 +845,9 @@ async function verHistorialEvidenciaMacroproceso(evidenciaId) {
 }
 
 function abrirModalHistorialEvidencia(historial) {
-  const contenedor = document.getElementById("contenidoHistorialEvidencia");
+  const contenedor = getRequiredElement("contenidoHistorialEvidencia", "Historial evidencia");
+  if (!contenedor) return;
+
   if (!Array.isArray(historial) || historial.length === 0) {
     contenedor.innerHTML = `<p class="text-muted">No hay cambios registrados para esta evidencia.</p>`;
   } else {
@@ -872,7 +897,7 @@ function abrirModalSeguimientoSemanal(evidenciaId) {
   const titulo = document.getElementById("tituloModalSeguimientoSemanal");
   if (titulo) titulo.textContent = "Nuevo seguimiento semanal";
   document.getElementById("seguimientoTituloEvidencia").textContent = `${evidencia.codigo || "-"} · ${evidencia.titulo || "Evidencia"}`;
-  document.getElementById("seguimientoSemanaInicio").value = semana.inicio;
+  getRequiredElement("seguimientoSemanaInicio", "Seguimiento semanal").value = semana.inicio;
   document.getElementById("seguimientoSemanaFin").value = semana.fin;
   document.getElementById("seguimientoResponsable").value = evidencia.responsable || "";
   document.getElementById("seguimientoNivelAvance").value = "Sin avance";
@@ -1756,8 +1781,10 @@ function abrirModalPlanificacionIA(data) {
   const nivelRiesgo = String(data.nivel_riesgo || "medio").toLowerCase();
   const riesgoClase = ["bajo", "medio", "alto"].includes(nivelRiesgo) ? nivelRiesgo : "medio";
   const dashboard = data.dashboard || {};
+  const contenido = getRequiredElement("contenidoPlanificacionIA", "Planificación IA");
+  if (!contenido) return;
 
-  document.getElementById("contenidoPlanificacionIA").innerHTML = `
+  contenido.innerHTML = `
     <div class="analisis-section analisis-summary">
       <div>
         <span class="section-label">Nivel de riesgo</span>
@@ -1859,9 +1886,11 @@ function abrirModalGestionAcademicaIA(data) {
   const total = Number(indicadores.total_evidencias ?? 0);
   const nivelRiesgo = String(data.nivel_riesgo || "medio").toLowerCase();
   const riesgoClase = ["bajo", "medio", "alto"].includes(nivelRiesgo) ? nivelRiesgo : "medio";
+  const contenido = getRequiredElement("contenidoGestionAcademicaIA", "Gestión académica IA");
+  if (!contenido) return;
 
   if (!total) {
-    document.getElementById("contenidoGestionAcademicaIA").innerHTML = `
+    contenido.innerHTML = `
       <div class="analisis-section">
         <p class="text-muted">No se encontraron evidencias suficientes para analizar la gestión académica.</p>
       </div>
@@ -1870,7 +1899,7 @@ function abrirModalGestionAcademicaIA(data) {
     return;
   }
 
-  document.getElementById("contenidoGestionAcademicaIA").innerHTML = `
+  contenido.innerHTML = `
     <div class="analisis-section analisis-summary">
       <div>
         <span class="section-label">Nivel de riesgo</span>
@@ -2528,11 +2557,24 @@ function renderModuloMetricas(data) {
 }
 
 function cambiarPestanaMetricas(nombre) {
-  document.querySelectorAll(".metrics-tab").forEach((tab) => {
-    tab.classList.toggle("active", tab.dataset.metricsTab === nombre);
+  const tabs = document.querySelectorAll(".tab-btn[data-tab], .metrics-tab[data-metrics-tab]");
+  const panels = document.querySelectorAll("[data-panel], [data-metrics-panel]");
+
+  if (!tabs.length || !panels.length) {
+    console.warn("[Métricas] No se encontraron tabs o paneles para cambiar de pestaña.");
+    mostrarToast("No se encontraron las pestañas de métricas en la interfaz.", "warning");
+    return;
+  }
+
+  tabs.forEach((tab) => {
+    const tabName = tab.dataset.tab || tab.dataset.metricsTab;
+    tab.classList.toggle("active", tabName === nombre);
   });
-  document.querySelectorAll("[data-metrics-panel]").forEach((panel) => {
-    panel.classList.toggle("hidden", panel.dataset.metricsPanel !== nombre);
+  panels.forEach((panel) => {
+    const panelName = panel.dataset.panel || panel.dataset.metricsPanel;
+    const isActive = panelName === nombre;
+    panel.classList.toggle("hidden", !isActive);
+    panel.classList.toggle("active", isActive);
   });
 }
 
@@ -4586,6 +4628,34 @@ function toggleEvidenceDetails(button) {
   }
 }
 
+async function actualizarEstadoAccion(id, estado) {
+  if (!id || !estado) {
+    mostrarToast("No se pudo identificar la acción o el nuevo estado.", "warning");
+    return;
+  }
+
+  try {
+    await fetchJson(`${API_URL}/api/acciones-mejora/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estado })
+    });
+
+    mostrarToast("Estado de la acción actualizado correctamente.", "success");
+
+    if (macroprocesoAccionesActual) {
+      await verAccionesMacroproceso(macroprocesoAccionesActual);
+    } else {
+      await verAccionesMejora();
+    }
+
+    await cargarDashboardAccionesMejora();
+  } catch (error) {
+    console.error("Error al actualizar estado de acción:", error);
+    mostrarToast("Error al actualizar la acción: " + error.message, "error");
+  }
+}
+
 async function eliminarAccionMejora(id) {
   const confirmado = await confirmarAccion("¿Deseas eliminar esta acción de mejora?");
   if (!confirmado) return;
@@ -4638,6 +4708,7 @@ Object.assign(window, {
   abrirModalTrazabilidad,
   abrirModalValidacionEvidenciaIA,
   actualizarAlertaInteligente,
+  actualizarEstadoAccion,
   analizarGestionAcademicaIA,
   analizarMejoraContinuaIA,
   analizarPlanificacionIA,

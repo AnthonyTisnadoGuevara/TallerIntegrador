@@ -2087,13 +2087,14 @@ body.login-page {
 .acciones-menu {
   position: absolute;
   bottom: 100%;
-  right: 0;
+  right: 8px;
   background-color: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-xl);
-  min-width: 220px;
-  z-index: 150;
+  min-width: 240px;
+  max-width: min(320px, calc(100vw - 32px));
+  z-index: 1000;
   margin-bottom: var(--sp-xs);
   display: flex;
   flex-direction: column;
@@ -2152,6 +2153,9 @@ body.login-page {
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--trans-base);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .acciones-menu .menu-item:hover {
@@ -2163,6 +2167,50 @@ body.login-page {
 @keyframes dropdownFadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.action-card,
+.action-card *,
+.accion-card,
+.accion-card *,
+.evidence-card,
+.evidence-card *,
+.weekly-history-card,
+.weekly-history-card *,
+.planificacion-action-card,
+.planificacion-action-card * {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.action-card p,
+.accion-card p,
+.accion-details-grid div,
+.evidence-details-grid div,
+.evidence-card p,
+.weekly-history-card p,
+.planificacion-action-card p,
+.accion-detail-group,
+.accion-detail-meta,
+.evidence-details {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.acciones-dropdown,
+.evidence-card,
+.accion-card,
+.action-card {
+  overflow: visible;
+}
+
+@media (max-width: 720px) {
+  .acciones-menu {
+    left: auto;
+    right: 0;
+    min-width: 220px;
+  }
 }
 
 /* ========== LOADING OVERLAY ========== */
@@ -2292,4 +2340,4 @@ body.login-page {
 
 .cards-grid .card.success p {
   color: var(--success);
-}
+}
