@@ -126,6 +126,8 @@ document.addEventListener("click", function(event) {
     document.querySelectorAll(".acciones-menu").forEach((menu) => {
       menu.classList.add("hidden");
       menu.classList.remove("open-up");
+      menu.style.left = "";
+      menu.style.top = "";
     });
   }
 });
@@ -358,12 +360,12 @@ function renderEvidenceCard(evidencia, columnas) {
 
       <div class="evidence-card-body">
         ${alerta ? renderBadgeAlertaEvidencia(alerta) : ""}
-        <p><span>Responsable</span><strong>${escaparHtml(evidencia.responsable || "Sin responsable")}</strong></p>
+        <p><span>Responsable: </span><strong>${escaparHtml(evidencia.responsable || "Sin responsable")}</strong></p>
       </div>
 
       <div class="progress-block evidence-progress">
         <div class="progress-meta">
-          <span>Avance</span>
+          <span>Avance: </span>
           <strong>${avance}%</strong>
         </div>
         <div class="progress-bar">
@@ -388,10 +390,10 @@ function renderEvidenceCard(evidencia, columnas) {
         </div>` : ""}
         
         <div class="evidence-details-grid">
-          <div><strong>Tipo:</strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</div>
-          <div><strong>Mes:</strong> ${escaparHtml(evidencia.mes_programado || "-")}</div>
-          <div><strong>Origen:</strong> ${escaparHtml(evidencia.origen_documento || "-")}</div>
-          <div><strong>Sustento:</strong> ${archivoUrl ? `<a href="${archivoUrl}" target="_blank" class="file-link">Ver archivo</a>` : "Sin archivo"}</div>
+          <div><strong>Tipo: </strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</div>
+          <div><strong>Mes: </strong> ${escaparHtml(evidencia.mes_programado || "-")}</div>
+          <div><strong>Origen: </strong> ${escaparHtml(evidencia.origen_documento || "-")}</div>
+          <div><strong>Sustento: </strong> ${archivoUrl ? `<a href="${archivoUrl}" target="_blank" class="file-link">Ver archivo</a>` : "Sin archivo"}</div>
         </div>
 
         ${renderResumenSeguimientoSemanal(evidencia, seguimiento, resumenSeguimiento)}
@@ -401,7 +403,7 @@ function renderEvidenceCard(evidencia, columnas) {
         <button class="btn btn-primary" type="button" onclick="abrirModalSeguimientoSemanal('${id}')">Nuevo seguimiento</button>
         <button class="btn btn-secondary" type="button" onclick="verSeguimientosSemanales('${id}')">Historial</button>
         <div class="acciones-dropdown">
-          <button class="btn btn-menu btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('evidencia-${id}')">M&aacute;s acciones &#9662;</button>
+          <button class="btn btn-menu btn-actions" type="button" onclick="event.stopPropagation(); toggleMenuAcciones('evidencia-${id}', this)">M&aacute;s acciones &#9662;</button>
           <div id="menu-acciones-evidencia-${id}" class="acciones-menu actions-dropdown-menu hidden">
             <div class="menu-section">
               <span class="menu-label">M&aacute;s acciones</span>
@@ -409,7 +411,7 @@ function renderEvidenceCard(evidencia, columnas) {
               <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
               ${validarButton.replace("btn btn-primary", "menu-item actions-dropdown-item").replace("btn btn-secondary", "menu-item actions-dropdown-item")}
               <button class="menu-item actions-dropdown-item" type="button" onclick="verUltimaValidacionEvidenciaIA('${id}')">Ver &uacute;ltima validaci&oacute;n IA</button>
-              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar avance</button>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar Avance: </button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observaci&oacute;n</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialEvidenciaMacroproceso('${id}')">Ver historial de cambios</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="generarAccionDesdeEvidencia('${id}')">Generar acci&oacute;n</button>
@@ -533,9 +535,19 @@ function obtenerAlertaActivaEvidencia(evidenciaId) {
 }
 
 function renderBadgeAlertaEvidencia(alerta) {
-  const nivel = alerta.nivel_alerta || "media";
-  const texto = nivel === "critica" ? "Alerta critica" : "Alerta activa";
-  return `<span class="alert-badge alert-${escaparAtributo(nivel)}">${escaparHtml(texto)}</span>`;
+  const nivel = normalizarValor(alerta.nivel_alerta || "media");
+  const severidad = ["critica", "alta"].includes(nivel)
+    ? "alta"
+    : nivel === "media"
+      ? "media"
+      : "ok";
+  const textoNivel = severidad === "alta"
+    ? "Alta"
+    : severidad === "media"
+      ? "Media"
+      : "OK";
+  const estado = alerta.estado ? formatearTexto(alerta.estado) : "pendiente";
+  return `<span class="alert-badge alert-badge--${severidad}">${escaparHtml(`${textoNivel} ${estado}`)}</span>`;
 }
 
 function obtenerNombreArchivoEvidencia(url) {
@@ -694,15 +706,15 @@ function abrirModalEvidenciaMacroproceso(id, modo = "detalle") {
       <div><span>Código</span><strong>${escaparHtml(evidencia.codigo || "-")}</strong></div>
       <div><span>Estado</span><strong>${escaparHtml(formatearTexto(evidencia.estado || "-"))}</strong></div>
       <div><span>Prioridad</span><strong>${escaparHtml(formatearTexto(evidencia.prioridad || "-"))}</strong></div>
-      <div><span>Avance</span><strong>${avance}%</strong></div>
+      <div><span>Avance: </span><strong>${avance}%</strong></div>
     </div>
     <h3>${escaparHtml(evidencia.titulo || "Evidencia")}</h3>
-    <p><strong>Descripción:</strong> ${escaparHtml(evidencia.descripcion || "Sin descripción registrada.")}</p>
-    <p><strong>Tipo de evidencia:</strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</p>
-    <p><strong>Responsable:</strong> ${escaparHtml(evidencia.responsable || "Sin responsable")}</p>
-    <p><strong>Mes programado:</strong> ${escaparHtml(evidencia.mes_programado || "-")}</p>
-    <p><strong>Origen:</strong> ${escaparHtml(evidencia.origen_documento || "-")}</p>
-    <p><strong>Observación:</strong> ${escaparHtml(evidencia.observacion || "Sin observación registrada.")}</p>
+    <p><strong>Descripción: </strong> ${escaparHtml(evidencia.descripcion || "Sin descripción registrada.")}</p>
+    <p><strong>Tipo de evidencia: </strong> ${escaparHtml(evidencia.tipo_evidencia || "-")}</p>
+    <p><strong>Responsable: </strong> ${escaparHtml(evidencia.responsable || "Sin responsable")}</p>
+    <p><strong>Mes programado: </strong> ${escaparHtml(evidencia.mes_programado || "-")}</p>
+    <p><strong>Origen: </strong> ${escaparHtml(evidencia.origen_documento || "-")}</p>
+    <p><strong>Observación: </strong> ${escaparHtml(evidencia.observacion || "Sin observación registrada.")}</p>
   `;
 
   editor.classList.toggle("hidden", esSoloDetalle);
@@ -857,9 +869,9 @@ function abrirModalHistorialEvidencia(historial) {
           <strong>${escaparHtml(item.campo_modificado || "-")}</strong>
           <span>${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</span>
         </div>
-        <p><strong>Valor anterior:</strong> ${escaparHtml(item.valor_anterior ?? "-")}</p>
-        <p><strong>Valor nuevo:</strong> ${escaparHtml(item.valor_nuevo ?? "-")}</p>
-        <p><strong>Observación:</strong> ${escaparHtml(item.observacion || "-")}</p>
+        <p><strong>Valor anterior: </strong> ${escaparHtml(item.valor_anterior ?? "-")}</p>
+        <p><strong>Valor nuevo: </strong> ${escaparHtml(item.valor_nuevo ?? "-")}</p>
+        <p><strong>Observación: </strong> ${escaparHtml(item.observacion || "-")}</p>
       </article>
     `).join("");
   }
@@ -1143,14 +1155,14 @@ function renderTarjetaSeguimientoSemanal(item) {
           ${item.accion_realizada ? `<span class="weekly-badge ok">Acción realizada</span>` : `<span class="weekly-badge warning">Sin acción</span>`}
         </div>
       </div>
-      <p><strong>Responsable:</strong> ${escaparHtml(item.responsable || "-")}</p>
-      <p><strong>Acción:</strong> ${escaparHtml(item.descripcion_accion || "-")}</p>
-      <p><strong>Resultado:</strong> ${escaparHtml(item.resultado_observado || "-")}</p>
-      <p><strong>Dificultad:</strong> ${escaparHtml(item.dificultad_encontrada || "-")}</p>
-      <p><strong>Compromiso:</strong> ${escaparHtml(item.compromiso_siguiente_semana || "-")}</p>
-      ${item.requiere_apoyo ? `<p><strong>Tipo de apoyo:</strong> ${escaparHtml(item.tipo_apoyo_requerido || "-")}</p>` : ""}
-      <p><strong>Archivo:</strong> ${escaparHtml(nombreArchivo)}</p>
-      <p><strong>Observación:</strong> ${escaparHtml(item.observacion || "-")}</p>
+      <p><strong>Responsable: </strong> ${escaparHtml(item.responsable || "-")}</p>
+      <p><strong>Acción: </strong> ${escaparHtml(item.descripcion_accion || "-")}</p>
+      <p><strong>Resultado: </strong> ${escaparHtml(item.resultado_observado || "-")}</p>
+      <p><strong>Dificultad: </strong> ${escaparHtml(item.dificultad_encontrada || "-")}</p>
+      <p><strong>Compromiso: </strong> ${escaparHtml(item.compromiso_siguiente_semana || "-")}</p>
+      ${item.requiere_apoyo ? `<p><strong>Tipo de apoyo: </strong> ${escaparHtml(item.tipo_apoyo_requerido || "-")}</p>` : ""}
+      <p><strong>Archivo: </strong> ${escaparHtml(nombreArchivo)}</p>
+      <p><strong>Observación: </strong> ${escaparHtml(item.observacion || "-")}</p>
       <div class="weekly-history-actions">
         ${archivoUrl
           ? `<button class="btn btn-secondary" type="button" onclick="verArchivoEvidencia('${escaparAtributo(archivoUrl)}')">Ver archivo</button>`
@@ -1426,13 +1438,13 @@ function renderAlertasInteligentes(alertas) {
     return `
       <article class="alert-card alert-${escaparAtributo(nivel)}">
         <div class="alert-card-header">
-          <span class="alert-badge alert-${escaparAtributo(nivel)}">${escaparHtml(formatearTexto(nivel))}</span>
+          ${renderBadgeAlertaEvidencia(alerta)}
           <span class="evidence-code">${escaparHtml(formatearTexto(alerta.macroproceso || "-"))}</span>
         </div>
         <h3>${escaparHtml(alerta.titulo || "Alerta inteligente")}</h3>
-        <p><strong>Descripcion:</strong> ${escaparHtml(alerta.descripcion || "-")}</p>
-        <p><strong>Recomendacion:</strong> ${escaparHtml(alerta.recomendacion || "-")}</p>
-        <p><strong>Fecha:</strong> ${escaparHtml(fecha)}</p>
+        <p><strong>Descripcion: </strong> ${escaparHtml(alerta.descripcion || "-")}</p>
+        <p><strong>Recomendacion: </strong> ${escaparHtml(alerta.recomendacion || "-")}</p>
+        <p><strong>Fecha: </strong> ${escaparHtml(fecha)}</p>
         <div class="alert-actions">
           <button class="btn btn-success" type="button" onclick="actualizarAlertaInteligente('${escaparAtributo(alerta.id)}', 'atendida')">Marcar como atendida</button>
           <button class="btn btn-secondary" type="button" onclick="actualizarAlertaInteligente('${escaparAtributo(alerta.id)}', 'descartada')">Descartar</button>
@@ -1547,7 +1559,7 @@ function renderHistorialAnalisisIA(historial) {
           <span class="ia-risk-badge risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(riesgo)}</span>
           <span class="evidence-code">${escaparHtml(formatearTexto(item.macroproceso || "-"))}</span>
         </div>
-        <p><strong>Modelo:</strong> ${escaparHtml(item.modelo_usado || "-")}</p>
+        <p><strong>Modelo: </strong> ${escaparHtml(item.modelo_usado || "-")}</p>
         <p>${escaparHtml(item.resumen || "Sin resumen registrado.")}</p>
         <div class="evidence-actions">
           <button class="btn btn-primary" type="button" onclick="verDetalleAnalisisIA('${escaparAtributo(item.id)}')">Ver detalle</button>
@@ -1575,9 +1587,9 @@ function renderDetalleAnalisisIA(analisis) {
   detalle.innerHTML = `
     <div class="analisis-section">
       <h3>Detalle del análisis</h3>
-      <p><strong>Fecha:</strong> ${escaparHtml(analisis.created_at ? new Date(analisis.created_at).toLocaleString() : "Sin fecha")}</p>
-      <p><strong>Modelo usado:</strong> ${escaparHtml(analisis.modelo_usado || data.modelo_usado || "-")}</p>
-      <p><strong>Resumen:</strong> ${escaparHtml(analisis.resumen || data.resumen || data.resumen_general || "-")}</p>
+      <p><strong>Fecha: </strong> ${escaparHtml(analisis.created_at ? new Date(analisis.created_at).toLocaleString() : "Sin fecha")}</p>
+      <p><strong>Modelo usado: </strong> ${escaparHtml(analisis.modelo_usado || data.modelo_usado || "-")}</p>
+      <p><strong>Resumen: </strong> ${escaparHtml(analisis.resumen || data.resumen || data.resumen_general || "-")}</p>
     </div>
     <div class="analisis-section">
       <h3>Riesgos</h3>
@@ -1613,9 +1625,9 @@ async function compararUltimosAnalisisIA() {
     contenedor.classList.remove("hidden");
     contenedor.innerHTML = `
       <h3>Comparación de últimos análisis</h3>
-      <p><strong>Riesgo anterior:</strong> ${escaparHtml(comparacion.riesgo_anterior || "-")}</p>
-      <p><strong>Riesgo actual:</strong> ${escaparHtml(comparacion.riesgo_actual || "-")}</p>
-      <p><strong>Cambio:</strong> ${escaparHtml(formatearTexto(comparacion.cambio_riesgo || "sin_datos"))}</p>
+      <p><strong>Riesgo anterior: </strong> ${escaparHtml(comparacion.riesgo_anterior || "-")}</p>
+      <p><strong>Riesgo actual: </strong> ${escaparHtml(comparacion.riesgo_actual || "-")}</p>
+      <p><strong>Cambio: </strong> ${escaparHtml(formatearTexto(comparacion.cambio_riesgo || "sin_datos"))}</p>
       <p>${escaparHtml(comparacion.resumen || "Sin resumen de comparación.")}</p>
     `;
   } catch (error) {
@@ -1812,7 +1824,7 @@ function renderAccionesPlanificacion(acciones) {
             </div>
             <h3>${escaparHtml(accion.titulo || "Acción sugerida")}</h3>
             <p>${escaparHtml(accion.descripcion || "Sin descripción.")}</p>
-            <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Por definir")}</p>
+            <p><strong>Responsable sugerido: </strong> ${escaparHtml(accion.responsable_sugerido || "Por definir")}</p>
           </article>
         `;
       }).join("")}
@@ -2073,7 +2085,7 @@ function renderEstadoMacroprocesos(items) {
               <h3>${escaparHtml(item.macroproceso || "Macroproceso")}</h3>
               <span class="risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(riesgoClase)}</span>
             </div>
-            <p><strong>Avance promedio:</strong> ${escaparHtml(item.avance_promedio ?? 0)}%</p>
+            <p><strong>Avance promedio: </strong> ${escaparHtml(item.avance_promedio ?? 0)}%</p>
             ${renderListaPlanificacion(item.hallazgos, "Sin hallazgos registrados.")}
           </article>
         `;
@@ -2099,7 +2111,7 @@ function renderAccionesPrioritarias(acciones) {
             </div>
             <h3>${escaparHtml(accion.titulo || "Acción prioritaria")}</h3>
             <p>${escaparHtml(accion.descripcion || "Sin descripción.")}</p>
-            <p><strong>Responsable sugerido:</strong> ${escaparHtml(accion.responsable_sugerido || "Comité académico")}</p>
+            <p><strong>Responsable sugerido: </strong> ${escaparHtml(accion.responsable_sugerido || "Comité académico")}</p>
           </article>
         `;
       }).join("")}
@@ -2320,7 +2332,7 @@ function renderReporteIntegral(reporte) {
   return `
     <header class="report-header">
       <h1>${escaparHtml(reporte.titulo || "Reporte Integral de Mejora Continua")}</h1>
-      <p><strong>Fecha de generaci&oacute;n:</strong> ${escaparHtml(fecha)}</p>
+      <p><strong>Fecha de generaci&oacute;n: </strong> ${escaparHtml(fecha)}</p>
     </header>
 
     <section class="report-section">
@@ -2400,10 +2412,10 @@ function renderReporteSemaforo(items) {
   return items.map((item) => `
     <article class="report-card report-status-${escaparAtributo(item.color || "amarillo")}">
       <h3>${escaparHtml(item.nombre || nombreMacroproceso(item.macroproceso))}</h3>
-      <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.color || "-"))}</p>
-      <p><strong>Avance:</strong> ${escaparHtml(item.avance_promedio ?? 0)}%</p>
-      <p><strong>Alertas cr&iacute;ticas:</strong> ${escaparHtml(item.alertas_criticas ?? 0)}</p>
-      <p><strong>Riesgo IA:</strong> ${escaparHtml(formatearTexto(item.riesgo_ia || "sin_datos"))}</p>
+      <p><strong>Estado: </strong> ${escaparHtml(formatearTexto(item.color || "-"))}</p>
+      <p><strong>Avance: </strong> ${escaparHtml(item.avance_promedio ?? 0)}%</p>
+      <p><strong>Alertas cr&iacute;ticas: </strong> ${escaparHtml(item.alertas_criticas ?? 0)}</p>
+      <p><strong>Riesgo IA: </strong> ${escaparHtml(formatearTexto(item.riesgo_ia || "sin_datos"))}</p>
       <p>${escaparHtml(item.mensaje || "-")}</p>
     </article>
   `).join("");
@@ -2421,11 +2433,11 @@ function renderReporteEvidenciaCritica(item) {
   return `
     <article class="report-card">
       <h3>${escaparHtml(item.codigo || "Evidencia")}: ${escaparHtml(item.titulo || "-")}</h3>
-      <p><strong>Macroproceso:</strong> ${escaparHtml(nombreMacroproceso(item.macroproceso))}</p>
-      <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.estado || "-"))}</p>
-      <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
-      <p><strong>Avance:</strong> ${escaparHtml(item.avance ?? 0)}%</p>
-      <p><strong>Responsable:</strong> ${escaparHtml(item.responsable || "-")}</p>
+      <p><strong>Macroproceso: </strong> ${escaparHtml(nombreMacroproceso(item.macroproceso))}</p>
+      <p><strong>Estado: </strong> ${escaparHtml(formatearTexto(item.estado || "-"))}</p>
+      <p><strong>Prioridad: </strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
+      <p><strong>Avance: </strong> ${escaparHtml(item.avance ?? 0)}%</p>
+      <p><strong>Responsable: </strong> ${escaparHtml(item.responsable || "-")}</p>
     </article>
   `;
 }
@@ -2434,10 +2446,10 @@ function renderReporteAlerta(item) {
   return `
     <article class="report-card">
       <h3>${escaparHtml(item.titulo || "Alerta inteligente")}</h3>
-      <p><strong>Macroproceso:</strong> ${escaparHtml(nombreMacroproceso(item.macroproceso))}</p>
-      <p><strong>Nivel:</strong> ${escaparHtml(formatearTexto(item.nivel_alerta || "-"))}</p>
-      <p><strong>Descripci&oacute;n:</strong> ${escaparHtml(item.descripcion || "-")}</p>
-      <p><strong>Recomendaci&oacute;n:</strong> ${escaparHtml(item.recomendacion || "-")}</p>
+      <p><strong>Macroproceso: </strong> ${escaparHtml(nombreMacroproceso(item.macroproceso))}</p>
+      <p><strong>Nivel: </strong> ${escaparHtml(formatearTexto(item.nivel_alerta || "-"))}</p>
+      <p><strong>Descripci&oacute;n: </strong> ${escaparHtml(item.descripcion || "-")}</p>
+      <p><strong>Recomendaci&oacute;n: </strong> ${escaparHtml(item.recomendacion || "-")}</p>
     </article>
   `;
 }
@@ -2446,11 +2458,11 @@ function renderReporteAccion(item) {
   return `
     <article class="report-card">
       <h3>${escaparHtml(item.titulo || "Acci\u00f3n de mejora")}</h3>
-      <p><strong>Origen:</strong> ${escaparHtml(formatearTexto(item.origen_tipo || "-"))}</p>
-      <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.estado || "-"))}</p>
-      <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
-      <p><strong>Responsable:</strong> ${escaparHtml(item.responsable || "-")}</p>
-      <p><strong>Descripci&oacute;n:</strong> ${escaparHtml(item.descripcion || "-")}</p>
+      <p><strong>Origen: </strong> ${escaparHtml(formatearTexto(item.origen_tipo || "-"))}</p>
+      <p><strong>Estado: </strong> ${escaparHtml(formatearTexto(item.estado || "-"))}</p>
+      <p><strong>Prioridad: </strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
+      <p><strong>Responsable: </strong> ${escaparHtml(item.responsable || "-")}</p>
+      <p><strong>Descripci&oacute;n: </strong> ${escaparHtml(item.descripcion || "-")}</p>
     </article>
   `;
 }
@@ -2459,9 +2471,9 @@ function renderReporteAnalisis(item) {
   return `
     <article class="report-card">
       <h3>${escaparHtml(nombreMacroproceso(item.macroproceso))}</h3>
-      <p><strong>Tipo:</strong> ${escaparHtml(formatearTexto(item.tipo_analisis || "-"))}</p>
-      <p><strong>Riesgo:</strong> ${escaparHtml(formatearTexto(item.nivel_riesgo || "-"))}</p>
-      <p><strong>Modelo:</strong> ${escaparHtml(item.modelo_usado || "-")}</p>
+      <p><strong>Tipo: </strong> ${escaparHtml(formatearTexto(item.tipo_analisis || "-"))}</p>
+      <p><strong>Riesgo: </strong> ${escaparHtml(formatearTexto(item.nivel_riesgo || "-"))}</p>
+      <p><strong>Modelo: </strong> ${escaparHtml(item.modelo_usado || "-")}</p>
       <p>${escaparHtml(item.resumen || "Sin resumen registrado.")}</p>
     </article>
   `;
@@ -2471,9 +2483,9 @@ function renderReporteValidacion(item) {
   return `
     <article class="report-card">
       <h3>${escaparHtml(item.evidencia_id || "Evidencia")}</h3>
-      <p><strong>Macroproceso:</strong> ${escaparHtml(nombreMacroproceso(item.macroproceso))}</p>
-      <p><strong>Nivel de validez:</strong> ${escaparHtml(formatearTexto(item.nivel_validez || "-"))}</p>
-      <p><strong>Pertinencia:</strong> ${escaparHtml(formatearTexto(item.pertinencia || "-"))}</p>
+      <p><strong>Macroproceso: </strong> ${escaparHtml(nombreMacroproceso(item.macroproceso))}</p>
+      <p><strong>Nivel de validez: </strong> ${escaparHtml(formatearTexto(item.nivel_validez || "-"))}</p>
+      <p><strong>Pertinencia: </strong> ${escaparHtml(formatearTexto(item.pertinencia || "-"))}</p>
       <p>${escaparHtml(item.resumen || "Sin resumen registrado.")}</p>
     </article>
   `;
@@ -2483,10 +2495,10 @@ function renderReporteBrecha(item) {
   return `
     <article class="report-card">
       <h3>${escaparHtml(item.asignatura || "Brecha curricular")}</h3>
-      <p><strong>Tipo:</strong> ${escaparHtml(formatearTexto(item.tipo_brecha || "-"))}</p>
-      <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
-      <p><strong>Problema:</strong> ${escaparHtml(item.descripcion || "-")}</p>
-      <p><strong>Recomendaci&oacute;n:</strong> ${escaparHtml(item.recomendacion || "-")}</p>
+      <p><strong>Tipo: </strong> ${escaparHtml(formatearTexto(item.tipo_brecha || "-"))}</p>
+      <p><strong>Prioridad: </strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
+      <p><strong>Problema: </strong> ${escaparHtml(item.descripcion || "-")}</p>
+      <p><strong>Recomendaci&oacute;n: </strong> ${escaparHtml(item.recomendacion || "-")}</p>
     </article>
   `;
 }
@@ -3210,7 +3222,7 @@ function renderizarTablaSilabos() {
           ${botonArchivo}
           <button class="btn btn-success" onclick="analizarSilaboIA('${silabo.id}')">Analizar IA</button>
           <div class="acciones-dropdown">
-            <button class="btn btn-menu btn-actions" onclick="event.stopPropagation(); toggleMenuAcciones('${silabo.id}')">Acciones &#9662;</button>
+            <button class="btn btn-menu btn-actions" onclick="event.stopPropagation(); toggleMenuAcciones('${silabo.id}', this)">Acciones &#9662;</button>
             <div id="menu-acciones-${silabo.id}" class="acciones-menu hidden">
               <div class="menu-section">
                 <span class="menu-label">Consulta</span>
@@ -3287,7 +3299,7 @@ function limpiarFiltrosSilabos() {
   renderizarTablaSilabos();
 }
 
-function toggleMenuAcciones(id) {
+function toggleMenuAcciones(id, trigger = null) {
   const menu = document.getElementById(`menu-acciones-${id}`);
   if (!menu) return;
 
@@ -3295,20 +3307,45 @@ function toggleMenuAcciones(id) {
     if (item !== menu) {
       item.classList.add("hidden");
       item.classList.remove("open-up");
+      item.style.left = "";
+      item.style.top = "";
     }
   });
 
   menu.classList.toggle("hidden");
 
   if (!menu.classList.contains("hidden")) {
-    menu.classList.remove("open-up");
-    const rect = menu.getBoundingClientRect();
-    if (rect.bottom > window.innerHeight) {
-      menu.classList.add("open-up");
-    }
+    posicionarMenuAcciones(menu, trigger);
   } else {
     menu.classList.remove("open-up");
+    menu.style.left = "";
+    menu.style.top = "";
   }
+}
+
+function posicionarMenuAcciones(menu, trigger = null) {
+  const button = trigger || document.activeElement;
+  if (!button || typeof button.getBoundingClientRect !== "function") return;
+
+  menu.classList.remove("open-up");
+  const buttonRect = button.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  const margin = 12;
+  const availableWidth = window.innerWidth - margin * 2;
+  const menuWidth = Math.min(menuRect.width || 260, availableWidth);
+  const opensUp = buttonRect.bottom + menuRect.height + margin > window.innerHeight;
+  const top = opensUp
+    ? Math.max(margin, buttonRect.top - menuRect.height - 8)
+    : Math.min(window.innerHeight - menuRect.height - margin, buttonRect.bottom + 8);
+  const preferredLeft = buttonRect.right - menuWidth;
+  const left = Math.min(
+    Math.max(margin, preferredLeft),
+    window.innerWidth - menuWidth - margin
+  );
+
+  menu.classList.toggle("open-up", opensUp);
+  menu.style.left = `${left}px`;
+  menu.style.top = `${Math.max(margin, top)}px`;
 }
 
 async function registrarSilabo(event) {
@@ -3548,8 +3585,8 @@ function abrirModalHistorialSilabo(silabo, historial) {
             <span>â†’</span>
             <strong>${escaparHtml(formatearTexto(item.estado_nuevo || "sin estado"))}</strong>
           </div>
-          <p class="history-detail"><strong>Detalle:</strong> ${escaparHtml(item.observacion || "Sin detalle registrado.")}</p>
-          <p class="history-date"><strong>Fecha:</strong> ${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</p>
+          <p class="history-detail"><strong>Detalle: </strong> ${escaparHtml(item.observacion || "Sin detalle registrado.")}</p>
+          <p class="history-date"><strong>Fecha: </strong> ${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</p>
         </article>
       `).join("")}
     </div>
@@ -4188,9 +4225,9 @@ function renderizarTrazabilidadFiltrada() {
           ${renderBadge(item.nivel_coherencia)}
         </div>
         <h3>${escaparHtml(item.asignatura_origen ?? "-")} - ${escaparHtml(item.asignatura_destino ?? "-")}</h3>
-        <p><strong>Tipo:</strong> ${escaparHtml(formatearTexto(item.tipo_relacion))}</p>
-        <p><strong>Observación:</strong> ${escaparHtml(item.observacion ?? "-")}</p>
-        <p><strong>Sugerencia:</strong> ${escaparHtml(item.sugerencia ?? "-")}</p>
+        <p><strong>Tipo: </strong> ${escaparHtml(formatearTexto(item.tipo_relacion))}</p>
+        <p><strong>Observación: </strong> ${escaparHtml(item.observacion ?? "-")}</p>
+        <p><strong>Sugerencia: </strong> ${escaparHtml(item.sugerencia ?? "-")}</p>
       </article>
     `;
   }).join("");
@@ -4268,11 +4305,11 @@ function renderizarBrechasFiltradas() {
           <span class="badge badge-${prioridad}">Prioridad ${escaparHtml(formatearTexto(item.prioridad || "-"))}</span>
         </div>
         <h3>${escaparHtml(item.asignatura ?? "-")}</h3>
-        <p><strong>Tipo de brecha:</strong> ${escaparHtml(formatearTexto(item.tipo_brecha))}</p>
-        <p><strong>Problema detectado:</strong> ${escaparHtml(item.descripcion ?? "-")}</p>
-        <p><strong>Recomendaci&oacute;n de mejora:</strong> ${escaparHtml(item.recomendacion ?? "-")}</p>
-        <p><strong>Prioridad:</strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
-        <p><strong>Estado:</strong> ${escaparHtml(formatearTexto(item.estado))}</p>
+        <p><strong>Tipo de brecha: </strong> ${escaparHtml(formatearTexto(item.tipo_brecha))}</p>
+        <p><strong>Problema detectado: </strong> ${escaparHtml(item.descripcion ?? "-")}</p>
+        <p><strong>Recomendaci&oacute;n de mejora: </strong> ${escaparHtml(item.recomendacion ?? "-")}</p>
+        <p><strong>Prioridad: </strong> ${escaparHtml(formatearTexto(item.prioridad || "-"))}</p>
+        <p><strong>Estado: </strong> ${escaparHtml(formatearTexto(item.estado))}</p>
       </article>
     `;
   }).join("");
@@ -4476,8 +4513,8 @@ function renderizarTarjetasAcciones(data) {
         <h3>${escaparHtml(accion.titulo || "Acción de mejora")}</h3>
         
         <div class="accion-quick-info">
-          <span><strong>Curso:</strong> ${escaparHtml(accion.asignatura || "-")}</span>
-          <span><strong>Proceso:</strong> ${escaparHtml(nombreMacroproceso(macroproceso))}</span>
+          <span><strong>Curso: </strong> ${escaparHtml(accion.asignatura || "-")}</span>
+          <span><strong>Proceso: </strong> ${escaparHtml(nombreMacroproceso(macroproceso))}</span>
         </div>
 
         <p class="accion-preview">${descPreview}</p>
@@ -4497,10 +4534,10 @@ function renderizarTarjetasAcciones(data) {
             <p>${escaparHtml(accion.recomendacion || "-")}</p>
           </div>
           <div class="accion-details-grid">
-            <div><strong>Responsable:</strong> ${escaparHtml(accion.responsable || "Sin responsable")}</div>
-            <div><strong>Fecha límite:</strong> ${escaparHtml(accion.fecha_limite || "No definida")}</div>
-            <div><strong>Origen:</strong> ${escaparHtml(formatearTexto(accion.origen_tipo || "-"))}</div>
-            <div><strong>Evidencia:</strong> ${escaparHtml(evidenciaRelacionada.codigo ? `${evidenciaRelacionada.codigo} - ${evidenciaRelacionada.titulo || ""}` : origenId)}</div>
+            <div><strong>Responsable: </strong> ${escaparHtml(accion.responsable || "Sin responsable")}</div>
+            <div><strong>Fecha límite: </strong> ${escaparHtml(accion.fecha_limite || "No definida")}</div>
+            <div><strong>Origen: </strong> ${escaparHtml(formatearTexto(accion.origen_tipo || "-"))}</div>
+            <div><strong>Evidencia: </strong> ${escaparHtml(evidenciaRelacionada.codigo ? `${evidenciaRelacionada.codigo} - ${evidenciaRelacionada.titulo || ""}` : origenId)}</div>
           </div>
           ${accion.observacion ? `
           <div class="accion-detail-group">

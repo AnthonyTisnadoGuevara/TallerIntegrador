@@ -714,6 +714,59 @@ body {
   color: var(--success);
 }
 
+.alert-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.alert-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.alert-badge--alta {
+  color: #991b1b;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.alert-badge--alta::before {
+  background: #dc2626;
+}
+
+.alert-badge--media {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.alert-badge--media::before {
+  background: #f59e0b;
+}
+
+.alert-badge--ok {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.alert-badge--ok::before {
+  background: #16a34a;
+}
+
 .card-description {
   font-size: 14px;
   color: var(--text-secondary);
@@ -2079,35 +2132,27 @@ body.login-page {
 }
 
 .acciones-menu {
-  position: absolute;
-  bottom: 100%;
-  right: 8px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-xl);
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.14);
   min-width: 240px;
   max-width: min(320px, calc(100vw - 32px));
-  z-index: 1000;
-  margin-bottom: var(--sp-xs);
+  z-index: 3000;
   display: flex;
   flex-direction: column;
   padding: var(--sp-xs) 0;
+  overflow: visible;
   animation: dropdownFadeIn 150ms ease-out;
 }
 
 .acciones-menu.open-up {
-  bottom: 100%;
-  top: auto;
-  margin-bottom: var(--sp-xs);
-  margin-top: 0;
+  margin: 0;
 }
 
 .acciones-menu:not(.open-up) {
-  top: 100%;
-  bottom: auto;
-  margin-top: var(--sp-xs);
-  margin-bottom: 0;
+  margin: 0;
 }
 
 .acciones-menu.hidden {
@@ -2147,9 +2192,8 @@ body.login-page {
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--trans-base);
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 .acciones-menu .menu-item:hover {
@@ -2202,7 +2246,7 @@ body.login-page {
 @media (max-width: 720px) {
   .acciones-menu {
     left: auto;
-    right: 0;
+    right: auto;
     min-width: 220px;
   }
 }
