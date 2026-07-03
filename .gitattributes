@@ -1,0 +1,7 @@
+# Fuerza LF (no CRLF) para scripts de shell, sin importar el SO local.
+# Evita el error "bad interpreter: /bin/bash^M" al ejecutar en el VPS (Linux).
+*.sh text eol=lf
+
+# Buena práctica general: normaliza el resto de archivos de texto
+# usando el eol nativo del sistema, salvo excepciones explícitas.
+* text=auto

@@ -35,11 +35,11 @@ on_error() {
   local failed_command="$2"
   local exit_code="$3"
 
-  log_error "Deployment failed"
-  log_error "Failed command: $failed_command"
-  log_error "Line number: $line_number"
-  log_error "Exit code: $exit_code"
-  log_error "Log file: $LOG_FILE"
+  log_error "El despliegue falló"
+  log_error "Comando fallido: $failed_command"
+  log_error "Número de línea: $line_number"
+  log_error "Código de salida: $exit_code"
+  log_error "Archivo de log: $LOG_FILE"
 }
 
 trap 'on_error $LINENO "$BASH_COMMAND" $?' ERR
@@ -48,15 +48,15 @@ run_step() {
   local label="$1"
   shift
 
-  log_info "Starting: $label"
+  log_info "Iniciando: $label"
 
   if "$@"; then
-    log_success "Completed: $label"
+    log_success "Completado: $label"
   else
     local exit_code="$?"
-    log_error "Failed: $label"
-    log_error "Command: $*"
-    log_error "Exit code: $exit_code"
+    log_error "Falló: $label"
+    log_error "Comando: $*"
+    log_error "Código de salida: $exit_code"
     return "$exit_code"
   fi
 }
@@ -75,15 +75,15 @@ verify_required_files() {
 
   for file in "${required_files[@]}"; do
     if [[ -f "$file" ]]; then
-      log_success "Required file found: $file"
+      log_success "Archivo requerido encontrado: $file"
     else
-      log_error "Required file missing: $file"
+      log_error "Falta archivo requerido: $file"
       missing=1
     fi
   done
 
   if [[ "$missing" -ne 0 ]]; then
-    log_error "One or more required files are missing. Aborting deployment."
+    log_error "Falta uno o más archivos requeridos. Abortando despliegue."
     return 1
   fi
 }
@@ -96,7 +96,7 @@ validate_container_running() {
     return 0
   fi
 
-  log_error "Container is not running: $container_name"
+  log_error "El contenedor no está corriendo: $container_name"
   docker ps -a --filter "name=$container_name"
   return 1
 }
@@ -108,61 +108,96 @@ retry_curl() {
   local attempt
 
   for attempt in $(seq 1 "$max_attempts"); do
-    log_info "curl attempt $attempt/$max_attempts: $url"
+    log_info "Intento de curl $attempt/$max_attempts: $url"
 
     if curl -fsSI --max-time 20 "$url"; then
-      log_success "curl succeeded: $url"
+      log_success "curl exitoso: $url"
       return 0
     fi
 
     if [[ "$attempt" -lt "$max_attempts" ]]; then
-      log_warning "curl failed for $url. Retrying in ${delay_seconds}s..."
+      log_warning "curl falló para $url. Reintentando en ${delay_seconds}s..."
       sleep "$delay_seconds"
     fi
   done
 
-  log_error "curl failed after $max_attempts attempts: $url"
+  log_error "curl falló después de $max_attempts intentos: $url"
   return 1
 }
 
-log_info "Starting deployment"
-log_info "Date: $(date)"
-log_info "User: $(whoami)"
+log_info "Iniciando despliegue"
+log_info "Fecha: $(date)"
+log_info "Usuario: $(whoami)"
 log_info "Hostname: $(hostname)"
-log_info "Initial path: $(pwd)"
-log_info "Log file: $LOG_FILE"
+log_info "Ruta inicial: $(pwd)"
+log_info "Archivo de log: $LOG_FILE"
 
-run_step "Move to project directory" cd "$PROJECT_DIR"
+run_step "Cambiar al directorio del proyecto" cd "$PROJECT_DIR"
 
-run_step "Show current git status" git status --short
-run_step "Fetch latest changes" git fetch origin
-run_step "Checkout develop" git checkout develop
-run_step "Pull latest changes" git pull origin develop
-run_step "Show latest commit" git log -1 --oneline
-run_step "Verify required files exist" verify_required_files
+run_step "Mostrar estado actual de git" git status --short
 
-run_step "Stop existing containers" docker compose down
-run_step "Build Docker images" docker compose build --no-cache
-run_step "Start containers" docker compose up -d
+# --- NUEVO: guardamos el commit actual ANTES de actualizar ---
+PREVIOUS_COMMIT="$(git rev-parse HEAD)"
 
-log_info "Waiting 5 seconds for containers to initialize"
+run_step "Obtener últimos cambios" git fetch origin
+run_step "Cambiar a rama develop" git checkout develop
+run_step "Traer últimos cambios (pull)" git pull origin develop
+run_step "Mostrar último commit" git log -1 --oneline
+run_step "Verificar existencia de archivos requeridos" verify_required_files
+
+# --- NUEVO: comparamos commit antes/despues del pull ---
+CURRENT_COMMIT="$(git rev-parse HEAD)"
+
+if [[ "$PREVIOUS_COMMIT" == "$CURRENT_COMMIT" ]]; then
+  log_info "No se detectaron commits nuevos ($CURRENT_COMMIT). Se omite el build y el reinicio de contenedores."
+  SKIP_BUILD=1
+else
+  log_info "Se detectaron commits nuevos: $PREVIOUS_COMMIT -> $CURRENT_COMMIT"
+  SKIP_BUILD=0
+fi
+
+if [[ "$SKIP_BUILD" -eq 0 ]]; then
+  # --- CAMBIO: se quito --no-cache. Docker reutiliza capas cacheadas
+  #     (por ejemplo la instalacion de dependencias) si esos archivos
+  #     no cambiaron, y solo reconstruye lo que realmente cambio. ---
+  run_step "Construir imágenes Docker (con caché de capas)" docker compose build
+
+  # --- CAMBIO: en vez de "down" + "up -d", usamos "up -d" directo.
+  #     Compose recrea SOLO los contenedores cuya imagen o configuracion
+  #     cambio, dejando los demas corriendo sin interrupcion. ---
+  run_step "Recrear contenedores modificados" docker compose up -d --remove-orphans
+else
+  # Nos aseguramos de que los contenedores estén arriba aunque no hubo build
+  run_step "Asegurar que los contenedores estén corriendo" docker compose up -d --remove-orphans
+fi
+
+log_info "Esperando 5 segundos para que los contenedores inicialicen"
 sleep 5
 
-run_step "Show running containers" docker ps
-run_step "Validate backend container is running" validate_container_running "taller_backend"
-run_step "Validate frontend container is running" validate_container_running "taller_frontend"
-run_step "Show backend logs" docker logs taller_backend --tail 80
-run_step "Show frontend logs" docker logs taller_frontend --tail 50
+run_step "Mostrar contenedores en ejecución" docker ps
+run_step "Validar que el contenedor backend esté corriendo" validate_container_running "taller_backend"
+run_step "Validar que el contenedor frontend esté corriendo" validate_container_running "taller_frontend"
+run_step "Mostrar logs del backend" docker logs taller_backend --tail 80
+run_step "Mostrar logs del frontend" docker logs taller_frontend --tail 50
 
-run_step "Validate Nginx configuration" nginx -t
-run_step "Restart Nginx" systemctl restart nginx
+run_step "Validar configuración de Nginx" nginx -t
 
-run_step "Test backend locally" retry_curl "http://127.0.0.1:8000/docs"
-run_step "Test frontend locally" retry_curl "http://127.0.0.1:8080"
-run_step "Test production frontend" retry_curl "https://taller-mejoracontinua.duckdns.org"
-run_step "Test production Swagger" retry_curl "https://taller-mejoracontinua.duckdns.org/docs"
+# --- CAMBIO: reiniciamos Nginx solo cuando hubo cambios desplegados
+#     desde Git (nuevo commit). No detecta cambios especificos en
+#     nginx.conf, solo evita reinicios innecesarios cuando no se
+#     desplego nada nuevo. ---
+if [[ "$SKIP_BUILD" -eq 0 ]]; then
+  run_step "Reiniciar Nginx" systemctl restart nginx
+else
+  log_info "Se omite el reinicio de Nginx (no se desplegaron cambios)"
+fi
 
-log_success "Deployment completed successfully"
-log_success "Frontend URL: https://taller-mejoracontinua.duckdns.org"
-log_success "Swagger URL: https://taller-mejoracontinua.duckdns.org/docs"
-log_success "Log file: $LOG_FILE"
+run_step "Probar backend localmente" retry_curl "http://127.0.0.1:8000/docs"
+run_step "Probar frontend localmente" retry_curl "http://127.0.0.1:8080"
+run_step "Probar frontend en producción" retry_curl "https://taller-mejoracontinua.duckdns.org"
+run_step "Probar Swagger en producción" retry_curl "https://taller-mejoracontinua.duckdns.org/docs"
+
+log_success "Despliegue completado exitosamente"
+log_success "URL del frontend: https://taller-mejoracontinua.duckdns.org"
+log_success "URL de Swagger: https://taller-mejoracontinua.duckdns.org/docs"
+log_success "Archivo de log: $LOG_FILE"
