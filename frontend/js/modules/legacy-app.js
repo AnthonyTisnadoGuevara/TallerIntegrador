@@ -3176,7 +3176,7 @@ function renderizarTablaSilabos() {
   });
 
   if (filtrados.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--text-secondary);">No se encontraron sílabos con los filtros aplicados.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-secondary);">No se encontraron sílabos con los filtros aplicados.</td></tr>`;
     if (paginacion) paginacion.innerHTML = "";
     return;
   }
@@ -3199,7 +3199,6 @@ function renderizarTablaSilabos() {
       : `<button class="btn btn-disabled" disabled>Sin archivo</button>`;
 
     tr.innerHTML = `
-      <td><input type="checkbox" class="select-silabo" data-id="${silabo.id}" /></td>
       <td>${silabo.ciclo}</td>
       <td>${silabo.codigo_asignatura}</td>
       <td>${silabo.asignatura}</td>
@@ -3286,52 +3285,6 @@ function limpiarFiltrosSilabos() {
   if (condicion) condicion.value = "";
   paginaActual = 1;
   renderizarTablaSilabos();
-}
-
-async function procesarTodosLosSilabosSeleccionados() {
-  const seleccionados = Array.from(document.querySelectorAll(".select-silabo:checked")).map(cb => cb.dataset.id);
-  if (seleccionados.length === 0) {
-    mostrarToast("Por favor, selecciona al menos un sílabo para procesar.", "warning");
-    return;
-  }
-
-  const confirmar = await abrirModalConfirmacion({
-    titulo: "Procesar sílabos seleccionados",
-    mensaje: `¿Deseas analizar en bloque los ${seleccionados.length} sílabos seleccionados con el agente curricular?`,
-    textoConfirmar: "Analizar Bloque",
-    tipo: "success"
-  });
-
-  if (!confirmar) return;
-
-  try {
-    mostrarCargando(`Analizando ${seleccionados.length} sílabos en bloque... Por favor, espere.`);
-    let exitosos = 0;
-    let fallidos = 0;
-    
-    for (const id of seleccionados) {
-      try {
-        const response = await fetch(`${API_URL}/api/agentes/analizar-silabo/${id}`, {
-          method: "POST"
-        });
-        if (response.ok) {
-          exitosos++;
-        } else {
-          fallidos++;
-        }
-      } catch (err) {
-        fallidos++;
-      }
-    }
-    
-    mostrarToast(`Proceso completado. Éxitos: ${exitosos}, Fallas: ${fallidos}.`, "success");
-    await cargarDatos();
-  } catch (error) {
-    console.error("Error en procesamiento por lote:", error);
-    mostrarToast("Error al procesar en lote: " + error.message, "error");
-  } finally {
-    ocultarCargando();
-  }
 }
 
 function toggleMenuAcciones(id) {
@@ -4749,7 +4702,6 @@ Object.assign(window, {
   mostrarNotificacion,
   mostrarToast,
   ocultarModal,
-  procesarTodosLosSilabosSeleccionados,
   registrarSilabo,
   regresarAMacroprocesos,
   renderEvidenciasMacroproceso,

@@ -1070,16 +1070,6 @@ tbody tr:last-child td {
   background-color: var(--bg);
 }
 
-/* ========== BULK ACTIONS ========== */
-
-.bulk-actions {
-  display: flex;
-  gap: var(--sp-md);
-  margin-top: var(--sp-lg);
-  padding-top: var(--sp-lg);
-  border-top: 1px solid var(--border);
-}
-
 /* ========== FILE UPLOAD ========== */
 
 .file-upload-section {

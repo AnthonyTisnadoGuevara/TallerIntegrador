@@ -498,7 +498,6 @@
           <table>
             <thead>
               <tr>
-                <th><input type="checkbox" /></th>
                 <th>Ciclo</th>
                 <th>Código</th>
                 <th>Asignatura</th>
@@ -510,19 +509,13 @@
             </thead>
             <tbody id="tablaSilabos">
               <tr>
-                <td colspan="8" style="text-align: center; padding: 32px;">Cargando sílabos...</td>
+                <td colspan="7" style="text-align: center; padding: 32px;">Cargando sílabos...</td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <div class="pagination-container" id="paginacionContenedor"></div>
-
-        <div class="bulk-actions">
-          <button class="btn btn-secondary" onclick="procesarTodosLosSilabosSeleccionados()">
-            Procesar seleccionados
-          </button>
-        </div>
       </section>
 
       <!-- Registrar Nuevo Sílabo -->
@@ -580,13 +573,6 @@
         </form>
       </section>
 
-      <!-- Detalle del Sílabo -->
-      <section class="form-panel">
-        <h2>Detalle del Sílabo</h2>
-        <div id="detalleSilabo" class="info-box">
-          Selecciona un sílabo para ver su historial o análisis IA
-        </div>
-      </section>
     </section>
 
     <!-- MÉTRICAS VIEW -->
