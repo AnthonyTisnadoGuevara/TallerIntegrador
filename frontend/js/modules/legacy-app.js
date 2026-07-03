@@ -881,6 +881,34 @@ function calcularSemanaActual() {
   return { inicio: iso(inicio), fin: iso(fin) };
 }
 
+function normalizarNivelAvance(valor) {
+  const mapa = {
+    "sin_avance": "Sin avance",
+    "sin avance": "Sin avance",
+    "Sin avance": "Sin avance",
+    "inicial": "Bajo",
+    "Inicial": "Bajo",
+    "bajo": "Bajo",
+    "Bajo": "Bajo",
+    "medio": "Medio",
+    "Medio": "Medio",
+    "en proceso": "Medio",
+    "En proceso": "Medio",
+    "alto": "Alto",
+    "Alto": "Alto",
+    "avanzado": "Alto",
+    "Avanzado": "Alto",
+    "completado": "Completado",
+    "Completado": "Completado",
+    "completo": "Completado",
+    "Completo": "Completado",
+    "finalizado": "Completado",
+    "Finalizado": "Completado"
+  };
+
+  return mapa[String(valor || "").trim()] || "Sin avance";
+}
+
 function abrirModalSeguimientoSemanal(evidenciaId) {
   const evidencia = buscarEvidenciaMacroproceso(evidenciaId);
   if (!evidencia) {
@@ -932,7 +960,7 @@ function abrirModalEditarSeguimientoSemanal(seguimientoId) {
   document.getElementById("seguimientoSemanaInicio").value = seguimiento.semana_inicio || "";
   document.getElementById("seguimientoSemanaFin").value = seguimiento.semana_fin || "";
   document.getElementById("seguimientoResponsable").value = seguimiento.responsable || "";
-  document.getElementById("seguimientoNivelAvance").value = seguimiento.nivel_avance || "Sin avance";
+  document.getElementById("seguimientoNivelAvance").value = normalizarNivelAvance(seguimiento.nivel_avance);
   document.getElementById("seguimientoPorcentajeAvance").value = String(Math.min(100, Math.max(0, Number(seguimiento.porcentaje_avance || 0))));
   document.getElementById("seguimientoAccionRealizada").value = seguimiento.accion_realizada ? "si" : "no";
   document.getElementById("seguimientoDescripcionAccion").value = seguimiento.descripcion_accion || "";
@@ -965,6 +993,9 @@ function toggleApoyoSeguimiento() {
 
 async function guardarSeguimientoSemanal(event) {
   event.preventDefault();
+  const form = event.target;
+  const submitButton = form?.querySelector("button[type='submit']")
+    || document.querySelector('button[type="submit"][form="formSeguimientoSemanal"]');
   const evidencia = evidenciaSeguimientoActual;
   if (!evidencia) {
     mostrarToast("No se pudo identificar la evidencia.", "error");
@@ -1002,7 +1033,7 @@ async function guardarSeguimientoSemanal(event) {
     semana_fin: semanaFin,
     responsable: document.getElementById("seguimientoResponsable").value.trim() || null,
     accion_realizada: accionRealizadaValor !== "no",
-    nivel_avance: document.getElementById("seguimientoNivelAvance").value,
+    nivel_avance: normalizarNivelAvance(document.getElementById("seguimientoNivelAvance").value),
     porcentaje_avance: porcentaje,
     descripcion_accion: document.getElementById("seguimientoDescripcionAccion").value.trim() || null,
     resultado_observado: document.getElementById("seguimientoResultadoObservado").value.trim() || null,
@@ -1013,7 +1044,14 @@ async function guardarSeguimientoSemanal(event) {
     observacion: document.getElementById("seguimientoObservacion").value.trim() || null
   };
 
+  const nivelesValidos = ["Sin avance", "Bajo", "Medio", "Alto", "Completado"];
+  if (!nivelesValidos.includes(payload.nivel_avance)) {
+    mostrarToast("Selecciona un nivel de avance válido.", "error");
+    return;
+  }
+
   try {
+    if (submitButton) submitButton.disabled = true;
     const esEdicion = Boolean(seguimientoEdicionActual?.id);
     const url = esEdicion
       ? `${API_URL}/api/macroprocesos/evidencias/seguimiento-semanal/${seguimientoEdicionActual.id}`
@@ -1039,6 +1077,8 @@ async function guardarSeguimientoSemanal(event) {
   } catch (error) {
     console.error("Error al guardar seguimiento semanal:", error);
     mostrarToast("Error al guardar seguimiento: " + error.message, "error");
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 }
 
@@ -4813,4 +4853,3 @@ Object.assign(window, {
   verValidacion,
   volverMacroprocesos
 });
-
