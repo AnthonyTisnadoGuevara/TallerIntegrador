@@ -932,6 +932,7 @@ function abrirModalSeguimientoSemanal(evidenciaId) {
   document.getElementById("seguimientoPorcentajeAvance").value = String(Math.min(100, Math.max(0, Number(evidencia.avance || 0))));
   document.getElementById("seguimientoAccionRealizada").value = "no";
   document.getElementById("seguimientoRequiereApoyo").value = "false";
+  document.getElementById("modalSeguimientoSemanal")?.classList.remove("modal-front");
   toggleApoyoSeguimiento();
   mostrarModal("modalSeguimientoSemanal");
 }
@@ -970,6 +971,7 @@ function abrirModalEditarSeguimientoSemanal(seguimientoId) {
   document.getElementById("seguimientoRequiereApoyo").value = seguimiento.requiere_apoyo ? "true" : "false";
   document.getElementById("seguimientoTipoApoyo").value = seguimiento.tipo_apoyo_requerido || "";
   document.getElementById("seguimientoObservacion").value = seguimiento.observacion || "";
+  document.getElementById("modalSeguimientoSemanal")?.classList.add("modal-front");
   toggleApoyoSeguimiento();
   mostrarModal("modalSeguimientoSemanal");
 }
@@ -980,6 +982,7 @@ function cerrarModalSeguimientoSemanal() {
     evidenciaSeguimientoActual = null;
   }
   seguimientoEdicionActual = null;
+  document.getElementById("modalSeguimientoSemanal")?.classList.remove("modal-front");
   ocultarModal("modalSeguimientoSemanal");
 }
 

@@ -1122,6 +1122,10 @@ tbody tr:last-child td {
   display: none;
 }
 
+.modal.modal-front {
+  z-index: 2100;
+}
+
 .modal-overlay {
   position: absolute;
   top: 0;
