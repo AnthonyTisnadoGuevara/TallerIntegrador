@@ -444,7 +444,6 @@ function renderEvidenceCard(evidencia, columnas) {
               <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
               ${validarButton.replace("btn btn-primary", "menu-item actions-dropdown-item").replace("btn btn-secondary", "menu-item actions-dropdown-item")}
               <button class="menu-item actions-dropdown-item" type="button" onclick="verUltimaValidacionEvidenciaIA('${id}')">Ver &uacute;ltima validaci&oacute;n IA</button>
-              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar avance</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialEvidenciaMacroproceso('${id}')">Ver historial de cambios</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="generarAccionDesdeEvidencia('${id}')">Generar acci&oacute;n</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="subirArchivoEvidenciaMacroproceso('${id}')">Subir evidencia general</button>
