@@ -121,16 +121,49 @@ document.addEventListener("DOMContentLoaded", async () => {
   form.addEventListener("submit", registrarSilabo);
 });
 
-document.addEventListener("click", function(event) {
-  if (!event.target.closest(".acciones-dropdown")) {
-    document.querySelectorAll(".acciones-menu").forEach((menu) => {
-      menu.classList.add("hidden");
-      menu.classList.remove("open-up");
-      menu.style.left = "";
-      menu.style.top = "";
-    });
+function cerrarTodosLosDropdowns() {
+  document.querySelectorAll(".acciones-menu, .actions-menu, .dropdown-menu, .menu-acciones, .more-actions-menu").forEach((menu) => {
+    menu.classList.add("hidden");
+    menu.classList.remove("show", "open", "active", "open-up");
+    menu.style.left = "";
+    menu.style.top = "";
+    menu.style.display = "";
+  });
+
+  document.querySelectorAll("[aria-expanded='true']").forEach((btn) => {
+    btn.setAttribute("aria-expanded", "false");
+  });
+}
+
+function cerrarModalActivoConEscape(event) {
+  if (event.key !== "Escape") return;
+
+  cerrarTodosLosDropdowns();
+  const modalesVisibles = Array.from(document.querySelectorAll(".modal"))
+    .filter((modal) => !modal.classList.contains("hidden") && window.getComputedStyle(modal).display !== "none");
+
+  if (!modalesVisibles.length) return;
+  const modalActivo = modalesVisibles[modalesVisibles.length - 1];
+  const overlay = modalActivo.querySelector(".modal-overlay");
+
+  if (overlay) {
+    overlay.click();
+    return;
   }
-});
+
+  modalActivo.classList.add("hidden");
+  document.body.classList.toggle("modal-open", Boolean(document.querySelector(".modal:not(.hidden)")));
+}
+
+if (!window.__globalDropdownCloseRegistered) {
+  document.addEventListener("click", function(event) {
+    if (!event.target.closest(".acciones-dropdown, .more-options")) {
+      cerrarTodosLosDropdowns();
+    }
+  });
+  document.addEventListener("keydown", cerrarModalActivoConEscape);
+  window.__globalDropdownCloseRegistered = true;
+}
 
 async function mostrarMacroproceso(nombre) {
 
@@ -411,8 +444,7 @@ function renderEvidenceCard(evidencia, columnas) {
               <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'estado')">Cambiar estado</button>
               ${validarButton.replace("btn btn-primary", "menu-item actions-dropdown-item").replace("btn btn-secondary", "menu-item actions-dropdown-item")}
               <button class="menu-item actions-dropdown-item" type="button" onclick="verUltimaValidacionEvidenciaIA('${id}')">Ver &uacute;ltima validaci&oacute;n IA</button>
-              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar Avance: </button>
-              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'observacion')">Agregar observaci&oacute;n</button>
+              <button class="menu-item actions-dropdown-item" type="button" onclick="abrirModalEvidenciaMacroproceso('${id}', 'avance')">Editar avance</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="verHistorialEvidenciaMacroproceso('${id}')">Ver historial de cambios</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="generarAccionDesdeEvidencia('${id}')">Generar acci&oacute;n</button>
               <button class="menu-item actions-dropdown-item" type="button" onclick="subirArchivoEvidenciaMacroproceso('${id}')">Subir evidencia general</button>
@@ -561,9 +593,10 @@ function obtenerNombreArchivoEvidencia(url) {
 }
 
 function buscarEvidenciaMacroproceso(id) {
+  const idNormalizado = String(id);
   return Object.values(evidenciasMacroprocesosGlobal)
     .flat()
-    .find((item) => item.id === id);
+    .find((item) => String(item.id) === idNormalizado);
 }
 
 function abrirModalRegistroEvidenciaMacroproceso(macroproceso) {
@@ -863,21 +896,75 @@ function abrirModalHistorialEvidencia(historial) {
   if (!Array.isArray(historial) || historial.length === 0) {
     contenedor.innerHTML = `<p class="text-muted">No hay cambios registrados para esta evidencia.</p>`;
   } else {
-    contenedor.innerHTML = historial.map((item) => `
-      <article class="history-item">
-        <div class="history-item-header">
-          <strong>${escaparHtml(item.campo_modificado || "-")}</strong>
-          <span>${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</span>
-        </div>
-        <p><strong>Valor anterior: </strong> ${escaparHtml(item.valor_anterior ?? "-")}</p>
-        <p><strong>Valor nuevo: </strong> ${escaparHtml(item.valor_nuevo ?? "-")}</p>
-        <p><strong>Observación: </strong> ${escaparHtml(item.observacion || "-")}</p>
-      </article>
-    `).join("");
+    contenedor.innerHTML = `<div class="history-list">${historial.map(renderTarjetaHistorialEvidencia).join("")}</div>`;
   }
   mostrarModal("modalHistorialEvidencia");
 }
 
+function renderTarjetaHistorialEvidencia(item) {
+  const campo = item.campo_modificado || "-";
+  const fecha = item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha";
+  const observacion = item.observacion || "-";
+
+  return `
+    <article class="history-card">
+      <div class="history-card-header">
+        <div>
+          <span class="history-field">${escaparHtml(formatearCampoHistorial(campo))}</span>
+          <p class="history-date">${escaparHtml(fecha)}</p>
+        </div>
+        <span class="history-badge">Actualizacion</span>
+      </div>
+      <div class="history-values">
+        <div class="history-value-box">
+          <span class="history-label">Valor anterior</span>
+          ${renderValorHistorialEvidencia(item.valor_anterior)}
+        </div>
+        <div class="history-arrow">-&gt;</div>
+        <div class="history-value-box">
+          <span class="history-label">Valor nuevo</span>
+          ${renderValorHistorialEvidencia(item.valor_nuevo)}
+        </div>
+      </div>
+      <div class="history-observation">
+        <span>Observacion</span>
+        <p>${escaparHtml(observacion)}</p>
+      </div>
+    </article>
+  `;
+}
+
+function renderValorHistorialEvidencia(valor) {
+  if (valor === null || valor === undefined || valor === "") {
+    return `<strong>-</strong>`;
+  }
+
+  const texto = String(valor);
+  if (esUrlHistorial(texto)) {
+    return `
+      <strong>Archivo de sustento</strong>
+      <a class="history-file-link" href="${escaparAtributo(texto)}" target="_blank" rel="noopener">Ver archivo</a>
+    `;
+  }
+
+  return `<strong>${escaparHtml(texto)}</strong>`;
+}
+
+function esUrlHistorial(valor) {
+  return typeof valor === "string" && /^https?:\/\//i.test(valor.trim());
+}
+
+function formatearCampoHistorial(campo) {
+  const mapa = {
+    avance: "Avance",
+    observacion: "Observacion",
+    estado: "Estado",
+    seguimiento_semanal: "Seguimiento semanal",
+    archivo_url: "Archivo de sustento"
+  };
+
+  return mapa[campo] || formatearTexto(campo || "-");
+}
 function cerrarModalHistorialEvidencia() {
   ocultarModal("modalHistorialEvidencia");
 }
@@ -964,6 +1051,7 @@ function abrirModalEditarSeguimientoSemanal(seguimientoId) {
 
   evidenciaSeguimientoActual = evidencia;
   seguimientoEdicionActual = seguimiento;
+  ocultarModal("modalHistorialSeguimientos");
   const form = document.getElementById("formSeguimientoSemanal");
   if (form) form.reset();
 
@@ -1142,27 +1230,39 @@ function renderTarjetaSeguimientoSemanal(item) {
   const fechaRegistro = item.created_at
     ? new Date(item.created_at).toLocaleString()
     : "Sin fecha de registro";
+
   return `
     <article class="weekly-history-card nivel-${escaparAtributo(normalizarValor(item.nivel_avance || "sin avance").replaceAll(" ", "-"))}">
       <div class="weekly-history-header">
         <div>
-          <span class="cycle-badge">${escaparHtml(item.semana_inicio || "-")} al ${escaparHtml(item.semana_fin || "-")}</span>
-          <h3>${escaparHtml(item.nivel_avance || "Sin avance")} · ${porcentaje}%</h3>
-          <small>Registrado: ${escaparHtml(fechaRegistro)}</small>
+          <div class="weekly-history-title">${escaparHtml(item.semana_inicio || "-")} al ${escaparHtml(item.semana_fin || "-")}</div>
+          <div class="weekly-history-meta">Registrado: ${escaparHtml(fechaRegistro)}</div>
         </div>
         <div class="weekly-badges">
+          <span class="weekly-badge progress">${escaparHtml(item.nivel_avance || "Sin avance")} · ${porcentaje}%</span>
           ${item.requiere_apoyo ? `<span class="weekly-badge support">Requiere apoyo</span>` : ""}
-          ${item.accion_realizada ? `<span class="weekly-badge ok">Acción realizada</span>` : `<span class="weekly-badge warning">Sin acción</span>`}
+          ${item.accion_realizada ? `<span class="weekly-badge ok">Accion realizada</span>` : `<span class="weekly-badge warning">Sin accion</span>`}
         </div>
       </div>
-      <p><strong>Responsable: </strong> ${escaparHtml(item.responsable || "-")}</p>
-      <p><strong>Acción: </strong> ${escaparHtml(item.descripcion_accion || "-")}</p>
-      <p><strong>Resultado: </strong> ${escaparHtml(item.resultado_observado || "-")}</p>
-      <p><strong>Dificultad: </strong> ${escaparHtml(item.dificultad_encontrada || "-")}</p>
-      <p><strong>Compromiso: </strong> ${escaparHtml(item.compromiso_siguiente_semana || "-")}</p>
-      ${item.requiere_apoyo ? `<p><strong>Tipo de apoyo: </strong> ${escaparHtml(item.tipo_apoyo_requerido || "-")}</p>` : ""}
-      <p><strong>Archivo: </strong> ${escaparHtml(nombreArchivo)}</p>
-      <p><strong>Observación: </strong> ${escaparHtml(item.observacion || "-")}</p>
+      <div class="weekly-history-grid">
+        <span class="weekly-history-label">Responsable</span>
+        <span class="weekly-history-value">${escaparHtml(item.responsable || "-")}</span>
+        <span class="weekly-history-label">Accion realizada</span>
+        <span class="weekly-history-value">${escaparHtml(item.descripcion_accion || "-")}</span>
+        <span class="weekly-history-label">Resultado observado</span>
+        <span class="weekly-history-value">${escaparHtml(item.resultado_observado || "-")}</span>
+        <span class="weekly-history-label">Dificultad</span>
+        <span class="weekly-history-value">${escaparHtml(item.dificultad_encontrada || "-")}</span>
+        <span class="weekly-history-label">Compromiso</span>
+        <span class="weekly-history-value">${escaparHtml(item.compromiso_siguiente_semana || "-")}</span>
+        ${item.requiere_apoyo ? `
+        <span class="weekly-history-label">Tipo de apoyo</span>
+        <span class="weekly-history-value">${escaparHtml(item.tipo_apoyo_requerido || "-")}</span>` : ""}
+        <span class="weekly-history-label">Archivo</span>
+        <span class="weekly-history-value">${escaparHtml(nombreArchivo)}</span>
+        <span class="weekly-history-label">Observacion</span>
+        <span class="weekly-history-value">${escaparHtml(item.observacion || "-")}</span>
+      </div>
       <div class="weekly-history-actions">
         ${archivoUrl
           ? `<button class="btn btn-secondary" type="button" onclick="verArchivoEvidencia('${escaparAtributo(archivoUrl)}')">Ver archivo</button>`
@@ -1173,7 +1273,6 @@ function renderTarjetaSeguimientoSemanal(item) {
     </article>
   `;
 }
-
 function cerrarModalHistorialSeguimientos() {
   evidenciaSeguimientoActual = null;
   ocultarModal("modalHistorialSeguimientos");
@@ -1244,6 +1343,7 @@ async function eliminarSeguimientoSemanal(seguimientoId) {
 }
 
 async function validarEvidenciaIA(evidenciaId) {
+  cerrarTodosLosDropdowns();
   const evidencia = buscarEvidenciaMacroproceso(evidenciaId);
   if (!normalizarEnlaceArchivo(evidencia?.archivo_url)) {
     mostrarToast("Primero suba un archivo de sustento para validar esta evidencia.", "warning");
@@ -1267,6 +1367,7 @@ async function validarEvidenciaIA(evidenciaId) {
 }
 
 async function verUltimaValidacionEvidenciaIA(evidenciaId) {
+  cerrarTodosLosDropdowns();
   try {
     const result = await fetchJson(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/validacion-ia`);
 
@@ -1283,66 +1384,69 @@ async function verUltimaValidacionEvidenciaIA(evidenciaId) {
 }
 
 function abrirModalValidacionEvidenciaIA(validacion) {
+  cerrarTodosLosDropdowns();
   const contenedor = document.getElementById("contenidoValidacionEvidenciaIA");
   if (!contenedor) return;
 
-  const nivel = String(validacion.nivel_validez || "sin-dato").toLowerCase();
-  const nivelClase = ["alto", "medio", "bajo"].includes(nivel) ? nivel : "sin-dato";
+  const nivel = String(validacion.nivel_validez || "sin dato").toLowerCase();
+  const nivelClase = nivel.includes("alto") || nivel.includes("alta")
+    ? "high"
+    : nivel.includes("medio") || nivel.includes("media")
+      ? "medium"
+      : nivel.includes("bajo") || nivel.includes("baja")
+        ? "low"
+        : "neutral";
   const pertinencia = String(validacion.pertinencia || "sin dato").replaceAll("_", " ");
   const fecha = validacion.created_at
     ? new Date(validacion.created_at).toLocaleString()
     : "Sin fecha registrada";
 
   contenedor.innerHTML = `
-    <div class="analisis-section validation-summary">
-      <div>
-        <span class="section-label">Nivel de validez</span>
-        <span class="ia-validity-badge validity-${escaparAtributo(nivelClase)}">${escaparHtml(formatearTexto(nivel))}</span>
+    <div class="ai-validation-modal">
+      <div class="ai-validation-summary">
+        <span class="ai-validation-badge ai-validation-${escaparAtributo(nivelClase)}">Validez ${escaparHtml(formatearTexto(nivel))}</span>
+        <span class="ai-validation-badge ai-validation-ok">Pertinencia ${escaparHtml(formatearTexto(pertinencia))}</span>
+        <span class="ai-validation-date">${escaparHtml(fecha)}</span>
       </div>
-      <div>
-        <span class="section-label">Pertinencia</span>
-        <strong>${escaparHtml(formatearTexto(pertinencia))}</strong>
+
+      <section class="ai-validation-section">
+        <h4>Resumen</h4>
+        ${renderTextoAnalisis(validacion.resumen)}
+      </section>
+
+      <div class="ai-validation-grid">
+        <section class="ai-validation-section">
+          <h4>Elementos detectados</h4>
+          ${renderLista(validacion.elementos_detectados)}
+        </section>
+        <section class="ai-validation-section">
+          <h4>Elementos faltantes</h4>
+          ${renderLista(validacion.elementos_faltantes)}
+        </section>
+        <section class="ai-validation-section">
+          <h4>Observaciones</h4>
+          ${renderLista(validacion.observaciones)}
+        </section>
+        <section class="ai-validation-section">
+          <h4>Recomendaciones</h4>
+          ${renderLista(validacion.recomendaciones)}
+        </section>
       </div>
-      <div>
-        <span class="section-label">Fecha</span>
-        <strong>${escaparHtml(fecha)}</strong>
-      </div>
-    </div>
-    <div class="analisis-section">
-      <h3>Resumen</h3>
-      ${renderTextoAnalisis(validacion.resumen)}
-    </div>
-    <div class="validation-detail-grid">
-      <div class="analisis-section">
-        <h3>Elementos detectados</h3>
-        ${renderLista(validacion.elementos_detectados)}
-      </div>
-      <div class="analisis-section">
-        <h3>Elementos faltantes</h3>
-        ${renderLista(validacion.elementos_faltantes)}
-      </div>
-      <div class="analisis-section">
-        <h3>Observaciones</h3>
-        ${renderLista(validacion.observaciones)}
-      </div>
-      <div class="analisis-section">
-        <h3>Recomendaciones</h3>
-        ${renderLista(validacion.recomendaciones)}
-      </div>
-    </div>
-    <div class="analisis-section">
-      <h3>Acci&oacute;n sugerida</h3>
-      ${renderTextoAnalisis(validacion.accion_sugerida)}
-    </div>
-    <div class="analisis-section">
-      <h3>Modelo usado</h3>
-      <p>${escaparHtml(validacion.modelo_usado || "-")}</p>
+
+      <section class="ai-validation-section">
+        <h4>Accion sugerida</h4>
+        ${renderTextoAnalisis(validacion.accion_sugerida)}
+      </section>
+
+      <section class="ai-validation-section ai-validation-meta">
+        <h4>Modelo usado</h4>
+        <p>${escaparHtml(validacion.modelo_usado || "-")}</p>
+      </section>
     </div>
   `;
 
   mostrarModal("modalValidacionEvidenciaIA");
 }
-
 function cerrarModalValidacionEvidenciaIA() {
   ocultarModal("modalValidacionEvidenciaIA");
 }
@@ -1643,16 +1747,35 @@ function cerrarModalHistorialIA() {
 
 async function generarAccionDesdeEvidencia(evidenciaId) {
   try {
+    const evidencia = buscarEvidenciaMacroproceso(evidenciaId);
     const result = await fetchJson(`${API_URL}/api/macroprocesos/evidencias/${evidenciaId}/generar-accion`, {
       method: "POST"
     });
+    const accion = result.data || result.accion_existente || await obtenerAccionMejoraPorEvidencia(evidenciaId);
 
-    mostrarToast(result.message || "Acción de mejora generada correctamente.", "success");
+    if (accion) {
+      accionesMejoraGlobal = [accion];
+      macroprocesoAccionesActual = evidencia?.macroproceso || accion.macroproceso || null;
+      abrirModalAccionesMejora();
+    }
+
+    mostrarToast(
+      result.accion_existente
+        ? "Esta evidencia ya tiene una acción de mejora asociada."
+        : result.message || "Acción de mejora generada correctamente.",
+      result.accion_existente ? "info" : "success"
+    );
     await cargarDashboardAccionesMejora();
   } catch (error) {
     console.error("Error al generar acción desde evidencia:", error);
     mostrarToast("No se pudo generar la acción de mejora.", "error");
   }
+}
+
+async function obtenerAccionMejoraPorEvidencia(evidenciaId) {
+  const result = await fetchJson(`${API_URL}/api/acciones-mejora/?origen_id=${encodeURIComponent(evidenciaId)}`);
+  const acciones = Array.isArray(result.data) ? result.data : [];
+  return acciones[0] || null;
 }
 
 async function generarAccionesDesdeEvidenciasMacroproceso(macroproceso) {
@@ -2748,15 +2871,14 @@ function renderMacroprocessMetricCard(item) {
 
 function getMetricIcon(variant) {
   const icons = {
-    success: "âœ“",
+    success: "OK",
     danger: "!",
-    warning: "â€¢",
+    warning: "!",
     ia: "IA",
     total: "#"
   };
   return icons[variant] || "#";
 }
-
 function getRiskColor(value) {
   const numero = Number(value || 0);
   if (numero < 40) return "danger";
@@ -3303,7 +3425,7 @@ function toggleMenuAcciones(id, trigger = null) {
   const menu = document.getElementById(`menu-acciones-${id}`);
   if (!menu) return;
 
-  document.querySelectorAll(".acciones-menu").forEach((item) => {
+  document.querySelectorAll(".acciones-menu, .dropdown-menu").forEach((item) => {
     if (item !== menu) {
       item.classList.add("hidden");
       item.classList.remove("open-up");
@@ -3313,8 +3435,10 @@ function toggleMenuAcciones(id, trigger = null) {
   });
 
   menu.classList.toggle("hidden");
+  trigger?.setAttribute("aria-expanded", menu.classList.contains("hidden") ? "false" : "true");
 
   if (!menu.classList.contains("hidden")) {
+    menu.style.display = "";
     posicionarMenuAcciones(menu, trigger);
   } else {
     menu.classList.remove("open-up");
@@ -3550,7 +3674,7 @@ function abrirModalHistorialSilabo(silabo, historial) {
   if (!contenido) return;
 
   if (subtitulo) {
-    subtitulo.textContent = silabo.asignatura || "Sílabo";
+    subtitulo.textContent = normalizarTextoEncoding(silabo.asignatura || "Silabo");
   }
 
   const estadoActual = silabo.estado_actual || silabo.estado || "Sin estado";
@@ -3563,8 +3687,8 @@ function abrirModalHistorialSilabo(silabo, historial) {
         <strong>${escaparHtml(formatearTexto(estadoActual))}</strong>
       </section>
       <article class="empty-history-card">
-        <h3>No hay historial registrado para este sílabo.</h3>
-        <p>El historial se generará cuando se cambie el estado, se actualice el archivo, se edite el cumplimiento o se ejecute un análisis IA.</p>
+        <h3>No hay cambios registrados para este silabo.</h3>
+        <p>El historial se generara cuando se cambie el estado, se actualice el archivo, se edite el cumplimiento o se ejecute un analisis IA.</p>
       </article>
     `;
     mostrarModal("modalHistorialSilabo");
@@ -3577,23 +3701,34 @@ function abrirModalHistorialSilabo(silabo, historial) {
       <span>Estado actual</span>
       <strong>${escaparHtml(formatearTexto(estadoActual))}</strong>
     </section>
-    <div class="history-timeline">
-      ${ordenado.map((item) => `
-        <article class="history-timeline-item">
-          <div class="history-change-badge">
-            <strong>${escaparHtml(formatearTexto(item.estado_anterior || "sin estado"))}</strong>
-            <span>â†’</span>
-            <strong>${escaparHtml(formatearTexto(item.estado_nuevo || "sin estado"))}</strong>
-          </div>
-          <p class="history-detail"><strong>Detalle: </strong> ${escaparHtml(item.observacion || "Sin detalle registrado.")}</p>
-          <p class="history-date"><strong>Fecha: </strong> ${escaparHtml(item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha")}</p>
-        </article>
-      `).join("")}
+    <div class="syllabus-history-list">
+      ${ordenado.map(renderTarjetaHistorialSilabo).join("")}
     </div>
   `;
   mostrarModal("modalHistorialSilabo");
 }
 
+function renderTarjetaHistorialSilabo(item) {
+  const estadoAnterior = formatearTexto(item.estado_anterior || "sin estado");
+  const estadoNuevo = formatearTexto(item.estado_nuevo || "sin estado");
+  const fecha = item.created_at ? new Date(item.created_at).toLocaleString() : "Sin fecha";
+  const detalle = item.observacion || "Sin detalle registrado.";
+
+  return `
+    <article class="syllabus-history-card">
+      <div class="syllabus-history-header">
+        <span class="syllabus-history-type">Cambio de estado</span>
+        <span class="syllabus-history-date">${escaparHtml(fecha)}</span>
+      </div>
+      <div class="syllabus-history-change">
+        <span class="history-old-value">${escaparHtml(estadoAnterior)}</span>
+        <span class="history-arrow" aria-hidden="true">&rarr;</span>
+        <span class="history-new-value">${escaparHtml(estadoNuevo)}</span>
+      </div>
+      <p class="syllabus-history-detail">${escaparHtml(detalle)}</p>
+    </article>
+  `;
+}
 function cerrarModalHistorialSilabo() {
   ocultarModal("modalHistorialSilabo");
 }
@@ -3652,6 +3787,7 @@ let silaboIdEdicionActual = null;
 let resolverConfirmacion = null;
 
 function mostrarModal(modalId) {
+  cerrarTodosLosDropdowns();
   const el = document.getElementById(modalId);
   if (el) {
     el.classList.remove("hidden");
@@ -3665,7 +3801,9 @@ function ocultarModal(modalId) {
   const el = document.getElementById(modalId);
   if (el) {
     el.classList.add("hidden");
-    document.body.classList.remove("modal-open");
+    const hayModalAbierto = Array.from(document.querySelectorAll(".modal"))
+      .some((modal) => !modal.classList.contains("hidden"));
+    document.body.classList.toggle("modal-open", hayModalAbierto);
   } else {
     console.warn(`ocultarModal: El modal con ID "${modalId}" no existe en el DOM.`);
   }
@@ -3696,13 +3834,22 @@ function mostrarToast(mensaje, tipo = "info") {
 }
 
 function abrirModalConfirmacion({ titulo, mensaje, textoConfirmar = "Aceptar", tipo = "primary" }) {
-  document.getElementById("confirmacionTitulo").textContent = titulo;
-  document.getElementById("confirmacionMensaje").textContent = mensaje;
-
+  const modal = document.getElementById("modalConfirmacion");
+  const tituloEl = document.getElementById("confirmacionTitulo");
+  const mensajeEl = document.getElementById("confirmacionMensaje");
   const botonConfirmar = document.getElementById("confirmacionAceptar");
+
+  if (!modal || !tituloEl || !mensajeEl || !botonConfirmar) {
+    console.warn("[Confirmacion] Modal de confirmacion no encontrado. Usando confirm nativo.");
+    return Promise.resolve(window.confirm(mensaje));
+  }
+
+  tituloEl.textContent = titulo;
+  mensajeEl.textContent = mensaje;
   botonConfirmar.textContent = textoConfirmar;
   botonConfirmar.className = `btn btn-${tipo}`;
 
+  modal.classList.add("modal-front");
   mostrarModal("modalConfirmacion");
 
   return new Promise((resolve) => {
@@ -3948,8 +4095,37 @@ async function verAnalisisSilabo(id) {
   }
 }
 
+function normalizarTextoEncoding(texto) {
+  if (texto == null) return "";
+
+  let valor = String(texto);
+  const mojibake = (caracter) => Array.from(new TextEncoder().encode(caracter), (byte) => String.fromCharCode(byte)).join("");
+  const reemplazos = [
+    "\u2192",
+    "\u2022",
+    "\u00e1",
+    "\u00e9",
+    "\u00ed",
+    "\u00f3",
+    "\u00fa",
+    "\u00f1",
+    "\u201c",
+    "\u201d",
+    "\u2019",
+    "\u2013",
+    "\u2014"
+  ];
+
+  reemplazos.forEach((correcto) => {
+    const unaVez = mojibake(correcto);
+    const dosVeces = mojibake(unaVez);
+    valor = valor.replaceAll(dosVeces, correcto).replaceAll(unaVez, correcto);
+  });
+
+  return valor.replaceAll(mojibake(" "), " ").replaceAll("\u00c2", "");
+}
 function escaparHtml(valor) {
-  return String(valor ?? "")
+  return normalizarTextoEncoding(valor)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -3981,6 +4157,46 @@ function renderTextoAnalisis(valor) {
     : "<p class='text-muted'>Sin información registrada.</p>";
 }
 
+function obtenerArrayAnalisis(valor) {
+  if (!valor) return [];
+
+  if (typeof valor === "string") {
+    try {
+      const parsed = JSON.parse(valor);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      return valor
+        .split(/\r?\n|⬢|;/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return Array.isArray(valor) ? valor : [valor];
+}
+
+function renderChipsAnalisis(valor) {
+  const items = obtenerArrayAnalisis(valor);
+  if (!items.length) return "<p class='text-muted'>Sin informacion registrada.</p>";
+
+  return `
+    <div class="analysis-chip-list">
+      ${items.map((item) => `<span class="analysis-chip">${escaparHtml(typeof item === "object" ? JSON.stringify(item) : item)}</span>`).join("")}
+    </div>
+  `;
+}
+
+function renderListaAnalisis(valor) {
+  const items = obtenerArrayAnalisis(valor);
+  if (!items.length) return "<p class='text-muted'>Sin informacion registrada.</p>";
+
+  return `
+    <ul class="analysis-list">
+      ${items.map((item) => `<li>${escaparHtml(typeof item === "object" ? JSON.stringify(item) : item)}</li>`).join("")}
+    </ul>
+  `;
+}
+
 function abrirModalAnalisis(analisis) {
   const riesgo = String(analisis.nivel_riesgo ?? "sin dato").toLowerCase();
   const riesgoClase = ["bajo", "medio", "alto"].includes(riesgo) ? riesgo : "sin-dato";
@@ -3988,59 +4204,56 @@ function abrirModalAnalisis(analisis) {
     ? new Date(analisis.created_at).toLocaleString()
     : "Sin fecha registrada";
 
-  document.getElementById("tituloModalAnalisis").textContent = "Análisis curricular del sílabo";
+  document.getElementById("tituloModalAnalisis").textContent = "Analisis curricular del silabo";
   document.getElementById("contenidoAnalisis").innerHTML = `
-    <div class="analisis-section analisis-summary">
-      <div>
-        <span class="section-label">Nivel de riesgo</span>
-        <span class="risk-badge risk-${riesgoClase}">${escaparHtml(riesgo)}</span>
+    <div class="syllabus-analysis">
+      <div class="syllabus-analysis-meta">
+        <span class="risk-badge risk-${escaparAtributo(riesgoClase)}">Riesgo ${escaparHtml(formatearTexto(riesgo))}</span>
+        <span class="model-badge">${escaparHtml(analisis.modelo_usado ?? "Sin modelo registrado")}</span>
+        <span class="date-badge">${escaparHtml(fecha)}</span>
       </div>
-      <div>
-        <span class="section-label">Modelo usado</span>
-        <p>${escaparHtml(analisis.modelo_usado ?? "Sin modelo registrado")}</p>
-      </div>
-      <div>
-        <span class="section-label">Fecha de análisis</span>
-        <p>${escaparHtml(fecha)}</p>
-      </div>
-    </div>
 
-    <div class="analisis-section">
-      <h3>Resumen</h3>
-      ${renderTextoAnalisis(analisis.resumen)}
-    </div>
-    <div class="analisis-section">
-      <h3>Competencias detectadas</h3>
-      ${renderLista(analisis.competencias_detectadas)}
-    </div>
-    <div class="analisis-section">
-      <h3>Contenidos detectados</h3>
-      ${renderLista(analisis.contenidos_detectados)}
-    </div>
-    <div class="analisis-section">
-      <h3>Resultados de aprendizaje</h3>
-      ${renderLista(analisis.resultados_aprendizaje)}
-    </div>
-    <div class="analisis-section">
-      <h3>Secciones faltantes</h3>
-      ${renderLista(analisis.secciones_faltantes)}
-    </div>
-    <div class="analisis-section">
-      <h3>Sugerencias</h3>
-      ${renderLista(analisis.sugerencias)}
-    </div>
-    <div class="analisis-section">
-      <h3>Observación general</h3>
-      ${renderTextoAnalisis(analisis.observacion_general)}
+      <section class="analysis-section">
+        <h4>Resumen</h4>
+        ${renderTextoAnalisis(analisis.resumen)}
+      </section>
+
+      <section class="analysis-section">
+        <h4>Competencias detectadas</h4>
+        ${renderChipsAnalisis(analisis.competencias_detectadas)}
+      </section>
+
+      <section class="analysis-section">
+        <h4>Contenidos detectados</h4>
+        ${renderChipsAnalisis(analisis.contenidos_detectados)}
+      </section>
+
+      <section class="analysis-section">
+        <h4>Resultados de aprendizaje</h4>
+        ${renderListaAnalisis(analisis.resultados_aprendizaje)}
+      </section>
+
+      <section class="analysis-section">
+        <h4>Secciones faltantes</h4>
+        ${renderListaAnalisis(analisis.secciones_faltantes)}
+      </section>
+
+      <section class="analysis-section analysis-section-highlight">
+        <h4>Recomendaciones</h4>
+        ${renderListaAnalisis(analisis.sugerencias)}
+      </section>
+
+      <section class="analysis-section">
+        <h4>Observaciones</h4>
+        ${renderTextoAnalisis(analisis.observacion_general)}
+      </section>
     </div>
   `;
 
   mostrarModal("modalAnalisis");
 }
-
 function cerrarModalAnalisis() {
-  document.getElementById("modalAnalisis").classList.add("hidden");
-  document.body.classList.remove("modal-open");
+  ocultarModal("modalAnalisis");
 }
 
 async function analizarTrazabilidadCurricular() {
@@ -4519,7 +4732,7 @@ function renderizarTarjetasAcciones(data) {
 
         <p class="accion-preview">${descPreview}</p>
 
-        <button class="btn-toggle-details" onclick="toggleAccionDetails(this)">
+        <button class="btn-toggle-details" type="button" onclick="toggleAccionDetails(this)">
           Ver detalles 
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
         </button>
@@ -4550,10 +4763,9 @@ function renderizarTarjetasAcciones(data) {
         </div>
 
         <div class="accion-actions">
-          <button class="btn btn-secondary" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'en_proceso')">En proceso</button>
-          <button class="btn btn-success" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'atendida')">Atendida</button>
-          <button class="btn btn-secondary" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'descartada')">Descartar</button>
-          <button class="btn btn-danger" onclick="eliminarAccionMejora('${escaparAtributo(accion.id)}')">Eliminar</button>
+          <button class="btn btn-accion-proceso" type="button" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'en_proceso', this)">En proceso</button>
+          <button class="btn btn-accion-atendida" type="button" onclick="actualizarEstadoAccion('${escaparAtributo(accion.id)}', 'atendida', this)">Atendida</button>
+          <button class="btn btn-accion-descartar" type="button" onclick="descartarAccionMejora('${escaparAtributo(accion.id)}', this)">Descartar</button>
         </div>
       </article>
     `;
@@ -4588,12 +4800,76 @@ function toggleEvidenceDetails(button) {
   }
 }
 
-async function actualizarEstadoAccion(id, estado) {
-  if (!id || !estado) {
-    mostrarToast("No se pudo identificar la acción o el nuevo estado.", "warning");
+function obtenerFiltrosAccionesMejora() {
+  return {
+    busqueda: document.getElementById("buscarAccionesMejora")?.value || "",
+    estado: document.getElementById("filtroEstadoAcciones")?.value || "todos",
+    prioridad: document.getElementById("filtroPrioridadAcciones")?.value || "todos"
+  };
+}
+
+function restaurarFiltrosAccionesMejora(filtros) {
+  const buscar = document.getElementById("buscarAccionesMejora");
+  const estado = document.getElementById("filtroEstadoAcciones");
+  const prioridad = document.getElementById("filtroPrioridadAcciones");
+
+  if (buscar) buscar.value = filtros.busqueda || "";
+  if (estado) estado.value = filtros.estado || "todos";
+  if (prioridad) prioridad.value = filtros.prioridad || "todos";
+}
+
+async function recargarAccionesMejoraActuales() {
+  const filtros = obtenerFiltrosAccionesMejora();
+  const url = macroprocesoAccionesActual
+    ? `${API_URL}/api/acciones-mejora/?macroproceso=${encodeURIComponent(macroprocesoAccionesActual)}`
+    : `${API_URL}/api/acciones-mejora/`;
+  const result = await fetchJson(url);
+
+  accionesMejoraGlobal = result.data || [];
+  restaurarFiltrosAccionesMejora(filtros);
+  renderizarAccionesMejoraFiltradas();
+}
+
+function setBotonAccionCargando(button, cargando, textoCargando = "Procesando...") {
+  if (!button) return;
+
+  if (cargando) {
+    button.dataset.originalText = button.textContent;
+    button.textContent = textoCargando;
+    button.disabled = true;
     return;
   }
 
+  button.disabled = false;
+  if (button.dataset.originalText) {
+    button.textContent = button.dataset.originalText;
+    delete button.dataset.originalText;
+  }
+}
+
+function textoEstadoAccion(estado) {
+  const estados = {
+    en_proceso: "en proceso",
+    atendida: "atendida",
+    descartada: "descartada",
+    pendiente: "pendiente"
+  };
+  return estados[estado] || formatearTexto(estado);
+}
+
+async function actualizarEstadoAccion(id, estado, button = null) {
+  if (!id || !estado) {
+    mostrarToast("No se pudo identificar la accion o el nuevo estado.", "warning");
+    return;
+  }
+
+  const estadosValidos = ["pendiente", "en_proceso", "atendida", "descartada"];
+  if (!estadosValidos.includes(estado)) {
+    mostrarToast("Estado de accion invalido.", "warning");
+    return;
+  }
+
+  setBotonAccionCargando(button, true);
   try {
     await fetchJson(`${API_URL}/api/acciones-mejora/${id}`, {
       method: "PUT",
@@ -4601,46 +4877,32 @@ async function actualizarEstadoAccion(id, estado) {
       body: JSON.stringify({ estado })
     });
 
-    mostrarToast("Estado de la acción actualizado correctamente.", "success");
-
-    if (macroprocesoAccionesActual) {
-      await verAccionesMacroproceso(macroprocesoAccionesActual);
-    } else {
-      await verAccionesMejora();
-    }
-
+    mostrarToast(
+      estado === "descartada"
+        ? "Accion descartada correctamente."
+        : `Accion marcada como ${textoEstadoAccion(estado)}.`,
+      "success"
+    );
+    await recargarAccionesMejoraActuales();
     await cargarDashboardAccionesMejora();
   } catch (error) {
-    console.error("Error al actualizar estado de acción:", error);
-    mostrarToast("Error al actualizar la acción: " + error.message, "error");
+    console.error("[Acciones Mejora] Error al actualizar estado:", error);
+    mostrarToast("Error al actualizar la accion: " + error.message, "error");
+  } finally {
+    setBotonAccionCargando(button, false);
   }
 }
 
-async function eliminarAccionMejora(id) {
-  const confirmado = await confirmarAccion("¿Deseas eliminar esta acción de mejora?");
+async function descartarAccionMejora(id, button = null) {
+  if (!id) {
+    mostrarToast("No se pudo identificar la accion de mejora.", "warning");
+    return;
+  }
+
+  const confirmado = await confirmarAccion("Deseas descartar esta accion de mejora? Se conservara en el historial.");
   if (!confirmado) return;
 
-  try {
-    const response = await fetch(`${API_URL}/api/acciones-mejora/${id}`, {
-      method: "DELETE"
-    });
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.detail || "No se pudo eliminar la acción.");
-    }
-
-    mostrarToast("Acción eliminada correctamente.", "success");
-    if (macroprocesoAccionesActual) {
-      await verAccionesMacroproceso(macroprocesoAccionesActual);
-    } else {
-      await verAccionesMejora();
-    }
-    await cargarDashboardAccionesMejora();
-  } catch (error) {
-    console.error("Error al eliminar acción:", error);
-    mostrarToast("Error al eliminar acción: " + error.message, "error");
-  }
+  await actualizarEstadoAccion(id, "descartada", button);
 }
 
 Object.assign(window, {
@@ -4710,8 +4972,8 @@ Object.assign(window, {
   compararUltimosAnalisisIA,
   descargarMetricasFinalesCsv,
   descargarReporteIntegralJson,
+  descartarAccionMejora,
   editarSilabo,
-  eliminarAccionMejora,
   eliminarSeguimientoSemanal,
   eliminarSilabo,
   enviarEncuestaAceptacion,

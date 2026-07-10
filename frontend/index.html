@@ -162,7 +162,7 @@
         <article class="macro-card">
           <div class="card-header">
             <h3>Planificación Estratégica</h3>
-            <span class="status-badge in-process">En proceso</span>
+            <span class="status-badge completed">Implementado</span>
           </div>
           <p class="card-description">Gestión de objetivos estratégicos, indicadores, metas y evidencias del plan de
             mejora.</p>
@@ -177,7 +177,7 @@
         <article class="macro-card">
           <div class="card-header">
             <h3>Gestión Académica</h3>
-            <span class="status-badge in-process">En proceso</span>
+            <span class="status-badge completed">Implementado</span>
           </div>
           <p class="card-description">Análisis de malla curricular, perfil de egreso y coherencia académica del
             programa.</p>
@@ -883,6 +883,25 @@
     </div>
   </div>
 
+  <!-- Modal: Validación IA de Evidencia -->
+  <div id="modalValidacionEvidenciaIA" class="modal hidden" role="dialog">
+    <div class="modal-overlay" onclick="cerrarModalValidacionEvidenciaIA()"></div>
+    <div class="modal-content modal-xl">
+      <div class="modal-header">
+        <h3>Última validación IA de evidencia</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalValidacionEvidenciaIA()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="contenidoValidacionEvidenciaIA"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalValidacionEvidenciaIA()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Acciones de Mejora -->
   <div id="modalAccionesMejora" class="modal hidden" role="dialog">
     <div class="modal-overlay" onclick="cerrarModalAccionesMejora()"></div>
@@ -1463,6 +1482,26 @@
     <div class="loading-spinner-container">
       <div class="loading-spinner"></div>
       <p id="loadingText" class="loading-text">Cargando...</p>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmación -->
+  <div id="modalConfirmacion" class="modal modal-front hidden" role="dialog" aria-modal="true">
+    <div class="modal-overlay" onclick="cerrarModalConfirmacion(false)"></div>
+    <div class="modal-content modal-confirmation">
+      <div class="modal-header">
+        <h3 id="confirmacionTitulo">Confirmar acción</h3>
+        <button type="button" class="modal-close" onclick="cerrarModalConfirmacion(false)" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <p id="confirmacionMensaje" class="confirmation-message">¿Deseas continuar?</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalConfirmacion(false)">Cancelar</button>
+        <button id="confirmacionAceptar" type="button" class="btn btn-danger" onclick="cerrarModalConfirmacion(true)">Aceptar</button>
+      </div>
     </div>
   </div>
 
