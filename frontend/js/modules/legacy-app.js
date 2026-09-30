@@ -2166,26 +2166,85 @@ async function analizarMejoraContinuaIA() {
   }
 }
 
+function resaltarTerminosDiagnostico(texto) {
+  const terminosCriticos = [
+    /riesgo general alto/gi,
+    /bajos? avances?/gi,
+    /brechas curriculares prioritarias/gi,
+    /acciones de mejora pendientes/gi
+  ];
+  return terminosCriticos.reduce(
+    (resultado, patron) => resultado.replace(patron, '<strong class="diagnostic-critical-term">$&</strong>'),
+    escaparHtml(texto)
+  );
+}
+
+function renderResumenDiagnostico(resumen) {
+  const texto = String(resumen || "Sin resumen generado.").trim();
+  let fragmentos = (texto.match(/[^.!?;]+[.!?;]?/g) || [])
+    .map((fragmento) => fragmento.trim())
+    .filter(Boolean);
+
+  if (fragmentos.length < 2 && texto.length > 130) {
+    fragmentos = texto.split(/,\s+/).map((fragmento) => fragmento.trim()).filter(Boolean);
+  }
+
+  if (fragmentos.length > 3) {
+    fragmentos = [fragmentos[0], fragmentos[1], fragmentos.slice(2).join(" ")];
+  }
+
+  return `
+    <ul class="diagnostic-summary-list">
+      ${fragmentos.map((fragmento) => `<li>${resaltarTerminosDiagnostico(fragmento)}</li>`).join("")}
+    </ul>
+  `;
+}
+
 function renderIndicadoresGenerales(indicadores) {
-  const items = [
-    ["Macroprocesos", indicadores.total_macroprocesos ?? 0],
-    ["Evidencias", indicadores.total_evidencias_macroprocesos ?? 0],
-    ["Sílabos", indicadores.total_silabos ?? 0],
-    ["Brechas", indicadores.total_brechas ?? 0],
-    ["Brechas alta prioridad", indicadores.brechas_alta_prioridad ?? 0],
-    ["Acciones de mejora", indicadores.total_acciones_mejora ?? 0],
-    ["Acciones pendientes", indicadores.acciones_pendientes ?? 0],
-    ["Acciones en proceso", indicadores.acciones_en_proceso ?? 0],
-    ["Acciones completadas", indicadores.acciones_completadas ?? 0]
+  const grupos = [
+    {
+      titulo: "Cobertura",
+      tono: "info",
+      items: [
+        ["Macroprocesos", indicadores.total_macroprocesos ?? 0, "neutral"],
+        ["Evidencias", indicadores.total_evidencias_macroprocesos ?? 0, "neutral"],
+        ["Sílabos", indicadores.total_silabos ?? 0, "neutral"]
+      ]
+    },
+    {
+      titulo: "Problemas",
+      tono: "danger",
+      items: [
+        ["Brechas", indicadores.total_brechas ?? 0, "warning"],
+        ["Alta prioridad", indicadores.brechas_alta_prioridad ?? 0, "danger"]
+      ]
+    },
+    {
+      titulo: "Acciones",
+      tono: "success",
+      items: [
+        ["Total", indicadores.total_acciones_mejora ?? 0, "neutral"],
+        ["Pendientes", indicadores.acciones_pendientes ?? 0, "danger"],
+        ["En proceso", indicadores.acciones_en_proceso ?? 0, "warning"],
+        ["Completadas", indicadores.acciones_completadas ?? 0, "success"]
+      ]
+    }
   ];
 
   return `
-    <div class="general-indicator-grid">
-      ${items.map(([titulo, valor]) => `
-        <div class="summary-card">
-          <span>${escaparHtml(titulo)}</span>
-          <strong>${escaparHtml(valor)}</strong>
-        </div>
+    <div class="diagnostic-indicator-groups">
+      ${grupos.map((grupo) => `
+        <section class="diagnostic-indicator-group diagnostic-group-${grupo.tono}">
+          <h4><span aria-hidden="true"></span>${escaparHtml(grupo.titulo)}</h4>
+          <div class="diagnostic-metrics-grid">
+            ${grupo.items.map(([titulo, valor, tono]) => `
+              <div class="diagnostic-metric-card diagnostic-stat-${tono}">
+                <span>${escaparHtml(titulo)}</span>
+                <strong>${escaparHtml(valor)}</strong>
+              </div>
+            `).join("")}
+          </div>
+        </section>
       `).join("")}
     </div>
   `;
@@ -2196,19 +2255,36 @@ function renderEstadoMacroprocesos(items) {
     return `<p class="text-muted">No se encontraron estados por macroproceso.</p>`;
   }
 
+  const pesoRiesgo = { alto: 0, medio: 1, bajo: 2 };
+  const itemsOrdenados = [...items].sort((a, b) => {
+    const riesgoA = String(a.nivel_riesgo || "medio").toLowerCase();
+    const riesgoB = String(b.nivel_riesgo || "medio").toLowerCase();
+    return (pesoRiesgo[riesgoA] ?? 1) - (pesoRiesgo[riesgoB] ?? 1);
+  });
+
   return `
     <div class="macroprocess-status-grid">
-      ${items.map((item) => {
+      ${itemsOrdenados.map((item) => {
         const riesgo = String(item.nivel_riesgo || "medio").toLowerCase();
         const riesgoClase = ["bajo", "medio", "alto"].includes(riesgo) ? riesgo : "medio";
+        const avance = Math.max(0, Math.min(100, Number(item.avance_promedio) || 0));
         return `
-          <article class="macroprocess-status-card risk-${escaparAtributo(riesgoClase)}">
-            <div class="evidence-card-header">
+          <article class="macroprocess-status-card diagnostic-status-card risk-${escaparAtributo(riesgoClase)}">
+            <div class="diagnostic-status-header">
               <h3>${escaparHtml(item.macroproceso || "Macroproceso")}</h3>
-              <span class="risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(riesgoClase)}</span>
+              <span class="risk-badge diagnostic-risk-badge risk-${escaparAtributo(riesgoClase)}">Riesgo ${escaparHtml(riesgoClase)}</span>
             </div>
-            <p><strong>Avance promedio: </strong> ${escaparHtml(item.avance_promedio ?? 0)}%</p>
-            ${renderListaPlanificacion(item.hallazgos, "Sin hallazgos registrados.")}
+            <div class="diagnostic-progress-row">
+              <span>Avance promedio</span>
+              <strong>${escaparHtml(avance)}%</strong>
+            </div>
+            <div class="diagnostic-progress" role="progressbar" aria-label="Avance de ${escaparAtributo(item.macroproceso || "macroproceso")}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${avance}">
+              <span style="width: ${avance}%"></span>
+            </div>
+            <div class="diagnostic-findings">
+              <span class="diagnostic-findings-label">Hallazgos principales</span>
+              ${renderListaPlanificacion(item.hallazgos, "Sin hallazgos registrados.")}
+            </div>
           </article>
         `;
       }).join("")}
@@ -2261,70 +2337,90 @@ function abrirModalMejoraContinuaIA(data) {
   }
 
   document.getElementById("contenidoMejoraContinuaIA").innerHTML = `
-    <div class="analisis-section analisis-summary">
-      <div>
+    <section class="diagnostic-hero risk-${escaparAtributo(riesgoClase)}">
+      <div class="diagnostic-hero-main">
         <span class="section-label">Nivel de riesgo general</span>
-        <span class="general-risk-badge risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(riesgoClase)}</span>
+        <span class="general-risk-badge risk-badge risk-${escaparAtributo(riesgoClase)}">Riesgo ${escaparHtml(riesgoClase)}</span>
       </div>
-      <div>
+      <div class="diagnostic-hero-stat">
         <span class="section-label">Macroprocesos</span>
-        <p>${escaparHtml(indicadores.total_macroprocesos ?? 3)}</p>
+        <strong>${escaparHtml(indicadores.total_macroprocesos ?? 3)}</strong>
       </div>
-      <div>
+      <div class="diagnostic-hero-model">
         <span class="section-label">Modelo usado</span>
         <p>${escaparHtml(data.modelo_usado || "-")}</p>
       </div>
-    </div>
+    </section>
 
-    <div class="analisis-section">
-      <h3>Resumen general</h3>
-      <p>${escaparHtml(data.resumen_general || "Sin resumen generado.")}</p>
-    </div>
+    <section class="diagnostic-section diagnostic-summary-section">
+      <div class="diagnostic-section-heading">
+        <span class="diagnostic-section-icon" aria-hidden="true">01</span>
+        <div>
+          <h3>Resumen ejecutivo</h3>
+          <p>Lectura rápida de los principales resultados del análisis.</p>
+        </div>
+      </div>
+      ${renderResumenDiagnostico(data.resumen_general)}
+    </section>
 
-    <div class="analisis-section">
-      <h3>Indicadores generales</h3>
+    <section class="diagnostic-section">
+      <div class="diagnostic-section-heading">
+        <span class="diagnostic-section-icon" aria-hidden="true">02</span>
+        <div>
+          <h3>Indicadores generales</h3>
+          <p>Cobertura, problemas detectados y estado de las acciones.</p>
+        </div>
+      </div>
       ${renderIndicadoresGenerales(indicadores)}
-    </div>
+    </section>
 
-    <div class="analisis-section">
-      <h3>Estado por macroproceso</h3>
+    <section class="diagnostic-section">
+      <div class="diagnostic-section-heading">
+        <span class="diagnostic-section-icon" aria-hidden="true">03</span>
+        <div>
+          <h3>Estado por macroproceso</h3>
+          <p>Ordenado desde el nivel de riesgo más crítico.</p>
+        </div>
+      </div>
       ${renderEstadoMacroprocesos(data.estado_macroprocesos)}
+    </section>
+
+    <div class="diagnostic-columns">
+      <section class="diagnostic-section diagnostic-alert-section">
+        <h3>Macroprocesos críticos</h3>
+        ${renderListaPlanificacion(data.macroprocesos_criticos, "Sin macroprocesos críticos registrados.")}
+      </section>
+
+      <section class="diagnostic-section">
+        <h3>Hallazgos integrados</h3>
+        ${renderListaPlanificacion(data.hallazgos_integrados, "Sin hallazgos integrados registrados.")}
+      </section>
+
+      <section class="diagnostic-section diagnostic-alert-section">
+        <h3>Evidencias críticas</h3>
+        ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
+      </section>
     </div>
 
-    <div class="analisis-section">
-      <h3>Macroprocesos críticos</h3>
-      ${renderListaPlanificacion(data.macroprocesos_criticos, "Sin macroprocesos críticos registrados.")}
-    </div>
-
-    <div class="analisis-section">
-      <h3>Hallazgos integrados</h3>
-      ${renderListaPlanificacion(data.hallazgos_integrados, "Sin hallazgos integrados registrados.")}
-    </div>
-
-    <div class="analisis-section">
-      <h3>Evidencias críticas</h3>
-      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
-    </div>
-
-    <div class="analisis-section">
+    <section class="diagnostic-section">
       <h3>Acciones prioritarias</h3>
       ${renderAccionesPrioritarias(data.acciones_prioritarias)}
-    </div>
+    </section>
 
-    <div class="analisis-section">
+    <section class="diagnostic-section">
       <h3>Recomendaciones para el comité académico</h3>
       ${renderListaPlanificacion(data.recomendaciones_comite, "Sin recomendaciones registradas.")}
-    </div>
+    </section>
 
-    <div class="analisis-section">
+    <section class="diagnostic-section diagnostic-decision">
       <h3>Decisión sugerida</h3>
       <p>${escaparHtml(data.decision_sugerida || "Sin decisión sugerida.")}</p>
-    </div>
+    </section>
 
-    <div class="analisis-section">
+    <section class="diagnostic-section">
       <h3>Observación general</h3>
       <p>${escaparHtml(data.observacion_general || "Sin observación general.")}</p>
-    </div>
+    </section>
   `;
 
   mostrarModal("modalMejoraContinuaIA");
