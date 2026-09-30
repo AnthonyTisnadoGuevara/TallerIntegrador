@@ -3755,6 +3755,10 @@ body.login-page {
   gap: 12px;
 }
 
+.ai-analysis-indicator-groups {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .diagnostic-indicator-group {
   min-width: 0;
   padding: 14px;
@@ -3969,6 +3973,54 @@ body.login-page {
   background: #eff6ff;
 }
 
+.ai-analysis-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 14px;
+}
+
+.ai-analysis-detail-grid .diagnostic-section {
+  height: 100%;
+}
+
+.ai-analysis-alert-card {
+  border-top: 4px solid #ef4444;
+  background: linear-gradient(180deg, #fff7f7, #ffffff 42%);
+}
+
+.ai-analysis-recommendation-card {
+  border-top: 4px solid #2563eb;
+  background: linear-gradient(180deg, #eff6ff, #ffffff 42%);
+}
+
+.planificacion-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 12px;
+}
+
+.planificacion-action-card {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #f59e0b;
+  border-radius: 13px;
+  background: #f8fafc;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.04);
+}
+
+.planificacion-action-card.priority-alta { border-left-color: #dc2626; }
+.planificacion-action-card.priority-baja { border-left-color: #16a34a; }
+
+.planificacion-action-card h3 {
+  margin: 12px 0 8px;
+}
+
+.planificacion-action-card p {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
 @media (max-width: 760px) {
   .diagnostic-modal-content {
     width: min(96vw, 1080px);
@@ -3982,7 +4034,8 @@ body.login-page {
 
   .diagnostic-hero,
   .diagnostic-columns,
-  .diagnostic-indicator-groups {
+  .diagnostic-indicator-groups,
+  .ai-analysis-indicator-groups {
     grid-template-columns: 1fr;
   }
 

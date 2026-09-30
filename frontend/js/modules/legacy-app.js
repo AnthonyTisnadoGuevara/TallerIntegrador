@@ -1954,6 +1954,51 @@ function renderAccionesPlanificacion(acciones) {
   `;
 }
 
+function renderGruposIndicadoresAnalisis(grupos) {
+  return `
+    <div class="diagnostic-indicator-groups ai-analysis-indicator-groups">
+      ${grupos.map((grupo) => `
+        <section class="diagnostic-indicator-group diagnostic-group-${grupo.tono || "info"}">
+          <h4><span aria-hidden="true"></span>${escaparHtml(grupo.titulo)}</h4>
+          <div class="diagnostic-metrics-grid">
+            ${grupo.items.map(([titulo, valor, tono = "neutral"]) => `
+              <div class="diagnostic-metric-card diagnostic-stat-${tono}">
+                <span>${escaparHtml(titulo)}</span>
+                <strong>${escaparHtml(valor)}</strong>
+              </div>
+            `).join("")}
+          </div>
+        </section>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderIndicadoresPlanificacion(dashboard) {
+  return renderGruposIndicadoresAnalisis([
+    {
+      titulo: "Seguimiento",
+      tono: "info",
+      items: [
+        ["Total", dashboard.total ?? 0],
+        ["Pendientes", dashboard.pendientes ?? 0, "danger"],
+        ["En proceso", dashboard.en_proceso ?? 0, "warning"],
+        ["Completadas", dashboard.completadas ?? 0, "success"]
+      ]
+    },
+    {
+      titulo: "Alertas",
+      tono: "danger",
+      items: [
+        ["Observadas", dashboard.observadas ?? 0, "warning"],
+        ["Prioridad alta", dashboard.alta ?? 0, "danger"],
+        ["Pendientes de alta", dashboard.pendientes_alta ?? 0, "danger"],
+        ["Sin archivo", dashboard.sin_archivo ?? 0, "warning"]
+      ]
+    }
+  ]);
+}
+
 function abrirModalPlanificacionIA(data) {
   const nivelRiesgo = String(data.nivel_riesgo || "medio").toLowerCase();
   const riesgoClase = ["bajo", "medio", "alto"].includes(nivelRiesgo) ? nivelRiesgo : "medio";
@@ -1962,50 +2007,61 @@ function abrirModalPlanificacionIA(data) {
   if (!contenido) return;
 
   contenido.innerHTML = `
-    <div class="analisis-section analisis-summary">
-      <div>
-        <span class="section-label">Nivel de riesgo</span>
-        <span class="risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(nivelRiesgo)}</span>
+    <section class="diagnostic-hero risk-${escaparAtributo(riesgoClase)}">
+      <div class="diagnostic-hero-main">
+        <span class="section-label">Nivel de riesgo estratégico</span>
+        <span class="general-risk-badge risk-badge risk-${escaparAtributo(riesgoClase)}">Riesgo ${escaparHtml(nivelRiesgo)}</span>
       </div>
-      <div>
+      <div class="diagnostic-hero-stat">
         <span class="section-label">Avance promedio</span>
-        <p>${escaparHtml(dashboard.avance_promedio ?? 0)}%</p>
+        <strong>${escaparHtml(dashboard.avance_promedio ?? 0)}%</strong>
       </div>
-      <div>
+      <div class="diagnostic-hero-model">
         <span class="section-label">Modelo usado</span>
         <p>${escaparHtml(data.modelo_usado || "-")}</p>
       </div>
+    </section>
+
+    <section class="diagnostic-section diagnostic-summary-section">
+      <div class="diagnostic-section-heading">
+        <span class="diagnostic-section-icon" aria-hidden="true">01</span>
+        <div><h3>Resumen ejecutivo</h3><p>Situación general de la planificación estratégica.</p></div>
+      </div>
+      ${renderResumenDiagnostico(data.resumen)}
+    </section>
+
+    <section class="diagnostic-section">
+      <div class="diagnostic-section-heading">
+        <span class="diagnostic-section-icon" aria-hidden="true">02</span>
+        <div><h3>Indicadores de seguimiento</h3><p>Estado operativo y alertas que requieren atención.</p></div>
+      </div>
+      ${renderIndicadoresPlanificacion(dashboard)}
+    </section>
+
+    <div class="ai-analysis-detail-grid">
+      <section class="diagnostic-section ai-analysis-alert-card">
+        <h3>Riesgos detectados</h3>
+        ${renderListaPlanificacion(data.riesgos)}
+      </section>
+      <section class="diagnostic-section ai-analysis-alert-card">
+        <h3>Evidencias críticas</h3>
+        ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
+      </section>
+      <section class="diagnostic-section ai-analysis-recommendation-card">
+        <h3>Recomendaciones</h3>
+        ${renderListaPlanificacion(data.recomendaciones)}
+      </section>
     </div>
 
-    <div class="analisis-section">
-      <h3>Resumen</h3>
-      <p>${escaparHtml(data.resumen || "Sin resumen generado.")}</p>
-    </div>
-
-    <div class="analisis-section">
-      <h3>Riesgos detectados</h3>
-      ${renderListaPlanificacion(data.riesgos)}
-    </div>
-
-    <div class="analisis-section">
-      <h3>Evidencias críticas</h3>
-      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
-    </div>
-
-    <div class="analisis-section">
-      <h3>Recomendaciones</h3>
-      ${renderListaPlanificacion(data.recomendaciones)}
-    </div>
-
-    <div class="analisis-section">
+    <section class="diagnostic-section">
       <h3>Acciones sugeridas</h3>
       ${renderAccionesPlanificacion(data.acciones_sugeridas)}
-    </div>
+    </section>
 
-    <div class="analisis-section">
+    <section class="diagnostic-section diagnostic-decision">
       <h3>Observación general</h3>
       <p>${escaparHtml(data.observacion_general || "Sin observación general.")}</p>
-    </div>
+    </section>
   `;
 
   mostrarModal("modalPlanificacionIA");
@@ -2035,27 +2091,28 @@ async function analizarGestionAcademicaIA() {
 }
 
 function renderIndicadoresGestionAcademica(indicadores) {
-  const items = [
-    ["Total de evidencias", indicadores.total_evidencias ?? 0],
-    ["Pendientes", indicadores.pendientes ?? 0],
-    ["En proceso", indicadores.en_proceso ?? 0],
-    ["Completadas", indicadores.completadas ?? 0],
-    ["Observadas", indicadores.observadas ?? 0],
-    ["Avance promedio", `${indicadores.avance_promedio ?? 0}%`],
-    ["Prioridad alta", indicadores.prioridad_alta ?? 0],
-    ["Sin sustento documental", indicadores.sin_sustento_documental ?? 0]
-  ];
-
-  return `
-    <div class="indicator-grid">
-      ${items.map(([titulo, valor]) => `
-        <div class="summary-card">
-          <span>${escaparHtml(titulo)}</span>
-          <strong>${escaparHtml(valor)}</strong>
-        </div>
-      `).join("")}
-    </div>
-  `;
+  return renderGruposIndicadoresAnalisis([
+    {
+      titulo: "Seguimiento académico",
+      tono: "info",
+      items: [
+        ["Total", indicadores.total_evidencias ?? 0],
+        ["Pendientes", indicadores.pendientes ?? 0, "danger"],
+        ["En proceso", indicadores.en_proceso ?? 0, "warning"],
+        ["Completadas", indicadores.completadas ?? 0, "success"]
+      ]
+    },
+    {
+      titulo: "Alertas documentales",
+      tono: "danger",
+      items: [
+        ["Observadas", indicadores.observadas ?? 0, "warning"],
+        ["Prioridad alta", indicadores.prioridad_alta ?? 0, "danger"],
+        ["Sin sustento", indicadores.sin_sustento_documental ?? 0, "danger"],
+        ["Avance", `${indicadores.avance_promedio ?? 0}%`, "neutral"]
+      ]
+    }
+  ]);
 }
 
 function abrirModalGestionAcademicaIA(data) {
@@ -2077,65 +2134,69 @@ function abrirModalGestionAcademicaIA(data) {
   }
 
   contenido.innerHTML = `
-    <div class="analisis-section analisis-summary">
-      <div>
-        <span class="section-label">Nivel de riesgo</span>
-        <span class="risk-badge risk-${escaparAtributo(riesgoClase)}">${escaparHtml(nivelRiesgo)}</span>
+    <section class="diagnostic-hero risk-${escaparAtributo(riesgoClase)}">
+      <div class="diagnostic-hero-main">
+        <span class="section-label">Nivel de riesgo académico</span>
+        <span class="general-risk-badge risk-badge risk-${escaparAtributo(riesgoClase)}">Riesgo ${escaparHtml(nivelRiesgo)}</span>
       </div>
-      <div>
+      <div class="diagnostic-hero-stat">
         <span class="section-label">Avance promedio</span>
-        <p>${escaparHtml(indicadores.avance_promedio ?? 0)}%</p>
+        <strong>${escaparHtml(indicadores.avance_promedio ?? 0)}%</strong>
       </div>
-      <div>
+      <div class="diagnostic-hero-model">
         <span class="section-label">Modelo usado</span>
         <p>${escaparHtml(data.modelo_usado || "-")}</p>
       </div>
-    </div>
+    </section>
 
-    <div class="analisis-section">
-      <h3>Resumen</h3>
-      <p>${escaparHtml(data.resumen || "Sin resumen generado.")}</p>
-    </div>
+    <section class="diagnostic-section diagnostic-summary-section">
+      <div class="diagnostic-section-heading">
+        <span class="diagnostic-section-icon" aria-hidden="true">01</span>
+        <div><h3>Resumen ejecutivo</h3><p>Situación general de la gestión académica.</p></div>
+      </div>
+      ${renderResumenDiagnostico(data.resumen)}
+    </section>
 
-    <div class="analisis-section">
-      <h3>Indicadores</h3>
+    <section class="diagnostic-section">
+      <div class="diagnostic-section-heading">
+        <span class="diagnostic-section-icon" aria-hidden="true">02</span>
+        <div><h3>Indicadores académicos</h3><p>Seguimiento operativo y alertas documentales.</p></div>
+      </div>
       ${renderIndicadoresGestionAcademica(indicadores)}
+    </section>
+
+    <div class="ai-analysis-detail-grid">
+      <section class="diagnostic-section ai-analysis-alert-card">
+        <h3>Riesgos detectados</h3>
+        ${renderListaPlanificacion(data.riesgos)}
+      </section>
+      <section class="diagnostic-section ai-analysis-alert-card">
+        <h3>Acuerdos pendientes</h3>
+        ${renderListaPlanificacion(data.acuerdos_pendientes, "Sin acuerdos pendientes registrados.")}
+      </section>
+      <section class="diagnostic-section">
+        <h3>Observaciones académicas</h3>
+        ${renderListaPlanificacion(data.observaciones_academicas, "Sin observaciones académicas registradas.")}
+      </section>
+      <section class="diagnostic-section ai-analysis-alert-card">
+        <h3>Evidencias críticas</h3>
+        ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
+      </section>
+      <section class="diagnostic-section ai-analysis-recommendation-card">
+        <h3>Recomendaciones</h3>
+        ${renderListaPlanificacion(data.recomendaciones)}
+      </section>
     </div>
 
-    <div class="analisis-section">
-      <h3>Riesgos detectados</h3>
-      ${renderListaPlanificacion(data.riesgos)}
-    </div>
-
-    <div class="analisis-section">
-      <h3>Acuerdos pendientes</h3>
-      ${renderListaPlanificacion(data.acuerdos_pendientes, "Sin acuerdos pendientes registrados.")}
-    </div>
-
-    <div class="analisis-section">
-      <h3>Observaciones académicas</h3>
-      ${renderListaPlanificacion(data.observaciones_academicas, "Sin observaciones académicas registradas.")}
-    </div>
-
-    <div class="analisis-section">
-      <h3>Evidencias críticas</h3>
-      ${renderListaPlanificacion(data.evidencias_criticas, "Sin evidencias críticas registradas.")}
-    </div>
-
-    <div class="analisis-section">
-      <h3>Recomendaciones</h3>
-      ${renderListaPlanificacion(data.recomendaciones)}
-    </div>
-
-    <div class="analisis-section">
+    <section class="diagnostic-section">
       <h3>Acciones sugeridas</h3>
       ${renderAccionesPlanificacion(data.acciones_sugeridas)}
-    </div>
+    </section>
 
-    <div class="analisis-section">
+    <section class="diagnostic-section diagnostic-decision">
       <h3>Observación general</h3>
       <p>${escaparHtml(data.observacion_general || "Sin observación general.")}</p>
-    </div>
+    </section>
   `;
 
   mostrarModal("modalGestionAcademicaIA");
