@@ -94,6 +94,11 @@ body {
   overflow-x: hidden;
 }
 
+/* Evita mostrar el dashboard mientras se valida la sesión de Supabase. */
+body.auth-pending {
+  visibility: hidden;
+}
+
 img,
 svg,
 canvas,

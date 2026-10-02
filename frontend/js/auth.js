@@ -102,6 +102,8 @@ async function protegerPagina() {
     span.textContent = user.email || "Usuario autenticado";
   }
 
+  document.body?.classList.remove("auth-pending");
+
   return true;
 }
 
