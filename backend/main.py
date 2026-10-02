@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import agentes
@@ -12,11 +14,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
-origins = [
+configured_origins = os.getenv("CORS_ORIGINS", "")
+origins = [origin.strip() for origin in configured_origins.split(",") if origin.strip()]
+
+# Valores de desarrollo y compatibilidad con la configuración anterior.
+for origin in (
     "http://127.0.0.1:5500",
     "http://localhost:5500",
     "https://taller-integrador-wine.vercel.app",
-]
+):
+    if origin not in origins:
+        origins.append(origin)
 
 app.add_middleware(
     CORSMiddleware,

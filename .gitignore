@@ -219,6 +219,7 @@ __marimo__/
 # Variables de entorno
 .env
 backend/.env
+backend/.env.test
 
 # Entorno virtual Python
 venv/
