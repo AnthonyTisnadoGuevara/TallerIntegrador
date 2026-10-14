@@ -1,0 +1,32 @@
+{
+  "fixture_status": "fictional_test_data_not_official_criteria",
+  "cases": [
+    {
+      "expediente_id": "SYNTH-EXP-PLAN-001",
+      "macroproceso": "planificacion_estrategica",
+      "corpus_id": "SYNTH-CORPUS-2026-A",
+      "document_version": "v1",
+      "documents": [{"document_id": "SYNTH-DOC-PLAN-001", "version": "v1", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "source": "fixture_local", "locator": "synthetic/plan.txt"}],
+      "criterion_id": "SYNTH-PLAN-CRITERION-001",
+      "normative_version": "SYNTH-NORM-v1"
+    },
+    {
+      "expediente_id": "SYNTH-EXP-ACADEMIC-001",
+      "macroproceso": "gestion_academica",
+      "corpus_id": "SYNTH-CORPUS-2026-A",
+      "document_version": "v1",
+      "documents": [{"document_id": "SYNTH-DOC-ACADEMIC-001", "version": "v1", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "source": "fixture_local", "locator": "synthetic/academic.txt"}],
+      "criterion_id": "SYNTH-ACADEMIC-CRITERION-001",
+      "normative_version": "SYNTH-NORM-v1"
+    },
+    {
+      "expediente_id": "SYNTH-EXP-SYLLABUS-001",
+      "macroproceso": "gestion_silabos",
+      "corpus_id": "SYNTH-CORPUS-2026-A",
+      "document_version": "v1",
+      "documents": [{"document_id": "SYNTH-DOC-SYLLABUS-001", "version": "v1", "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "source": "fixture_local", "locator": "synthetic/syllabus.txt"}],
+      "criterion_id": "SYNTH-SYLLABUS-CRITERION-001",
+      "normative_version": "SYNTH-NORM-v1"
+    }
+  ]
+}

@@ -225,6 +225,11 @@ backend/.env.test
 venv/
 backend/venv/
 backend/uploads/
+/.venv-evaluation/
+
+# Resultados y Ground Truth locales (no versionar archivos o bloqueos)
+/evaluation/outputs/
+/evaluation/models/
 
 # Caché Python
 __pycache__/

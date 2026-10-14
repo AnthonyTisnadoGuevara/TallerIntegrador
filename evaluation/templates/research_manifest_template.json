@@ -1,0 +1,33 @@
+{
+  "schema_version": "1",
+  "study_id": "",
+  "status": "borrador",
+  "frozen_at": null,
+  "research_manifest_sha256": null,
+  "protocol": {
+    "version": "",
+    "approval_reference": null,
+    "approved_by": null,
+    "approved_at": null
+  },
+  "corpus_manifest": {
+    "relative_path": "",
+    "sha256": null
+  },
+  "normative_catalogs": [
+    {
+      "catalog_id": "",
+      "normative_version": "",
+      "relative_path": "",
+      "sha256": null
+    }
+  ],
+  "ground_truth": {
+    "relative_path": "",
+    "sha256": null,
+    "record_count": null,
+    "validation_version": ""
+  },
+  "macroprocess_metadata": [],
+  "privacy_restrictions": []
+}

@@ -1,0 +1,39 @@
+{
+  "execution_id": "20261014T074036Z",
+  "date": "2026-10-14",
+  "timezone": "America/Lima",
+  "overall_status": "PARCIAL",
+  "prompts": {
+    "1_auditoria_final": "COMPLETADO_CON_LIMITACIONES",
+    "2_dataset_ground_truth": "BLOQUEADO_DATASET_REAL_PENDIENTE",
+    "3_modelos_semanticos": "COMPLETADO_CON_LIMITACIONES",
+    "4_prueba_piloto": "BLOQUEADO_PILOTO_ARTEFACTO_OBJETIVO",
+    "5_benchmark_definitivo": "BLOQUEADO_NO_EJECUTADO",
+    "6_resultados_tesis": "COMPLETADO_CON_LIMITACIONES"
+  },
+  "validation": {
+    "evaluation_unittest": "PASS",
+    "evaluation_unittest_count": 123,
+    "pip_check": "PASS",
+    "git_diff_check_before_reports": "PASS",
+    "git_diff_check_after_reports": "PASS",
+    "compileall_evaluation": "PASS"
+  },
+  "semantic_runtime": {
+    "python": "3.12.10",
+    "device": "CPU",
+    "torch": "2.8.0+cpu",
+    "transformers": "4.57.3",
+    "bert_score_distribution": "0.3.13",
+    "bert_score_module_attribute": "0.3.12",
+    "sentence_transformers": "5.1.2",
+    "numpy": "2.2.6",
+    "synthetic_only": true,
+    "scientific_results": false
+  },
+  "external_services_called": false,
+  "institutional_documents_used": false,
+  "productive_system_modified": false,
+  "commit_or_push": false,
+  "report_directory": "evaluation/reports/master_execution/20261014T074036Z"
+}

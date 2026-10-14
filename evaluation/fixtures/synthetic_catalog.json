@@ -1,0 +1,20 @@
+{
+  "disclaimer": "CATÁLOGO FICTICIO PARA PRUEBAS TÉCNICAS; NO ES OFICIAL NI CONTIENE CRITERIOS ICACIT.",
+  "catalog_id": "SYNTH-CATALOG-001",
+  "normative_version": "SYNTH-V1",
+  "official_source": "synthetic://no-oficial",
+  "validation_status": "pendiente_validacion",
+  "criteria": [
+    {
+      "criterion_id": "SYNTH-CRIT-001",
+      "official_id": "SYNTH-REF-001",
+      "catalog_id": "SYNTH-CATALOG-001",
+      "normative_version": "SYNTH-V1",
+      "official_source": "synthetic://no-oficial",
+      "text": "Criterio ficticio para verificar la carga del catálogo.",
+      "applicability_rule": "No usar para decidir conformidad real.",
+      "effective_from": null,
+      "effective_to": null
+    }
+  ]
+}

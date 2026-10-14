@@ -1,0 +1,14 @@
+{
+  "disclaimer": "DATO FICTICIO PARA PRUEBAS TÉCNICAS. No es un sílabo, estándar, criterio de acreditación ni dato institucional.",
+  "expediente_id": "SYNTH-EXP-0001",
+  "corpus_id": "SYNTH-CORPUS-0001",
+  "document_version": "1",
+  "document": {
+    "document_id": "SYNTH-DOC-0001",
+    "name": "documento ficticio de prueba",
+    "format": "txt",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "version": "1",
+    "locator": "synthetic://fixture/document-0001"
+  }
+}

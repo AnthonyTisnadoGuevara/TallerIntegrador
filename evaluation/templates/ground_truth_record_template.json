@@ -1,0 +1,34 @@
+{
+  "template_status": "VACÍA; NO ES GROUND TRUTH Y NO DEBE CARGARSE COMO DATO",
+  "expediente_id": "",
+  "criterion_id": "",
+  "catalog_id": "",
+  "normative_version": "",
+  "macroproceso": null,
+  "status": "borrador",
+  "annotations": [
+    {
+      "annotation_id": "",
+      "expediente_id": "",
+      "criterion_id": "",
+      "normative_version": "",
+      "macroproceso": null,
+      "evaluator_id": "",
+      "applicability": null,
+      "reference_label": null,
+      "reference_verdict": null,
+      "evidence": [],
+      "review_status": "anotacion_individual",
+      "annotated_at": null,
+      "reviewed_at": null,
+      "annotation_version": ""
+    }
+  ],
+  "disagreement_resolution": null,
+  "final_applicability": null,
+  "final_label": null,
+  "reference_verdict": null,
+  "validated_by": null,
+  "validated_at": null,
+  "validation_version": null
+}

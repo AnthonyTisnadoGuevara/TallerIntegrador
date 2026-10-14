@@ -1,0 +1,42 @@
+{
+  "schema_version": "1",
+  "corpus_id": "",
+  "target_period": "2025",
+  "unit_of_analysis": "expediente_documental",
+  "status": "borrador",
+  "frozen_at": null,
+  "manifest_sha256": null,
+  "authorization": {
+    "status": "pendiente",
+    "reference": null,
+    "approved_by": null,
+    "approved_at": null
+  },
+  "privacy_restrictions": [],
+  "expedientes": [
+    {
+      "expediente_id": "",
+      "document_period": "",
+      "document_version": "",
+      "catalog_ref": {
+        "catalog_id": "",
+        "normative_version": ""
+      },
+      "macroprocesos": [],
+      "documents": [
+        {
+          "document_id": "",
+          "relative_path": "",
+          "version": "",
+          "format": "",
+          "sha256": null,
+          "provenance": {
+            "source_system": "",
+            "source_reference": ""
+          },
+          "authorization_status": "pendiente"
+        }
+      ]
+    }
+  ]
+}
